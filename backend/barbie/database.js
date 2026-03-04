@@ -41,8 +41,13 @@ async function initDatabase() {
         }
 
         const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
-        await mongoose.connect(uri);
+        await mongoose.connect(uri, {
+            serverSelectionTimeoutMS: 5000 // 5 second timeout
+        });
         console.log('✅ Connected to MongoDB successfully');
+
+        // Disable buffering if connected
+        mongoose.set('bufferCommands', false);
 
         // Seed default Admin if not exists
         const adminCount = await Admin.countDocuments();
@@ -71,7 +76,7 @@ async function initDatabase() {
 
     } catch (error) {
         console.error('❌ MongoDB Connection Error:', error.message);
-        process.exit(1);
+        // Do NOT exit process, let fallback login work
     }
 }
 

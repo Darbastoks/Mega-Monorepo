@@ -550,12 +550,18 @@
                     updateCounts();
                     renderTable();
                 } else {
-                    if (isLogin) loginError.style.display = 'block';
+                    if (isLogin) {
+                        loginError.style.display = 'block';
+                        loginError.innerText = response.status === 401 ? 'Neteisingas slaptažodis!' : 'Serverio klaida (DB?)';
+                    }
                     else logout();
                 }
             } catch (err) {
                 console.error(err);
-                if (isLogin) alert("Nepavyko prisijungti prie serverio.");
+                if (isLogin) {
+                    loginError.style.display = 'block';
+                    loginError.innerText = 'Tinklo klaida. Bandykite vėliau.';
+                }
                 else logout();
             }
         }

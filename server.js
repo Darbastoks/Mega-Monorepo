@@ -14,6 +14,8 @@ const dbNails = require('./backend/nails/database');
 // Velora Lead & Admin
 const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
 
+const mongoose = require('mongoose');
+mongoose.set('bufferCommands', false); // Disable buffering to prevent hanging
 const app = express();
 const PORT = process.env.PORT || 3000;
 
