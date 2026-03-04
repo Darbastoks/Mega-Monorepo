@@ -180,9 +180,11 @@ app.post('/api/hair/book', hairLimiter, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-const GRETA_ADMIN_PASS = process.env.GRETA_ADMIN_PASSWORD || 'greta123';
+const GRETA_ADMIN_PASS = 'greta123';
 
 app.get('/api/hair/bookings', async (req, res) => {
+    console.log(`[HAIR] Login attempt with password: "${req.query.password}"`);
+    console.log(`[HAIR] Expected password: "${GRETA_ADMIN_PASS}"`);
     if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
     try {
         const bookings = await GretaBooking.find().sort({ createdAt: -1 });
