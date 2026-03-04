@@ -11,6 +11,8 @@ const { initDatabase, Admin, Service, Booking } = require('./backend/barbie/data
 const GretaBooking = require('./backend/hair/GretaBooking');
 // Nails SQLite db
 const dbNails = require('./backend/nails/database');
+// Velora Lead & Admin
+const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -117,6 +119,26 @@ app.patch('/api/barbie/admin/bookings/:id', requireBarbieAdmin, async (req, res)
     } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
+app.delete('/api/barbie/admin/bookings/:id', requireBarbieAdmin, async (req, res) => {
+    try {
+        await Booking.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+app.post('/api/barbie/admin/change-password', requireBarbieAdmin, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const admin = await Admin.findById(req.session.barbieAdminId);
+        if (!admin || !bcrypt.compareSync(currentPassword, admin.password)) {
+            return res.status(401).json({ error: 'Neteisingas dabartinis slaptažodis' });
+        }
+        admin.password = bcrypt.hashSync(newPassword, 10);
+        await admin.save();
+        res.json({ success: true, message: 'Slaptažodis pakeistas sėkmingai' });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
 
 // ==================== NAILS BY LUKRA API (/api/nails/*) ====================
 app.get('/api/nails/available-times', (req, res) => {
@@ -201,6 +223,63 @@ app.put('/api/hair/bookings/:id/status', async (req, res) => {
 });
 
 
+// ==================== VELORA STUDIO API (/api/velora/*) ====================
+app.post('/api/velora/leads', async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        if (!name || !email) return res.status(400).json({ error: 'Vardas ir El. paštas privalomi' });
+        const newLead = new VeloraLead({ name, email, message });
+        await newLead.save();
+        res.status(201).json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+// Admin Auth Middleware for Velora
+function requireVeloraAdmin(req, res, next) {
+    if (req.session && req.session.isVeloraAdmin) return next();
+    res.status(401).json({ error: 'Reikia prisijungti' });
+}
+
+app.post('/api/velora/admin/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const admin = await VeloraAdmin.findOne({ username });
+        if (!admin || !bcrypt.compareSync(password, admin.password)) {
+            return res.status(401).json({ error: 'Neteisingi duomenys' });
+        }
+        req.session.isVeloraAdmin = true;
+        req.session.veloraAdminId = admin._id;
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+app.post('/api/velora/admin/logout', (req, res) => {
+    req.session.destroy();
+    res.json({ success: true });
+});
+
+app.get('/api/velora/admin/leads', requireVeloraAdmin, async (req, res) => {
+    try {
+        const leads = await VeloraLead.find().sort({ created_at: -1 });
+        res.json(leads);
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+app.patch('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) => {
+    try {
+        await VeloraLead.findByIdAndUpdate(req.params.id, { status: req.body.status });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+app.delete('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) => {
+    try {
+        await VeloraLead.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+});
+
+
 // Explicit index routes for sub-sites (prevents SPA fallback from catching them)
 app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
 app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
@@ -209,6 +288,7 @@ app.get('/hair', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
 app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'admin.html')));
+app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'admin.html')));
 // Fallback: everything else goes to Velora Studio
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 
@@ -217,6 +297,7 @@ app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.
 async function start() {
     try {
         await initDatabase(); // Initializing MongoDB for Barbie
+        await initVeloraDatabase(); // Initializing MongoDB for Velora
         app.listen(PORT, () => {
             console.log(`MEGA-MONOREPO Server running on port ${PORT}`);
             console.log(` - Velora: http://localhost:${PORT}/`);

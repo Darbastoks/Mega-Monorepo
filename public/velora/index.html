@@ -218,6 +218,28 @@
                     <p>Modernios svetainės grožio verslams.</p>
                 </div>
                 <div class="footer-contact">
+                    <h3>Parašykite mums</h3>
+                    <div class="contact-form-wrapper">
+                        <form id="veloraContactForm" class="contact-form">
+                            <div class="form-group">
+                                <label for="contactName">Vardas *</label>
+                                <input type="text" id="contactName" name="name" placeholder="Jūsų vardas" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">El. paštas *</label>
+                                <input type="email" id="contactEmail" name="email" placeholder="vardenis@pastas.lt"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactMessage">Žinutė</label>
+                                <textarea id="contactMessage" name="message" rows="4"
+                                    placeholder="Kuo galime padėti?"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-full">Siųsti žinutę</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="footer-contact">
                     <h3>Kontaktai</h3>
                     <a href="https://instagram.com/velorastudio.lt" target="_blank" class="contact-link">
                         <div class="contact-icon"><i class="fab fa-instagram"></i></div>
@@ -230,7 +252,8 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Velora Studio. Visos teisės saugomos.</p>
+                <p>&copy; 2026 Velora Studio. Visos teisės saugomos. <a href="/velora/admin" class="admin-link-footer">|
+                        Admin</a></p>
             </div>
         </div>
     </footer>

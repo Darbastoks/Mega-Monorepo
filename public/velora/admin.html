@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Velora Studio</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body class="admin-body">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="admin-login-overlay">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Velora Studio</h2>
+                <p>Prisijunkite prie valdymo pulto</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Vartotojo vardas</label>
+                    <input type="text" id="username" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Slaptažodis</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; margin-top: 10px;">Prisijungti</button>
+                <div id="loginError" class="login-error"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <header class="admin-header">
+            <div class="container admin-nav">
+                <div class="admin-logo">Velora Studio <span>Admin</span></div>
+                <div class="admin-actions">
+                    <a href="/velora" class="btn btn-outline btn-sm">Svetainė</a>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm">Atsijungti</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container admin-main">
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="stat-info">
+                        <h3 id="statTotal">0</h3>
+                        <p>Viso užklausų</p>
+                    </div>
+                </div>
+                <div class="stat-card new">
+                    <div class="stat-icon"><i class="fas fa-bell"></i></div>
+                    <div class="stat-info">
+                        <h3 id="statNew">0</h3>
+                        <p>Naujos užklausos</p>
+                    </div>
+                </div>
+                <div class="stat-card contacted">
+                    <div class="stat-icon"><i class="fas fa-phone"></i></div>
+                    <div class="stat-info">
+                        <h3 id="statContacted">0</h3>
+                        <p>Susisiekta</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-controls">
+                <div class="filter-tabs">
+                    <button class="filter-btn active" data-status="all">Visos</button>
+                    <button class="filter-btn" data-status="new">Naujos</button>
+                    <button class="filter-btn" data-status="contacted">Susisiekta</button>
+                    <button class="filter-btn" data-status="resolved">Išspręsta</button>
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar el. paštą...">
+                </div>
+            </div>
+
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Klientas</th>
+                            <th>Kontaktai</th>
+                            <th>Žinutė</th>
+                            <th>Statusas</th>
+                            <th>Veiksmai</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsTableBody">
+                        <!-- Leads will be loaded here -->
+                    </tbody>
+                </table>
+                <div id="noLeads" class="no-data" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>Užklausų nerasta</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

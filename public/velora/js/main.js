@@ -127,11 +127,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeModal();
             }
         });
-        
+
         // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.classList.contains('show')) {
                 closeModal();
+            }
+        });
+    }
+
+    // Contact Form Submission
+    const contactForm = document.getElementById('veloraContactForm');
+    if (contactForm) {
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = contactForm.querySelector('button');
+            const originalText = btn.textContent;
+
+            btn.disabled = true;
+            btn.textContent = 'Siunčiama...';
+
+            const formData = {
+                name: document.getElementById('contactName').value,
+                email: document.getElementById('contactEmail').value,
+                message: document.getElementById('contactMessage').value
+            };
+
+            try {
+                const response = await fetch('/api/velora/leads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    alert('Ačiū! Jūsų žinutė gauta. Susisieksime netrukus.');
+                    contactForm.reset();
+                } else {
+                    alert('Apgailestaujame, įvyko klaida. Bandykite dar kartą.');
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                alert('Tinklo klaida. Patikrinkite ryšį.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         });
     }
