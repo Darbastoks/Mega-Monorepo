@@ -30,6 +30,13 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
+// 3. Static Files (MUST BE BEFORE ROOT CATCH-ALL)
+app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
+app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
+app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
+app.use(express.static(path.join(__dirname, 'public/velora')));
+
+
 // ==================== BARBIE BARBER API ====================
 app.get('/api/barbie/services', async (req, res) => {
     try {
