@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G Spot Barbershop | Vilnius — Sertifikuota plaukų stilistė</title>
+    <meta name="description"
+        content="G Spot Barbershop Vilniuje. Profesionalūs vyrų plaukų kirpimai, barzdos modeliavimas. Registruokitės online!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo">
+                <span class="logo-icon">✂</span>
+                <span class="logo-text">G SPOT<span class="logo-accent"> BARBERSHOP</span></span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#hero">Pradžia</a></li>
+                <li><a href="#about">Apie mus</a></li>
+                <li><a href="#services">Paslaugos</a></li>
+                <li><a href="#gallery">Galerija</a></li>
+                <li><a href="#booking" class="nav-cta">Registruotis</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-particles" id="heroParticles"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                Vilnius, Lietuva
+            </div>
+            <h1 class="hero-title">
+                <span class="hero-title-line">G SPOT</span>
+                <span class="hero-title-line accent">BARBERSHOP</span>
+            </h1>
+            <p class="hero-subtitle">Sertifikuota plaukų stilistė · Modeliniai vyrų kirpimai ir barzdos</p>
+            <div class="hero-actions">
+                <a href="#booking" class="btn btn-primary">
+                    <span>Registruotis</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="#services" class="btn btn-outline">Paslaugos & Kainos</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number" data-target="489">0</span>
+                    <span class="stat-label">Sekėjai</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="5">0</span>
+                    <span class="stat-label">Metų patirtis</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-target="2000">0</span>
+                    <span class="stat-label">Patenkintų klientų</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-scroll">
+            <span>Slinkite žemyn</span>
+            <div class="scroll-indicator"></div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section about" id="about">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Apie mus</span>
+                <h2 class="section-title">Profesionalus <span class="text-gradient">stilius</span> kiekvienam</h2>
+                <p class="section-desc">Sertifikuota plaukų stilistė su ilgamete patirtimi, siūlanti aukščiausios
+                    kokybės vyrų kirpimo ir barzdos paslaugas Vilniuje.</p>
+            </div>
+            <div class="about-grid">
+                <div class="about-card">
+                    <div class="about-card-icon">💈</div>
+                    <h3>Sertifikuota meistrė</h3>
+                    <p>Profesionali plaukų stilistė su sertifikatu ir nuolat tobulinama kvalifikacija.</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-card-icon">✨</div>
+                    <h3>Premium produktai</h3>
+                    <p>Naudojame tik aukščiausios kokybės produktus jūsų plaukams ir barzdai.</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-card-icon">🎯</div>
+                    <h3>Individualus požiūris</h3>
+                    <p>Kiekvienas klientas gauna asmeninę konsultaciją ir stilių pagal veidą.</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-card-icon">📍</div>
+                    <h3>Vilniaus centras</h3>
+                    <p>Patogi lokacija Vilniaus centre su lengvu prieinamumu ir parkingu.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="section services" id="services">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Paslaugos</span>
+                <h2 class="section-title">Mūsų <span class="text-gradient">kainynas</span></h2>
+                <p class="section-desc">Pasirinkite jums tinkamiausią paslaugą ir registruokitės online</p>
+            </div>
+            <div class="services-grid" id="servicesGrid">
+                <!-- Services loaded dynamically via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="section gallery" id="gallery">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Galerija</span>
+                <h2 class="section-title">Mūsų <span class="text-gradient">darbai</span></h2>
+                <p class="section-desc">Peržiūrėkite mūsų naujausius darbus ir raskite savo stilių</p>
+            </div>
+            <div class="gallery-grid" id="galleryGrid">
+                <div class="gallery-item" data-category="kirpimas">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">✂️</span>
+                        <span>Fade kirpimas</span>
+                    </div>
+                </div>
+                <div class="gallery-item" data-category="barzda">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">🪒</span>
+                        <span>Barzdos modeliavimas</span>
+                    </div>
+                </div>
+                <div class="gallery-item" data-category="kirpimas">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">💇‍♂️</span>
+                        <span>Klasikinis kirpimas</span>
+                    </div>
+                </div>
+                <div class="gallery-item" data-category="kompleksas">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">⭐</span>
+                        <span>Pilnas kompleksas</span>
+                    </div>
+                </div>
+                <div class="gallery-item" data-category="barzda">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">🧔</span>
+                        <span>Barzdos formavimas</span>
+                    </div>
+                </div>
+                <div class="gallery-item" data-category="kirpimas">
+                    <div class="gallery-placeholder">
+                        <span class="gallery-placeholder-icon">💈</span>
+                        <span>Tekstūrinis kirpimas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Booking Section -->
+    <section class="section booking" id="booking">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Registracija</span>
+                <h2 class="section-title">Užsiregistruokite <span class="text-gradient">online</span></h2>
+                <p class="section-desc">Pasirinkite patogų laiką ir paslaugą. Atsakysime per 24 valandas.</p>
+            </div>
+            <div class="booking-wrapper">
+                <form class="booking-form" id="bookingForm">
+                    <div class="form-group">
+                        <label for="bookingName">Vardas *</label>
+                        <input type="text" id="bookingName" name="name" placeholder="Jūsų vardas" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingPhone">Telefonas *</label>
+                            <input type="tel" id="bookingPhone" name="phone" placeholder="+370 6XX XXXXX" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingEmail">El. paštas</label>
+                            <input type="email" id="bookingEmail" name="email" placeholder="jusu@email.lt">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingService">Paslauga *</label>
+                        <select id="bookingService" name="service" required>
+                            <option value="">Pasirinkite paslaugą...</option>
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingDate">Data *</label>
+                            <input type="date" id="bookingDate" name="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookingTime">Laikas *</label>
+                            <select id="bookingTime" name="time" required>
+                                <option value="">Pirma pasirinkite datą...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="bookingMessage">Papildoma informacija</label>
+                        <textarea id="bookingMessage" name="message" rows="3"
+                            placeholder="Jūsų pageidavimai (nebūtina)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="bookingSubmit">
+                        <span>Registruotis</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </form>
+                <div class="booking-info">
+                    <div class="info-card">
+                        <div class="info-icon">📍</div>
+                        <h4>Lokacija</h4>
+                        <p>Vilnius, Lietuva</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">🕐</div>
+                        <h4>Darbo laikas</h4>
+                        <p>Pirm - Penkt: 9:00 - 19:00</p>
+                        <p>Šešt: 10:00 - 16:00</p>
+                        <p>Sekm: Nedirbame</p>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-icon">📱</div>
+                        <h4>Kontaktai</h4>
+                        <p>Instagram: @barbie___barber</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo-icon">✂</span>
+                    <span class="logo-text">G SPOT<span class="logo-accent"> BARBERSHOP</span></span>
+                    <p class="footer-desc">Sertifikuota plaukų stilistė Vilniuje. Modeliniai vyrų kirpimai ir barzdos.
+                    </p>
+                </div>
+                <div class="footer-links">
+                    <h4>Navigacija</h4>
+                    <a href="#hero">Pradžia</a>
+                    <a href="#about">Apie mus</a>
+                    <a href="#services">Paslaugos</a>
+                    <a href="#gallery">Galerija</a>
+                    <a href="#booking">Registracija</a>
+                </div>
+                <div class="footer-social">
+                    <h4>Sekite mus</h4>
+                    <a href="https://instagram.com/barbie___barber" target="_blank" class="social-link">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                        </svg>
+                        @barbie___barber
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 G Spot Barbershop. Visos teisės saugomos.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <span class="toast-icon" id="toastIcon">✅</span>
+            <span class="toast-message" id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+
+</html>

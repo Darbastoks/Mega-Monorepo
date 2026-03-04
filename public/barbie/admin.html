@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | G Spot Barbershop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body class="admin-body">
+    <!-- Admin Login -->
+    <div class="admin-login" id="adminLogin">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="logo-icon">✂</span>
+                <h1>G SPOT<span class="logo-accent"> BARBERSHOP</span></h1>
+                <p>Administratoriaus panelė</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Vartotojo vardas</label>
+                    <input type="text" id="username" name="username" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Slaptažodis</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Prisijungti</button>
+            </form>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard" style="display:none;">
+        <header class="admin-header">
+            <div class="admin-header-left">
+                <span class="logo-icon">✂</span>
+                <h2>G SPOT <span class="logo-accent">Admin</span></h2>
+            </div>
+            <div class="admin-header-right">
+                <a href="/" class="btn btn-outline btn-sm">← Svetainė</a>
+                <button class="btn btn-outline btn-sm" id="logoutBtn">Atsijungti</button>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="admin-stats">
+            <div class="admin-stat-card">
+                <span class="admin-stat-number" id="statTotal">0</span>
+                <span class="admin-stat-label">Viso registracijų</span>
+            </div>
+            <div class="admin-stat-card pending">
+                <span class="admin-stat-number" id="statPending">0</span>
+                <span class="admin-stat-label">Laukiančios</span>
+            </div>
+            <div class="admin-stat-card confirmed">
+                <span class="admin-stat-number" id="statConfirmed">0</span>
+                <span class="admin-stat-label">Patvirtintos</span>
+            </div>
+            <div class="admin-stat-card completed">
+                <span class="admin-stat-number" id="statCompleted">0</span>
+                <span class="admin-stat-label">Atliktos</span>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-filters">
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">Visos</button>
+                <button class="filter-tab" data-filter="pending">Laukiančios</button>
+                <button class="filter-tab" data-filter="confirmed">Patvirtintos</button>
+                <button class="filter-tab" data-filter="completed">Atliktos</button>
+                <button class="filter-tab" data-filter="cancelled">Atšauktos</button>
+            </div>
+            <div class="filter-search">
+                <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+            </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="admin-table-wrap">
+            <table class="admin-table" id="bookingsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vardas</th>
+                        <th>Telefonas</th>
+                        <th>Paslauga</th>
+                        <th>Data</th>
+                        <th>Laikas</th>
+                        <th>Statusas</th>
+                        <th>Veiksmai</th>
+                    </tr>
+                </thead>
+                <tbody id="bookingsBody">
+                    <!-- Rows loaded dynamically -->
+                </tbody>
+            </table>
+            <div class="admin-empty" id="emptyState" style="display:none;">
+                <span>📋</span>
+                <p>Registracijų nerasta</p>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div class="modal" id="passwordModal" style="display:none;">
+            <div class="modal-content">
+                <h3>Keisti slaptažodį</h3>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label>Dabartinis slaptažodis</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Naujas slaptažodis</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline"
+                            onclick="document.getElementById('passwordModal').style.display='none'">Atšaukti</button>
+                        <button type="submit" class="btn btn-primary">Pakeisti</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <span class="toast-icon" id="toastIcon">✅</span>
+            <span class="toast-message" id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+</body>
+
+</html>

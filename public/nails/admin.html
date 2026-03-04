@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nails.by.lukra | Admin Panel</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body class="admin-body">
+
+    <!-- Admin Top Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-logo">
+            nails.by.lukra <span>| Admin</span>
+        </div>
+        <div class="admin-nav-actions">
+            <a href="index.html" class="btn-admin-outline">
+                <i class="fas fa-arrow-left"></i> Svetainė
+            </a>
+            <a href="#" class="btn-admin-outline">
+                Atsijungti
+            </a>
+        </div>
+    </nav>
+
+    <!-- Admin Dashboard Main Content -->
+    <main class="admin-dashboard">
+
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>0</h3>
+                <p>Viso registracijų</p>
+            </div>
+            <div class="stat-card">
+                <h3>0</h3>
+                <p>Laukiančios</p>
+            </div>
+            <div class="stat-card">
+                <h3>0</h3>
+                <p>Patvirtintos</p>
+            </div>
+            <div class="stat-card">
+                <h3>0</h3>
+                <p>Atliktos</p>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="admin-filters">
+            <div class="filter-tabs">
+                <div class="filter-tab active">Visos</div>
+                <div class="filter-tab">Laukiančios</div>
+                <div class="filter-tab">Patvirtintos</div>
+                <div class="filter-tab">Atliktos</div>
+                <div class="filter-tab">Atšauktos</div>
+            </div>
+
+            <div class="admin-search">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Ieškoti pagal vardą ar telefoną...">
+            </div>
+        </div>
+
+        <!-- Data Table / Empty State -->
+        <div class="admin-table-container">
+            <p>Pagal šiuos filtrus rezervacijų nerasta.</p>
+        </div>
+
+        <!-- Scripts -->
+        <script src="js/admin.js"></script>
+</body>
+
+</html>
