@@ -201,10 +201,15 @@ app.put('/api/hair/bookings/:id/status', async (req, res) => {
 });
 
 
-// Fallback React/SPA routes inside Barbie and Nails
+// Explicit index routes for sub-sites (prevents SPA fallback from catching them)
+app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
+app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
+app.get('/hair', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'index.html')));
+// Admin panel routes
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
 app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'admin.html')));
+// Fallback: everything else goes to Velora Studio
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 
 
