@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
 
 // Barbie MongoDB models
 const { initDatabase, Admin, Service, Booking } = require('./backend/barbie/database');
+// HairBeauty Mongoose model (shares Barbie DB connection)
+const GretaBooking = require('./backend/hair/GretaBooking');
 // Nails SQLite db
 const dbNails = require('./backend/nails/database');
 
@@ -31,6 +33,8 @@ app.use(express.static(path.join(__dirname, 'public/velora')));
 app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
 // Serve Nails By Lukra at '/nails'
 app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
+// Serve HairBeauty at '/hair'
+app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
 
 
 // ==================== BARBIE BARBER API (/api/barbie/*) ====================
@@ -154,9 +158,53 @@ app.patch('/api/nails/reservations/:id/status', (req, res) => {
 });
 
 
+// ==================== HAIR BEAUTY API (/api/hair/*) ====================
+const rLimit = require('express-rate-limit');
+const hairLimiter = rLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+
+app.post('/api/hair/book', hairLimiter, async (req, res) => {
+    try {
+        const { name, phone, service, date, message } = req.body;
+        if (!name || !phone || !service) return res.status(400).json({ error: 'Name, phone, and service are required.' });
+
+        const newB = new GretaBooking({ name, phone, service, preferred_date: date, message });
+        const saved = await newB.save();
+        res.status(201).json({ success: true, bookingId: saved._id });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+const GRETA_ADMIN_PASS = process.env.GRETA_ADMIN_PASSWORD || 'greta123';
+
+app.get('/api/hair/bookings', async (req, res) => {
+    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+    try {
+        const bookings = await GretaBooking.find().sort({ createdAt: -1 });
+        res.json(bookings);
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/hair/bookings/:id', async (req, res) => {
+    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+    try {
+        await GretaBooking.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.put('/api/hair/bookings/:id/status', async (req, res) => {
+    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+    if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Bad status' });
+    try {
+        const b = await GretaBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        res.json({ success: true, booking: b });
+    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+});
+
+
 // Fallback React/SPA routes inside Barbie and Nails
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
+app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'admin.html')));
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 
 

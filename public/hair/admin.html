@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Hair Beauty by Greta</title>
+    <link rel="stylesheet" href="/hair/styles.css?v=5">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+        rel="stylesheet">
+    <!-- Include FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(circle at top right, rgba(163, 141, 114, 0.08), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(163, 141, 114, 0.05), transparent 50%);
+        }
+
+        /* Top Navbar */
+        .admin-nav {
+            background: rgba(252, 251, 250, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(232, 226, 216, 0.8);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(61, 53, 44, 0.02);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-nav .logo {
+            color: var(--text-main);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-nav .logo i {
+            color: var(--accent-primary);
+        }
+
+        .admin-nav-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .admin-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-family: var(--font-body);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .admin-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            width: 100%;
+            flex-grow: 1;
+            /* Hide initially until login */
+            display: none;
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        /* Login Screen */
+        #loginScreen {
+            max-width: 420px;
+            margin: 120px auto;
+            background: var(--white);
+            padding: 50px 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        #loginScreen h2 {
+            margin-bottom: 25px;
+            font-family: var(--font-heading);
+            color: var(--text-main);
+            font-size: 2rem;
+        }
+
+        #loginScreen input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            background: var(--bg-primary);
+            transition: var(--transition);
+        }
+
+        #loginScreen input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(163, 141, 114, 0.1);
+        }
+
+        #loginError {
+            color: #991b1b;
+            background: #fee2e2;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle colored borders matching the screenshot aesthetic but light */
+        .stat-card:nth-child(1) {
+            border-top: 3px solid var(--text-main);
+        }
+
+        .stat-card:nth-child(2) {
+            border-top: 3px solid #f59e0b;
+        }
+
+        /* Warning/Yellow */
+        .stat-card:nth-child(3) {
+            border-top: 3px solid #3b82f6;
+        }
+
+        /* Info/Blue */
+        .stat-card:nth-child(4) {
+            border-top: 3px solid #10b981;
+        }
+
+        /* Success/Green */
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-family: var(--font-heading);
+            color: var(--text-main);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        /* Controls: Filters & Search */
+        .dashboard-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            background: var(--bg-secondary);
+            padding: 5px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .filter-tab {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-tab:hover {
+            color: var(--text-main);
+        }
+
+        .filter-tab.active {
+            background: var(--white);
+            color: var(--text-main);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--white);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Table Area */
+        .table-wrapper {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: var(--bg-primary);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            transition: var(--transition);
+        }
+
+        tbody tr:hover {
+            background-color: var(--bg-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        .status-confirmed {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .status-completed {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Action Buttons */
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-confirm {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .btn-confirm:hover {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-complete {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .btn-complete:hover {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-cancel:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-delete {
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            padding: 6px 10px;
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Navbar -->
+    <nav class="admin-nav">
+        <div class="logo">
+            <i class="fa-solid fa-scissors"></i>
+            <div>Hair Beauty <span>by Greta</span> | <strong>Admin</strong></div>
+        </div>
+        <div class="admin-nav-actions" id="navActions" style="display: none;">
+            <a href="/hair" class="admin-btn">
+                <i class="fa-solid fa-arrow-left"></i> Svetainė
+            </a>
+            <button class="admin-btn" onclick="logout()">
+                Atsijungti
+            </button>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <div id="loginScreen">
+        <h2>Prisijungimas</h2>
+        <div id="loginError">Neteisingas slaptažodis!</div>
+        <form id="loginForm">
+            <input type="password" id="adminPassword" placeholder="Įveskite administratoriaus slaptažodį..." required>
+            <button type="submit" class="btn btn-primary btn-block">Prisijungti</button>
+        </form>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-container" id="dashboardScreen">
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="stat-card">
+                <div class="stat-value" id="countAll">0</div>
+                <div class="stat-label">Viso Registracijų</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="countPending">0</div>
+                <div class="stat-label">Laukiančios</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="countConfirmed">0</div>
+                <div class="stat-label">Patvirtintos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="countCompleted">0</div>
+                <div class="stat-label">Atliktos</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="dashboard-controls">
+            <div class="filter-tabs" id="filterTabs">
+                <button class="filter-tab active" data-filter="all">Visos</button>
+                <button class="filter-tab" data-filter="pending">Laukiančios</button>
+                <button class="filter-tab" data-filter="confirmed">Patvirtintos</button>
+                <button class="filter-tab" data-filter="completed">Atliktos</button>
+                <button class="filter-tab" data-filter="cancelled">Atšauktos</button>
+            </div>
+
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper">
+            <div id="tableContainer">
+                <!-- Data inserted by JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = '/api/hair';
+
+        const loginScreen = document.getElementById('loginScreen');
+        const dashboardScreen = document.getElementById('dashboardScreen');
+        const navActions = document.getElementById('navActions');
+        const loginForm = document.getElementById('loginForm');
+        const tableContainer = document.getElementById('tableContainer');
+        const loginError = document.getElementById('loginError');
+        const searchInput = document.getElementById('searchInput');
+        const filterTabs = document.querySelectorAll('.filter-tab');
+
+        let allBookings = [];
+        let currentFilter = 'all';
+
+        const storedToken = sessionStorage.getItem('adminToken');
+        if (storedToken) {
+            loadDashboard(storedToken);
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pwd = document.getElementById('adminPassword').value;
+            loadDashboard(pwd, true);
+        });
+
+        async function loadDashboard(token, isLogin = false) {
+            try {
+                const response = await fetch(`${API_URL}/bookings?password=${encodeURIComponent(token)}`);
+                if (response.ok) {
+                    allBookings = await response.json();
+
+                    if (isLogin) {
+                        sessionStorage.setItem('adminToken', token);
+                        loginError.style.display = 'none';
+                    }
+
+                    showDashboard();
+                    updateCounts();
+                    renderTable();
+                } else {
+                    if (isLogin) loginError.style.display = 'block';
+                    else logout();
+                }
+            } catch (err) {
+                console.error(err);
+                if (isLogin) alert("Nepavyko prisijungti prie serverio.");
+                else logout();
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminToken');
+            dashboardScreen.style.display = 'none';
+            navActions.style.display = 'none';
+            loginScreen.style.display = 'block';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function showDashboard() {
+            loginScreen.style.display = 'none';
+            dashboardScreen.style.display = 'block';
+            navActions.style.display = 'flex';
+        }
+
+        function updateCounts() {
+            document.getElementById('countAll').innerText = allBookings.length;
+            document.getElementById('countPending').innerText = allBookings.filter(b => b.status === 'pending' || !b.status).length;
+            document.getElementById('countConfirmed').innerText = allBookings.filter(b => b.status === 'confirmed').length;
+            document.getElementById('countCompleted').innerText = allBookings.filter(b => b.status === 'completed').length;
+        }
+
+        // Filtering
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                filterTabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.getAttribute('data-filter');
+                renderTable();
+            });
+        });
+
+        // Searching
+        searchInput.addEventListener('input', () => {
+            renderTable();
+        });
+
+        function renderTable() {
+            const query = searchInput.value.toLowerCase();
+
+            let filtered = allBookings.filter(b => {
+                const searchMatch = b.name.toLowerCase().includes(query) || b.phone.includes(query);
+
+                const status = b.status || 'pending';
+                const filterMatch = currentFilter === 'all' || status === currentFilter;
+
+                return searchMatch && filterMatch;
+            });
+
+            if (filtered.length === 0) {
+                tableContainer.innerHTML = `<div class="empty-state">Pagal šiuos filtrus rezervacijų nerasta.</div>`;
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data / Laikas</th>
+                            <th>Vardas</th>
+                            <th>Telefonas</th>
+                            <th>Paslauga</th>
+                            <th>Norima Data (Kliento)</th>
+                            <th>Statusas</th>
+                            <th>Veiksmai</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filtered.forEach(b => {
+                const dateObj = new Date(b.createdAt || b.created_at);
+                const createdDate = dateObj.toLocaleDateString('lt-LT');
+                const createdTime = dateObj.toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit' });
+
+                const status = b.status || 'pending';
+                let statusBadge = '';
+                let actionBtns = '';
+
+                if (status === 'pending') {
+                    statusBadge = `<span class="status-badge status-pending">Laukianti</span>`;
+                    actionBtns = `
+                        <button class="action-btn btn-confirm" onclick="updateStatus('${b._id}', 'confirmed')"><i class="fa-solid fa-check"></i> Patvirtinti</button>
+                        <button class="action-btn btn-cancel" onclick="updateStatus('${b._id}', 'cancelled')"><i class="fa-solid fa-xmark"></i> Atšaukti</button>
+                    `;
+                } else if (status === 'confirmed') {
+                    statusBadge = `<span class="status-badge status-confirmed">Patvirtinta</span>`;
+                    actionBtns = `
+                        <button class="action-btn btn-complete" onclick="updateStatus('${b._id}', 'completed')"><i class="fa-solid fa-check-double"></i> Atlikta</button>
+                        <button class="action-btn btn-cancel" onclick="updateStatus('${b._id}', 'cancelled')"><i class="fa-solid fa-xmark"></i> Atšaukti</button>
+                    `;
+                } else if (status === 'completed') {
+                    statusBadge = `<span class="status-badge status-completed">Atlikta</span>`;
+                    actionBtns = ``; // No actions for completed
+                } else if (status === 'cancelled') {
+                    statusBadge = `<span class="status-badge status-cancelled">Atšaukta</span>`;
+                    actionBtns = ``; // No actions for cancelled
+                }
+
+                html += `
+                    <tr>
+                        <td>
+                            <div>${createdDate}</div>
+                            <small style="color: var(--text-muted)">${createdTime}</small>
+                        </td>
+                        <td><strong>${b.name}</strong></td>
+                        <td>${b.phone}</td>
+                        <td>${b.service}</td>
+                        <td>${b.preferred_date || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td class="actions-cell">
+                            ${actionBtns}
+                            <button class="action-btn btn-delete" title="Ištrinti visiškai" onclick="deleteBooking('${b._id}')"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            tableContainer.innerHTML = html;
+        }
+
+        async function updateStatus(id, newStatus) {
+            const token = sessionStorage.getItem('adminToken');
+            try {
+                const response = await fetch(`${API_URL}/bookings/${id}/status?password=${encodeURIComponent(token)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    // Update local state without fetching all again
+                    const idx = allBookings.findIndex(b => b._id === id);
+                    if (idx !== -1) {
+                        allBookings[idx].status = newStatus;
+                    }
+                    updateCounts();
+                    renderTable();
+                } else {
+                    alert('Nepavyko atnaujinti statuso.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Tinklo klaida. Nepavyko atnaujinti.');
+            }
+        }
+
+        async function deleteBooking(id) {
+            if (!confirm('Ar tikrai norite ištrinti šią rezervaciją visam laikui?')) return;
+
+            const token = sessionStorage.getItem('adminToken');
+            try {
+                const response = await fetch(`${API_URL}/bookings/${id}?password=${encodeURIComponent(token)}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    allBookings = allBookings.filter(b => b._id !== id);
+                    updateCounts();
+                    renderTable();
+                } else {
+                    alert('Nepavyko ištrinti.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Nepavyko ištrinti.');
+            }
+        }
+    </script>
+</body>
+
+</html>
