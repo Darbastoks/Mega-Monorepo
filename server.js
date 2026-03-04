@@ -27,14 +27,14 @@ app.use(session({
 }));
 
 // ==================== STATIC FRONTEND ROUTING ====================
-// Serve VeloraStudio as the main root '/'
-app.use(express.static(path.join(__dirname, 'public/velora')));
 // Serve Barbie Barber at '/barbie'
 app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
 // Serve Nails By Lukra at '/nails'
 app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
 // Serve HairBeauty at '/hair'
 app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
+// Serve VeloraStudio as the main root '/'
+app.use(express.static(path.join(__dirname, 'public/velora')));
 
 
 // ==================== BARBIE BARBER API (/api/barbie/*) ====================
