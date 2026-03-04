@@ -184,6 +184,11 @@ app.post('/api/hair/book', hairLimiter, async (req, res) => {
 
 const GRETA_ADMIN_PASS = 'greta123';
 
+// Explicit route for hair admin to ensure latest file is served
+app.get('/hair/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/hair/admin.html'));
+});
+
 // --- Admin Auth for Hair ---
 function requireHairAdmin(req, res, next) {
     if (req.session && req.session.isHairAdmin) return next();
