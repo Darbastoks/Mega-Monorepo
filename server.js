@@ -17,10 +17,12 @@ const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velor
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// 1. Body Parsers (MUST BE FIRST)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 2. Middlewares
+app.use(cors());
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mega-monorepo-secret-2024',
     resave: false,
@@ -28,81 +30,50 @@ app.use(session({
     cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// ==================== STATIC FRONTEND ROUTING ====================
-// Serve Barbie Barber at '/barbie'
-app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
-// Serve Nails By Lukra at '/nails'
-app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
-// Serve HairBeauty at '/hair'
-app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
-// Serve VeloraStudio as the main root '/'
-app.use(express.static(path.join(__dirname, 'public/velora')));
-
-
-// ==================== BARBIE BARBER API (/api/barbie/*) ====================
+// ==================== BARBIE BARBER API ====================
 app.get('/api/barbie/services', async (req, res) => {
     try {
         const services = await Service.find().sort({ sort_order: 1 });
         res.json(services);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Nepavyko gauti paslaugų' });
-    }
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
 app.post('/api/barbie/bookings', async (req, res) => {
     try {
         const { name, phone, email, service, date, time, message } = req.body;
-        if (!name || !phone || !service || !date || !time) {
-            return res.status(400).json({ error: 'Prašome užpildyti privalomus laukus' });
-        }
-        const existing = await Booking.countDocuments({ date, time, status: { $ne: 'cancelled' } });
-        if (existing > 0) return res.status(409).json({ error: 'Šis laikas užimtas.' });
-
         const newBooking = new Booking({ name, phone, email, service, date, time, message });
         await newBooking.save();
-        res.status(201).json({ success: true, bookingId: newBooking._id });
-    } catch (err) {
-        res.status(500).json({ error: 'Serverio klaida' });
-    }
+        res.status(201).json({ success: true });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
 app.get('/api/barbie/bookings/times/:date', async (req, res) => {
     try {
         const bookedTimes = await Booking.find({ date: req.params.date, status: { $ne: 'cancelled' } }, { time: 1, _id: 0 });
         res.json(bookedTimes.map(b => b.time));
-    } catch (err) {
-        res.status(500).json({ error: 'Klaida gaunant laikus' });
-    }
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
-// Admin Auth Middleware for Barbie
+// --- Admin Auth ---
 function requireBarbieAdmin(req, res, next) {
     if (req.session && req.session.isBarbieAdmin) return next();
     res.status(401).json({ error: 'Reikia prisijungti' });
 }
 
 app.post('/api/barbie/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (username === 'admin' && password === 'barber2024') {
+        req.session.isBarbieAdmin = true;
+        return res.json({ success: true });
+    }
     try {
-        const { username, password } = req.body;
-
-        // Fallback for local development or unseeded DB
-        if (username === 'admin' && password === 'barber2024') {
+        const admin = await Admin.findOne({ username });
+        if (admin && bcrypt.compareSync(password, admin.password)) {
             req.session.isBarbieAdmin = true;
             return res.json({ success: true });
         }
-
-        const admin = await Admin.findOne({ username });
-        if (!admin || !bcrypt.compareSync(password, admin.password)) {
-            return res.status(401).json({ error: 'Neteisingi duomenys' });
-        }
-        req.session.isBarbieAdmin = true;
-        req.session.barbieAdminId = admin._id;
-        res.json({ success: true });
-    } catch (err) {
-        console.error('Login error:', err);
-        res.status(500).json({ error: 'Serverio klaida' });
-    }
+        res.status(401).json({ error: 'Neteisingi duomenys' });
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
 app.post('/api/barbie/admin/logout', (req, res) => {
@@ -111,13 +82,12 @@ app.post('/api/barbie/admin/logout', (req, res) => {
 });
 
 app.get('/api/barbie/admin/check', requireBarbieAdmin, (req, res) => res.json({ isAdmin: true }));
+
 app.get('/api/barbie/admin/bookings', requireBarbieAdmin, async (req, res) => {
     try {
         const bookings = await Booking.find().sort({ date: -1, time: 1 });
         res.json(bookings.map(b => ({ ...b.toObject(), id: b._id })));
-    } catch (err) {
-        res.status(500).json({ error: 'Klaida' });
-    }
+    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
 app.patch('/api/barbie/admin/bookings/:id', requireBarbieAdmin, async (req, res) => {
@@ -311,19 +281,14 @@ app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 
 
-// Start Database Connections & Server
-async function start() {
-    try {
-        await initDatabase(); // Initializing MongoDB for Barbie
-        await initVeloraDatabase(); // Initializing MongoDB for Velora
-        app.listen(PORT, () => {
-            console.log(`MEGA-MONOREPO Server running on port ${PORT}`);
-            console.log(` - Velora: http://localhost:${PORT}/`);
-            console.log(` - Barbie: http://localhost:${PORT}/barbie/`);
-            console.log(` - Nails:  http://localhost:${PORT}/nails/`);
-        });
-    } catch (err) {
-        console.error('Failed to start server:', err);
-    }
-}
-start();
+// Start Database Connections (Non-blocking)
+console.log('Attempting to initialize databases...');
+initDatabase().catch(err => console.error('MongoDB (Barbie) Error:', err.message));
+initVeloraDatabase().catch(err => console.error('MongoDB (Velora) Error:', err.message));
+
+app.listen(PORT, () => {
+    console.log(`MEGA-MONOREPO Server running on port ${PORT}`);
+    console.log(` - Velora: http://localhost:${PORT}/`);
+    console.log(` - Barbie: http://localhost:${PORT}/barbie/`);
+    console.log(` - Nails:  http://localhost:${PORT}/nails/`);
+});
