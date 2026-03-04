@@ -184,26 +184,41 @@ app.post('/api/hair/book', hairLimiter, async (req, res) => {
 
 const GRETA_ADMIN_PASS = 'greta123';
 
-app.get('/api/hair/bookings', async (req, res) => {
-    console.log(`[HAIR] Login attempt with password: "${req.query.password}"`);
-    console.log(`[HAIR] Expected password: "${GRETA_ADMIN_PASS}"`);
-    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+// --- Admin Auth for Hair ---
+function requireHairAdmin(req, res, next) {
+    if (req.session && req.session.isHairAdmin) return next();
+    res.status(401).json({ error: 'Reikia prisijungti' });
+}
+
+app.post('/api/hair/admin/login', (req, res) => {
+    const { password } = req.body;
+    if (password === GRETA_ADMIN_PASS) {
+        req.session.isHairAdmin = true;
+        return res.json({ success: true });
+    }
+    res.status(401).json({ error: 'Neteisingas slaptažodis' });
+});
+
+app.post('/api/hair/admin/logout', (req, res) => {
+    req.session.isHairAdmin = false;
+    res.json({ success: true });
+});
+
+app.get('/api/hair/bookings', requireHairAdmin, async (req, res) => {
     try {
         const bookings = await GretaBooking.find().sort({ createdAt: -1 });
         res.json(bookings);
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.delete('/api/hair/bookings/:id', async (req, res) => {
-    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+app.delete('/api/hair/bookings/:id', requireHairAdmin, async (req, res) => {
     try {
         await GretaBooking.findByIdAndDelete(req.params.id);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.put('/api/hair/bookings/:id/status', async (req, res) => {
-    if (req.query.password !== GRETA_ADMIN_PASS) return res.status(401).json({ error: 'Neteisingas slaptažodis' });
+app.put('/api/hair/bookings/:id/status', requireHairAdmin, async (req, res) => {
     if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Bad status' });
     try {
         const b = await GretaBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });

@@ -526,47 +526,72 @@
 
         const storedToken = sessionStorage.getItem('adminToken');
         if (storedToken) {
-            loadDashboard(storedToken);
+            checkSession();
         }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const pwd = document.getElementById('adminPassword').value;
-            loadDashboard(pwd, true);
+            const password = document.getElementById('adminPassword').value;
+            loginAdmin(password);
         });
 
-        async function loadDashboard(token, isLogin = false) {
+        async function loginAdmin(password) {
             try {
-                const response = await fetch(`${API_URL}/bookings?password=${encodeURIComponent(token)}`);
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                if (response.ok) {
+                    sessionStorage.setItem('adminToken', 'active');
+                    loginError.style.display = 'none';
+                    showDashboard();
+                    loadBookings();
+                } else {
+                    const data = await response.json();
+                    loginError.style.display = 'block';
+                    loginError.innerText = data.error || 'Neteisingas slaptažodis!';
+                }
+            } catch (err) {
+                loginError.style.display = 'block';
+                loginError.innerText = 'Tinklo klaida. Bandykite vėliau.';
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch(`${API_URL}/bookings`);
                 if (response.ok) {
                     allBookings = await response.json();
-
-                    if (isLogin) {
-                        sessionStorage.setItem('adminToken', token);
-                        loginError.style.display = 'none';
-                    }
-
                     showDashboard();
                     updateCounts();
                     renderTable();
                 } else {
-                    if (isLogin) {
-                        loginError.style.display = 'block';
-                        loginError.innerText = response.status === 401 ? 'Neteisingas slaptažodis!' : 'Serverio klaida (DB?)';
-                    }
-                    else logout();
+                    logout();
                 }
             } catch (err) {
-                console.error(err);
-                if (isLogin) {
-                    loginError.style.display = 'block';
-                    loginError.innerText = 'Tinklo klaida. Bandykite vėliau.';
-                }
-                else logout();
+                logout();
             }
         }
 
-        function logout() {
+        async function loadBookings() {
+            try {
+                const response = await fetch(`${API_URL}/bookings`);
+                if (response.ok) {
+                    allBookings = await response.json();
+                    updateCounts();
+                    renderTable();
+                } else if (response.status === 401) {
+                    logout();
+                }
+            } catch (err) {
+                console.error('Failed to load bookings:', err);
+            }
+        }
+
+        async function logout() {
+            await fetch(`${API_URL}/admin/logout`, { method: 'POST' });
             sessionStorage.removeItem('adminToken');
             dashboardScreen.style.display = 'none';
             navActions.style.display = 'none';
@@ -688,9 +713,8 @@
         }
 
         async function updateStatus(id, newStatus) {
-            const token = sessionStorage.getItem('adminToken');
             try {
-                const response = await fetch(`${API_URL}/bookings/${id}/status?password=${encodeURIComponent(token)}`, {
+                const response = await fetch(`${API_URL}/bookings/${id}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: newStatus })
@@ -716,9 +740,8 @@
         async function deleteBooking(id) {
             if (!confirm('Ar tikrai norite ištrinti šią rezervaciją visam laikui?')) return;
 
-            const token = sessionStorage.getItem('adminToken');
             try {
-                const response = await fetch(`${API_URL}/bookings/${id}?password=${encodeURIComponent(token)}`, {
+                const response = await fetch(`${API_URL}/bookings/${id}`, {
                     method: 'DELETE'
                 });
                 if (response.ok) {
