@@ -136,6 +136,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- NEW: Time Slot Logic for Velora ---
+    const dateInput = document.getElementById('contactDate');
+    const timeSelect = document.getElementById('contactTime');
+    const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+
+    if (dateInput && timeSelect) {
+        dateInput.addEventListener('change', async () => {
+            const date = dateInput.value;
+            if (!date) {
+                timeSelect.disabled = true;
+                return;
+            }
+
+            timeSelect.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
+            timeSelect.disabled = true;
+
+            try {
+                const response = await fetch(`/api/velora/bookings/times/${date}`);
+                const bookedTimes = await response.json();
+
+                timeSelect.innerHTML = '<option value="" disabled selected>Pasirinkite laiką</option>';
+                timeSlots.forEach(slot => {
+                    const isBooked = bookedTimes.includes(slot);
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    if (isBooked) {
+                        option.disabled = true;
+                        option.textContent += ' (Užimta)';
+                    }
+                    timeSelect.appendChild(option);
+                });
+                timeSelect.disabled = false;
+            } catch (error) {
+                console.error('Error fetching times:', error);
+                timeSelect.innerHTML = '<option value="" disabled selected>Klaida</option>';
+            }
+        });
+    }
+
     // Contact Form Submission
     const contactForm = document.getElementById('veloraContactForm');
     if (contactForm) {
@@ -144,14 +184,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = contactForm.querySelector('button');
             const originalText = btn.textContent;
 
-            btn.disabled = true;
-            btn.textContent = 'Siunčiama...';
-
             const formData = {
                 name: document.getElementById('contactName').value,
                 email: document.getElementById('contactEmail').value,
+                date: document.getElementById('contactDate').value,
+                time: document.getElementById('contactTime').value,
                 message: document.getElementById('contactMessage').value
             };
+
+            if (!formData.date || !formData.time) {
+                alert('Prašome pasirinkti datą ir laiką.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Siunčiama...';
 
             try {
                 const response = await fetch('/api/velora/leads', {
@@ -161,10 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    alert('Ačiū! Jūsų žinutė gauta. Susisieksime netrukus.');
+                    alert('Ačiū! Jūsų rezervacija gauta. Susisieksime netrukus.');
                     contactForm.reset();
+                    timeSelect.disabled = true;
+                    timeSelect.innerHTML = '<option value="">Pasirinkite datą</option>';
                 } else {
-                    alert('Apgailestaujame, įvyko klaida. Bandykite dar kartą.');
+                    const data = await response.json();
+                    alert(data.error || 'Apgailestaujame, įvyko klaida. Bandykite dar kartą.');
                 }
             } catch (error) {
                 console.error('Error submitting form:', error);
@@ -176,3 +226,107 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ==================== INTERACTIVE STARFIELD FOR PRICING ====================
+(function () {
+    const canvas = document.getElementById('pricingStarfield');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    let mouseX = null;
+    let mouseY = null;
+    let animationId;
+    const STAR_COUNT = 180;
+    const MAGNETIC_RADIUS = 250;
+    const PULL_STRENGTH = 0.35;
+
+    function resizeCanvas() {
+        const section = canvas.parentElement;
+        canvas.width = section.offsetWidth;
+        canvas.height = section.offsetHeight;
+    }
+
+    function createStars() {
+        stars = [];
+        for (let i = 0; i < STAR_COUNT; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                baseX: 0,
+                baseY: 0,
+                size: 0.5 + Math.random() * 2,
+                opacity: Math.random(),
+                speed: 0.005 + Math.random() * 0.02,
+                phase: Math.random() * Math.PI * 2,
+                offsetX: 0,
+                offsetY: 0,
+            });
+            stars[i].baseX = stars[i].x;
+            stars[i].baseY = stars[i].y;
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const time = Date.now() * 0.001;
+
+        for (const star of stars) {
+            // Twinkle
+            star.opacity = 0.2 + 0.8 * Math.abs(Math.sin(time * star.speed * 10 + star.phase));
+
+            // Magnetic pull toward mouse
+            let targetOffsetX = 0;
+            let targetOffsetY = 0;
+
+            if (mouseX !== null && mouseY !== null) {
+                const dx = mouseX - star.baseX;
+                const dy = mouseY - star.baseY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < MAGNETIC_RADIUS) {
+                    const force = 1 - dist / MAGNETIC_RADIUS;
+                    targetOffsetX = dx * force * PULL_STRENGTH;
+                    targetOffsetY = dy * force * PULL_STRENGTH;
+                }
+            }
+
+            // Smooth spring-like interpolation
+            star.offsetX += (targetOffsetX - star.offsetX) * 0.08;
+            star.offsetY += (targetOffsetY - star.offsetY) * 0.08;
+
+            const drawX = star.baseX + star.offsetX;
+            const drawY = star.baseY + star.offsetY;
+
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, star.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+            ctx.fill();
+        }
+
+        animationId = requestAnimationFrame(animate);
+    }
+
+    // Get mouse position relative to canvas
+    const section = canvas.parentElement;
+    section.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+    section.addEventListener('mouseleave', () => {
+        mouseX = null;
+        mouseY = null;
+    });
+
+    // Initialize
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        createStars();
+    });
+
+    resizeCanvas();
+    createStars();
+    animate();
+})();

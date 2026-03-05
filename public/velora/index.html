@@ -139,8 +139,9 @@
         </div>
     </section>
     <!-- Pricing Section -->
-    <section id="kainos" class="pricing bg-light">
-        <div class="container fade-in">
+    <section id="kainos" class="pricing">
+        <canvas id="pricingStarfield" class="pricing-starfield"></canvas>
+        <div class="container fade-in" style="position:relative; z-index:2;">
             <div class="section-header">
                 <h2>Svetainės planai</h2>
                 <div class="divider"></div>
@@ -178,7 +179,7 @@
                     <a href="#kontaktai" class="btn btn-primary" style="margin-top:auto">Pasirinkti planą</a>
                 </div>
                 <div class="card pricing-card best-value">
-                    <div class="top-banner">✨ Geriausia vertė</div>
+                    <div class="top-banner">✨ GERIAUSIA VERTĖ</div>
                     <h3>PRO</h3>
                     <div class="price"><span class="old-price">79€</span> 59€<span>/mėn</span></div>
                     <ul class="features">
@@ -226,6 +227,18 @@
                                 <label for="contactEmail">El. paštas *</label>
                                 <input type="email" id="contactEmail" name="email" placeholder="vardenis@pastas.lt"
                                     required>
+                            </div>
+                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="form-group">
+                                    <label for="contactDate">Data *</label>
+                                    <input type="date" id="contactDate" name="date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="contactTime">Laikas *</label>
+                                    <select id="contactTime" name="time" required disabled>
+                                        <option value="">Pasirinkite datą</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="contactMessage">Žinutė</label>
