@@ -227,16 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ==================== INTERACTIVE STARFIELD FOR PRICING ====================
-(function () {
-    const canvas = document.getElementById('pricingStarfield');
+// ==================== INTERACTIVE STARFIELD ====================
+function initStarfield(canvasId) {
+    const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     let stars = [];
     let mouseX = null;
     let mouseY = null;
-    let animationId;
     const STAR_COUNT = 180;
     const MAGNETIC_RADIUS = 250;
     const PULL_STRENGTH = 0.35;
@@ -272,10 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const time = Date.now() * 0.001;
 
         for (const star of stars) {
-            // Twinkle
             star.opacity = 0.2 + 0.8 * Math.abs(Math.sin(time * star.speed * 10 + star.phase));
 
-            // Magnetic pull toward mouse
             let targetOffsetX = 0;
             let targetOffsetY = 0;
 
@@ -291,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Smooth spring-like interpolation
             star.offsetX += (targetOffsetX - star.offsetX) * 0.08;
             star.offsetY += (targetOffsetY - star.offsetY) * 0.08;
 
@@ -304,10 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fill();
         }
 
-        animationId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
     }
 
-    // Get mouse position relative to canvas
     const section = canvas.parentElement;
     section.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -320,7 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
         mouseY = null;
     });
 
-    // Initialize
     window.addEventListener('resize', () => {
         resizeCanvas();
         createStars();
@@ -329,4 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
     createStars();
     animate();
-})();
+}
+
+// Initialize starfields on both sections
+initStarfield('pricingStarfield');
+initStarfield('servicesStarfield');
+

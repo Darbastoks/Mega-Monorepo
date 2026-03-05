@@ -479,6 +479,12 @@ section {
 }
 
 /* Services */
+.services {
+    position: relative;
+    overflow: hidden;
+    background: #060a14;
+}
+
 .services-grid {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
