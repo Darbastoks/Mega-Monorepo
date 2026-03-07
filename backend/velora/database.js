@@ -9,6 +9,8 @@ const veloraAdminSchema = new mongoose.Schema({
 const veloraLeadSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true },
+    date: { type: String, required: true },
+    time: { type: String, required: true },
     message: { type: String },
     status: { type: String, enum: ['new', 'contacted', 'resolved', 'cancelled'], default: 'new' },
     created_at: { type: Date, default: Date.now }

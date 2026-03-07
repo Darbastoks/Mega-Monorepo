@@ -261,7 +261,8 @@ function initBookingForm() {
             service: document.getElementById('bookingService').value,
             date: document.getElementById('bookingDate').value,
             time: document.getElementById('bookingTime').value,
-            message: document.getElementById('bookingMessage').value.trim()
+            message: document.getElementById('bookingMessage').value.trim(),
+            website_url_fake: document.getElementById('website_url_fake').value // Anti-Spam Honeypot
         };
 
         try {

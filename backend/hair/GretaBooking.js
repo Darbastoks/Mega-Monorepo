@@ -15,8 +15,13 @@ const bookingSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    preferred_date: {
-        type: String
+    date: {
+        type: String,
+        required: true
+    },
+    time: {
+        type: String,
+        required: true
     },
     message: {
         type: String

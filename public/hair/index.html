@@ -236,8 +236,19 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="date">Pageidaujama data (neprivaloma)</label>
-                        <input type="date" id="date" name="date">
+                        <label for="date">Pageidaujama data *</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="time">Pageidaujamas laikas *</label>
+                        <select id="time" name="time" required disabled>
+                            <option value="">Pirma pasirinkite datą...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: none;" aria-hidden="true">
+                        <label for="website_url_fake">Jei esate žmogus, palikite šį laukelį tuščią</label>
+                        <input type="text" id="website_url_fake" name="website_url_fake" autocomplete="off"
+                            tabindex="-1">
                     </div>
                     <div class="form-group">
                         <label for="message">Papildomos pastabos</label>

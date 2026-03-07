@@ -47,9 +47,22 @@ app.get('/api/barbie/services', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
-app.post('/api/barbie/bookings', async (req, res) => {
+const barbieLimiter = rLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3,
+    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+});
+
+app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
     try {
-        const { name, phone, email, service, date, time, message } = req.body;
+        const { name, phone, email, service, date, time, message, website_url_fake } = req.body;
+
+        // Anti-Spam Honeypot
+        if (website_url_fake) {
+            console.log(`Spam blocked for Barbie Barber: ${email || phone}`);
+            return res.status(200).json({ success: true });
+        }
+
         if (!name || !phone || !service || !date || !time) {
             return res.status(400).json({ error: 'Visi privalomi laukai turi būti užpildyti.' });
         }
@@ -150,8 +163,21 @@ app.get('/api/nails/available-times', (req, res) => {
     });
 });
 
-app.post('/api/nails/reservations', (req, res) => {
-    const { name, phone, service, date, time, notes } = req.body;
+const nailsLimiter = rLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3,
+    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+});
+
+app.post('/api/nails/reservations', nailsLimiter, (req, res) => {
+    const { name, phone, service, date, time, notes, website_url_fake } = req.body;
+
+    // Anti-Spam Honeypot
+    if (website_url_fake) {
+        console.log(`Spam blocked for Nails by Lukra: ${phone}`);
+        return res.status(200).json({ success: true, id: 0 }); // Mock ID to fail silently on client side smoothly
+    }
+
     if (!name || !phone || !service || !date || !time) {
         return res.status(400).json({ error: 'Visi laukai privalomi' });
     }
@@ -189,11 +215,22 @@ app.patch('/api/nails/reservations/:id/status', (req, res) => {
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
 const rLimit = require('express-rate-limit');
-const hairLimiter = rLimit({ windowMs: 15 * 60 * 1000, max: 20 });
+const hairLimiter = rLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3,
+    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+});
 
 app.post('/api/hair/book', hairLimiter, async (req, res) => {
     try {
-        const { name, phone, service, date, time, message } = req.body;
+        const { name, phone, service, date, time, message, website_url_fake } = req.body;
+
+        // Anti-Spam Honeypot
+        if (website_url_fake) {
+            console.log(`Spam blocked for Hair Beauty: ${phone}`);
+            return res.status(200).json({ success: true, bookingId: 'spam-blocked' });
+        }
+
         if (!name || !phone || !service || !date || !time) {
             return res.status(400).json({ error: 'Name, phone, service, date, and time are required.' });
         }

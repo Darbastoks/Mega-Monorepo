@@ -109,9 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const submitBtn = bookingForm.querySelector('.btn-submit');
-            const originalText = submitBtn.innerText;
-            submitBtn.innerText = 'Siunčiama...';
             submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Siunčiama...';
 
             const payload = {
                 name: document.getElementById('bName').value,
@@ -119,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 service: document.getElementById('bService').value,
                 date: document.getElementById('bDate').value,
                 time: document.getElementById('bTime').value,
-                notes: document.getElementById('bNotes').value
+                notes: document.getElementById('bNotes').value,
+                website_url_fake: document.getElementById('website_url_fake').value // Honeypot
             };
 
             try {
-                // Point to local server API where Express runs
                 const response = await fetch('/api/nails/reservations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -131,18 +130,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    alert('Ačiū! Jūsų rezervacijos užklausa išsiųsta. Susisieksime su jumis greitai!');
+                    alert('Registracija sėkminga! Su jumis susisieksime patvirtinti laiką.');
                     bookingForm.reset();
+                    document.getElementById('bTime').innerHTML = '<option value="" disabled selected>Pirmiau pasirinkite datą</option>';
+                    document.getElementById('bTime').disabled = true;
                 } else {
-                    const errInfo = await response.json();
-                    alert('Klaida: ' + (errInfo.error || 'Serverio klaida.'));
+                    const data = await response.json();
+                    alert(data.error || 'Įvyko klaida registruojantis.');
                 }
-            } catch (error) {
-                console.error(error);
-                alert('Nepavyko susisiekti su serveriu. Prašome patikrinti interneto ryšį.');
+            } catch (err) {
+                alert('Tinklo klaida. Bandykite dar kartą vėliau.');
             } finally {
-                submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Pateikti užklausą';
             }
         });
     }

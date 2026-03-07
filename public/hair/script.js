@@ -19,6 +19,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinner = document.getElementById('btnSpinner');
     const formMessage = document.getElementById('formMessage');
 
+    // --- NEW: Time Slot Logic for Hair ---
+    const dateInput = document.getElementById('date');
+    const timeSelect = document.getElementById('time');
+    const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+
+    dateInput.addEventListener('change', async () => {
+        const date = dateInput.value;
+        if (!date) {
+            timeSelect.disabled = true;
+            return;
+        }
+
+        timeSelect.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
+        timeSelect.disabled = true;
+
+        try {
+            const response = await fetch(`/api/hair/bookings/times/${date}`);
+            const bookedTimes = await response.json();
+
+            timeSelect.innerHTML = '<option value="" disabled selected>Pasirinkite laiką</option>';
+            timeSlots.forEach(slot => {
+                const isBooked = bookedTimes.includes(slot);
+                const option = document.createElement('option');
+                option.value = slot;
+                option.textContent = slot;
+                if (isBooked) {
+                    option.disabled = true;
+                    option.textContent += ' (Užimta)';
+                }
+                timeSelect.appendChild(option);
+            });
+            timeSelect.disabled = false;
+        } catch (error) {
+            console.error('Error fetching times:', error);
+            timeSelect.innerHTML = '<option value="" disabled selected>Klaida kraunant laikus</option>';
+        }
+    });
+
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -31,9 +69,19 @@ document.addEventListener('DOMContentLoaded', () => {
             name: document.getElementById('name').value,
             phone: document.getElementById('phone').value,
             service: document.getElementById('service').value,
-            date: document.getElementById('date').value,
-            message: document.getElementById('message').value
+            date: dateInput.value,
+            time: timeSelect.value,
+            message: document.getElementById('message').value,
+            website_url_fake: document.getElementById('website_url_fake').value // Honeypot Field
         };
+
+        if (!formData.time) {
+            formMessage.textContent = 'Prašome pasirinkti laiką.';
+            formMessage.classList.add('msg-error');
+            spinner.style.display = 'none';
+            submitBtn.disabled = false;
+            return;
+        }
 
         try {
             const response = await fetch('/api/hair/book', {
@@ -50,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 formMessage.textContent = 'Ačiū! Jūsų užklausa buvo gauta.';
                 formMessage.classList.add('msg-success');
                 bookingForm.reset();
+                timeSelect.disabled = true;
+                timeSelect.innerHTML = '<option value="" disabled selected>Pirma pasirinkite datą...</option>';
             } else {
                 formMessage.textContent = data.error || 'Įvyko klaida. Prašome bandyti dar kartą.';
                 formMessage.classList.add('msg-error');
