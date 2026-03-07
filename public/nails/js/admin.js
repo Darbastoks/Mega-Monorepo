@@ -3,13 +3,24 @@ const API_URL = '/api/nails/reservations';
 // On Login Page
 const loginForm = document.querySelector('.login-form');
 if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const inputStr = loginForm.querySelector('input').value;
-        // Super basic client side lock since frontend is local 
-        if (inputStr.trim().length > 0) {
-            localStorage.setItem('adminToken', 'true');
-            window.location.href = 'admin.html';
+        const password = loginForm.querySelector('input').value;
+        try {
+            const res = await fetch('/api/nails/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+
+            if (res.ok) {
+                localStorage.setItem('adminToken', 'true'); // Keep for basic frontend state
+                window.location.href = 'admin.html';
+            } else {
+                alert('Neteisingas slaptažodis');
+            }
+        } catch (err) {
+            alert('Ryšio klaida');
         }
     });
 }
@@ -26,8 +37,9 @@ if (adminDashboard) {
     // Logout
     const logoutBtn = document.querySelector('.btn-admin-outline[href="#"]');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
+        logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            await fetch('/api/nails/admin/logout', { method: 'POST' });
             localStorage.removeItem('adminToken');
             window.location.href = 'admin-login.html';
         });

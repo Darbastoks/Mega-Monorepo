@@ -182,12 +182,14 @@ app.post('/api/barbie/admin/login', async (req, res) => {
     const { username, password } = req.body;
     if (username === 'admin' && password === 'barber2024') {
         req.session.isBarbieAdmin = true;
+        req.session.barbieAdminId = 'system-admin';
         return res.json({ success: true });
     }
     try {
         const admin = await Admin.findOne({ username });
         if (admin && bcrypt.compareSync(password, admin.password)) {
             req.session.isBarbieAdmin = true;
+            req.session.barbieAdminId = admin._id;
             return res.json({ success: true });
         }
         res.status(401).json({ error: 'Neteisingi duomenys' });
@@ -259,6 +261,24 @@ app.post('/api/barbie/admin/change-password', requireBarbieAdmin, async (req, re
 
 
 // ==================== NAILS BY LUKRA API (/api/nails/*) ====================
+function requireNailsAdmin(req, res, next) {
+    if (req.session && req.session.isNailsAdmin) return next();
+    res.status(401).json({ error: 'Reikia prisijungti' });
+}
+
+app.post('/api/nails/admin/login', (req, res) => {
+    const { password } = req.body;
+    if (password === 'nails2024') {
+        req.session.isNailsAdmin = true;
+        return res.json({ success: true });
+    }
+    res.status(401).json({ error: 'Neteisingas slaptažodis' });
+});
+
+app.post('/api/nails/admin/logout', (req, res) => {
+    req.session.isNailsAdmin = false;
+    res.json({ success: true });
+});
 
 app.get('/api/nails/settings', (req, res) => {
     dbNails.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
@@ -268,7 +288,7 @@ app.get('/api/nails/settings', (req, res) => {
     });
 });
 
-app.put('/api/nails/settings', (req, res) => {
+app.put('/api/nails/settings', requireNailsAdmin, (req, res) => {
     const { workingDays, startHour, endHour } = req.body;
     dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ? WHERE id = 1",
         [JSON.stringify(workingDays), startHour, endHour], function (err) {
@@ -284,7 +304,7 @@ app.get('/api/nails/services', (req, res) => {
     });
 });
 
-app.post('/api/nails/services', (req, res) => {
+app.post('/api/nails/services', requireNailsAdmin, (req, res) => {
     const { name, duration, price } = req.body;
     dbNails.run("INSERT INTO services (name, duration, price) VALUES (?, ?, ?)",
         [name, duration || 60, price || 0], function (err) {
@@ -293,7 +313,7 @@ app.post('/api/nails/services', (req, res) => {
         });
 });
 
-app.patch('/api/nails/services/:id', (req, res) => {
+app.patch('/api/nails/services/:id', requireNailsAdmin, (req, res) => {
     const { name, duration, price } = req.body;
     dbNails.run("UPDATE services SET name = ?, duration = ?, price = ? WHERE id = ?",
         [name, duration, price, req.params.id], function (err) {
@@ -302,7 +322,7 @@ app.patch('/api/nails/services/:id', (req, res) => {
         });
 });
 
-app.delete('/api/nails/services/:id', (req, res) => {
+app.delete('/api/nails/services/:id', requireNailsAdmin, (req, res) => {
     dbNails.run("DELETE FROM services WHERE id = ?", [req.params.id], function (err) {
         if (err) return res.status(500).json({ error: 'DB klaida' });
         res.json({ success: true });
@@ -403,14 +423,14 @@ app.post('/api/nails/reservations', nailsLimiter, (req, res) => {
     });
 });
 
-app.get('/api/nails/reservations', (req, res) => {
+app.get('/api/nails/reservations', requireNailsAdmin, (req, res) => {
     dbNails.all(`SELECT * FROM reservations ORDER BY date DESC, time ASC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Klaida' });
         res.json(rows);
     });
 });
 
-app.patch('/api/nails/reservations/:id/status', (req, res) => {
+app.patch('/api/nails/reservations/:id/status', requireNailsAdmin, (req, res) => {
     dbNails.run(`UPDATE reservations SET status = ? WHERE id = ?`, [req.body.status, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: 'Klaida' });
         res.json({ success: true });
@@ -465,7 +485,7 @@ app.get('/api/hair/settings', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.put('/api/hair/settings', async (req, res) => {
+app.put('/api/hair/settings', requireHairAdmin, async (req, res) => {
     try {
         const { workingDays, startHour, endHour } = req.body;
         let settings = await GretaSettings.findOne();
@@ -489,7 +509,7 @@ app.get('/api/hair/services', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.post('/api/hair/services', async (req, res) => {
+app.post('/api/hair/services', requireHairAdmin, async (req, res) => {
     try {
         const { name, duration, price, description } = req.body;
         const s = new GretaService({ name, duration, price, description });
@@ -498,14 +518,14 @@ app.post('/api/hair/services', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.patch('/api/hair/services/:id', async (req, res) => {
+app.patch('/api/hair/services/:id', requireHairAdmin, async (req, res) => {
     try {
         await GretaService.findByIdAndUpdate(req.params.id, req.body);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.delete('/api/hair/services/:id', async (req, res) => {
+app.delete('/api/hair/services/:id', requireHairAdmin, async (req, res) => {
     try {
         await GretaService.findByIdAndDelete(req.params.id);
         res.json({ success: true });
