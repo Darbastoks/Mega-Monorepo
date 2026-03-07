@@ -147,10 +147,20 @@
                 <h2>Svetainės planai</h2>
                 <div class="divider"></div>
             </div>
+            <!-- Monthly / Annual Toggle -->
+            <div class="pricing-toggle-wrapper">
+                <div class="pricing-toggle">
+                    <button id="toggleMonthly" class="toggle-btn active">Mėnesinis</button>
+                    <button id="toggleAnnual" class="toggle-btn">Metinis <span class="save-badge">-20%</span></button>
+                    <div class="toggle-pill"></div>
+                </div>
+            </div>
             <div class="grid pricing-grid">
-                <div class="card pricing-card">
+                <div class="card pricing-card" data-monthly-price="25" data-monthly-period="/mėn"
+                    data-annual-price="240" data-annual-period="/metams">
                     <h3>START</h3>
-                    <div class="price">25€<span>/mėn</span></div>
+                    <div class="price" id="price-start">25€<span>/mėn</span></div>
+                    <p class="billing-note" id="billing-start">Mokama kas mėnesį</p>
                     <ul class="features">
                         <li><i class="fas fa-check"></i> moderni svetainė</li>
                         <li><i class="fas fa-check"></i> paslaugų kainos</li>
@@ -163,10 +173,12 @@
                     </ul>
                     <a href="#kontaktai" class="btn btn-outline" style="margin-top:auto">Pasirinkti planą</a>
                 </div>
-                <div class="card pricing-card featured">
+                <div class="card pricing-card featured" data-monthly-price="39" data-monthly-period="/mėn"
+                    data-annual-price="390" data-annual-period="/metams">
                     <div class="badge">Populiariausias</div>
                     <h3>GROWTH</h3>
-                    <div class="price">39€<span>/mėn</span></div>
+                    <div class="price" id="price-growth">39€<span>/mėn</span></div>
+                    <p class="billing-note" id="billing-growth">Mokama kas mėnesį</p>
                     <ul class="features">
                         <li><i class="fas fa-check"></i> moderni svetainė</li>
                         <li><i class="fas fa-check"></i> paslaugų kainos</li>
@@ -179,10 +191,14 @@
                     </ul>
                     <a href="#kontaktai" class="btn btn-primary" style="margin-top:auto">Pasirinkti planą</a>
                 </div>
-                <div class="card pricing-card best-value">
+                <div class="card pricing-card best-value" data-monthly-price="59" data-monthly-old="79"
+                    data-monthly-period="/mėn" data-annual-price="399" data-annual-old="708"
+                    data-annual-period="/metams">
                     <div class="top-banner">✨ GERIAUSIA VERTĖ</div>
                     <h3>PRO</h3>
-                    <div class="price"><span class="old-price">79€</span> 59€<span>/mėn</span></div>
+                    <div class="price" id="price-pro"><span class="old-price">79€</span> 59€<span>/mėn</span></div>
+                    <p class="billing-note" id="billing-pro">Mokama kas mėnesį</p>
+                    <div class="annual-savings" id="savings-pro" style="display:none;">Sutaupai 309€ per metus! 🔥</div>
                     <ul class="features">
                         <li><i class="fas fa-check"></i> moderni svetainė</li>
                         <li><i class="fas fa-check"></i> paslaugų kainos</li>

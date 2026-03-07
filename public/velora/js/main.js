@@ -227,6 +227,85 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ==================== PRICING TOGGLE (Monthly / Annual) ====================
+(function () {
+    const monthlyBtn = document.getElementById('toggleMonthly');
+    const annualBtn = document.getElementById('toggleAnnual');
+    const pill = document.querySelector('.toggle-pill');
+    if (!monthlyBtn || !annualBtn || !pill) return;
+
+    let isMonthly = true;
+
+    // Position the pill on the active button
+    function updatePill() {
+        const activeBtn = isMonthly ? monthlyBtn : annualBtn;
+        pill.style.width = activeBtn.offsetWidth + 'px';
+        pill.style.transform = `translateX(${activeBtn.offsetLeft - 4}px)`;
+    }
+
+    // Update all card prices
+    function updatePrices() {
+        const cards = document.querySelectorAll('.pricing-card');
+        cards.forEach(card => {
+            const priceEl = card.querySelector('.price');
+            const billingEl = card.querySelector('.billing-note');
+            if (!priceEl) return;
+
+            if (isMonthly) {
+                const price = card.dataset.monthlyPrice;
+                const period = card.dataset.monthlyPeriod;
+                const oldPrice = card.dataset.monthlyOld;
+
+                if (oldPrice) {
+                    priceEl.innerHTML = `<span class="old-price">${oldPrice}€</span> ${price}€<span>${period}</span>`;
+                } else {
+                    priceEl.innerHTML = `${price}€<span>${period}</span>`;
+                }
+                if (billingEl) billingEl.textContent = 'Mokama kas mėnesį';
+            } else {
+                const price = card.dataset.annualPrice;
+                const period = card.dataset.annualPeriod;
+                const oldPrice = card.dataset.annualOld;
+
+                if (oldPrice) {
+                    priceEl.innerHTML = `<span class="old-price">${oldPrice}€</span> ${price}€<span>${period}</span>`;
+                } else {
+                    priceEl.innerHTML = `${price}€<span>${period}</span>`;
+                }
+                if (billingEl) billingEl.textContent = 'Mokama iš karto už visus metus';
+            }
+        });
+
+        // Show/hide savings on PRO
+        const savingsPro = document.getElementById('savings-pro');
+        if (savingsPro) {
+            savingsPro.style.display = isMonthly ? 'none' : 'block';
+        }
+    }
+
+    monthlyBtn.addEventListener('click', () => {
+        if (isMonthly) return;
+        isMonthly = true;
+        monthlyBtn.classList.add('active');
+        annualBtn.classList.remove('active');
+        updatePill();
+        updatePrices();
+    });
+
+    annualBtn.addEventListener('click', () => {
+        if (!isMonthly) return;
+        isMonthly = false;
+        annualBtn.classList.add('active');
+        monthlyBtn.classList.remove('active');
+        updatePill();
+        updatePrices();
+    });
+
+    // Initial pill size
+    updatePill();
+    window.addEventListener('resize', updatePill);
+})();
+
 // ==================== INTERACTIVE STARFIELD ====================
 function initStarfield(canvasId) {
     const canvas = document.getElementById(canvasId);
