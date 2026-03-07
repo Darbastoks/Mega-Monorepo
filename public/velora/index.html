@@ -261,6 +261,14 @@
                                     </select>
                                 </div>
                             </div>
+
+                            <!-- Honeypot Field for Spam Protection -->
+                            <div class="form-group" style="display: none;" aria-hidden="true">
+                                <label for="website_url_fake">Jei esate žmogus, palikite šį laukelį tuščią</label>
+                                <input type="text" id="website_url_fake" name="website_url_fake" autocomplete="off"
+                                    tabindex="-1">
+                            </div>
+
                             <div class="form-group">
                                 <label for="contactMessage">Žinutė</label>
                                 <textarea id="contactMessage" name="message" rows="4"

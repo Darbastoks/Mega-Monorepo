@@ -50,10 +50,23 @@ app.get('/api/barbie/services', async (req, res) => {
 app.post('/api/barbie/bookings', async (req, res) => {
     try {
         const { name, phone, email, service, date, time, message } = req.body;
+        if (!name || !phone || !service || !date || !time) {
+            return res.status(400).json({ error: 'Visi privalomi laukai turi būti užpildyti.' });
+        }
+
+        // Check if slot is already booked
+        const existing = await Booking.findOne({ date, time, status: { $ne: 'cancelled' } });
+        if (existing) {
+            return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
+        }
+
         const newBooking = new Booking({ name, phone, email, service, date, time, message });
         await newBooking.save();
         res.status(201).json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+    } catch (err) {
+        console.error('Barbie Book Error:', err);
+        res.status(500).json({ error: 'Serverio klaida' });
+    }
 });
 
 app.get('/api/barbie/bookings/times/:date', async (req, res) => {
@@ -139,14 +152,21 @@ app.get('/api/nails/available-times', (req, res) => {
 
 app.post('/api/nails/reservations', (req, res) => {
     const { name, phone, service, date, time, notes } = req.body;
-    dbNails.get(`SELECT count(*) as count FROM reservations WHERE date = ? AND time = ? AND status != 'cancelled'`, [date, time], (err, row) => {
-        if (row && row.count > 0) return res.status(409).json({ error: 'Laikas užimtas' });
+    if (!name || !phone || !service || !date || !time) {
+        return res.status(400).json({ error: 'Visi laukai privalomi' });
+    }
+
+    // Double check if slot is already taken in DB
+    dbNails.get(`SELECT id FROM reservations WHERE date = ? AND time = ? AND status != 'cancelled'`, [date, time], (err, row) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (row) return res.status(409).json({ error: 'Šis laikas jau užimtas' });
+
         dbNails.run(
-            `INSERT INTO reservations (name, phone, service, date, time, notes, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-            [name, phone, service, date, time, notes || ''],
+            `INSERT INTO reservations (name, phone, service, date, time, notes) VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, phone, service, date, time, notes],
             function (err) {
-                if (err) return res.status(500).json({ error: 'Klaida saugant' });
-                res.status(201).json({ success: true, bookingId: this.lastID });
+                if (err) return res.status(500).json({ error: 'Klaida išsaugant' });
+                res.status(201).json({ success: true, id: this.lastID });
             }
         );
     });
@@ -173,12 +193,30 @@ const hairLimiter = rLimit({ windowMs: 15 * 60 * 1000, max: 20 });
 
 app.post('/api/hair/book', hairLimiter, async (req, res) => {
     try {
-        const { name, phone, service, date, message } = req.body;
-        if (!name || !phone || !service) return res.status(400).json({ error: 'Name, phone, and service are required.' });
+        const { name, phone, service, date, time, message } = req.body;
+        if (!name || !phone || !service || !date || !time) {
+            return res.status(400).json({ error: 'Name, phone, service, date, and time are required.' });
+        }
 
-        const newB = new GretaBooking({ name, phone, service, preferred_date: date, message });
+        // Check if slot is already booked
+        const existing = await GretaBooking.findOne({ date, time, status: { $ne: 'cancelled' } });
+        if (existing) {
+            return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
+        }
+
+        const newB = new GretaBooking({ name, phone, service, date, time, message });
         const saved = await newB.save();
         res.status(201).json({ success: true, bookingId: saved._id });
+    } catch (err) {
+        console.error('Hair Book Error:', err);
+        res.status(500).json({ error: 'Failed', details: err.message });
+    }
+});
+
+app.get('/api/hair/bookings/times/:date', async (req, res) => {
+    try {
+        const booked = await GretaBooking.find({ date: req.params.date, status: { $ne: 'cancelled' } }, { time: 1, _id: 0 });
+        res.json(booked.map(b => b.time));
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -233,13 +271,45 @@ app.put('/api/hair/bookings/:id/status', requireHairAdmin, async (req, res) => {
 
 
 // ==================== VELORA STUDIO API (/api/velora/*) ====================
-app.post('/api/velora/leads', async (req, res) => {
+const veloraLimiter = rLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3, // limit each IP to 3 requests per windowMs
+    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+});
+
+app.post('/api/velora/leads', veloraLimiter, async (req, res) => {
     try {
-        const { name, email, message } = req.body;
-        if (!name || !email) return res.status(400).json({ error: 'Vardas ir El. paštas privalomi' });
-        const newLead = new VeloraLead({ name, email, message });
+        const { name, email, date, time, message, website_url_fake } = req.body;
+
+        // Honeypot check
+        if (website_url_fake) {
+            console.log(`Spam blocked for Velora: ${email}`);
+            return res.status(200).json({ success: true }); // Silently reject spam bots
+        }
+        if (!name || !email || !date || !time) {
+            return res.status(400).json({ error: 'Vardas, El. paštas, Data ir Laikas yra privalomi.' });
+        }
+
+        // Check if slot is already booked
+        const existing = await VeloraLead.findOne({ date, time, status: { $ne: 'cancelled' } });
+        if (existing) {
+            console.log(`Velora: Slot ${date} ${time} is TAKEN by ${existing.name}`);
+            return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
+        }
+
+        const newLead = new VeloraLead({ name, email, date, time, message });
         await newLead.save();
         res.status(201).json({ success: true });
+    } catch (err) {
+        console.error('Velora Lead Error:', err);
+        res.status(500).json({ error: 'Klaida', details: err.message });
+    }
+});
+
+app.get('/api/velora/bookings/times/:date', async (req, res) => {
+    try {
+        const booked = await VeloraLead.find({ date: req.params.date, status: { $ne: 'cancelled' } }, { time: 1, _id: 0 });
+        res.json(booked.map(b => b.time));
     } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 

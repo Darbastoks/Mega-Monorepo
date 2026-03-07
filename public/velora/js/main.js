@@ -181,30 +181,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactForm) {
         contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = contactForm.querySelector('button');
-            const originalText = btn.textContent;
+            const name = document.getElementById('contactName').value;
+            const email = document.getElementById('contactEmail').value;
+            const date = document.getElementById('contactDate').value;
+            const time = document.getElementById('contactTime').value;
+            const message = document.getElementById('contactMessage').value;
+            const website_url_fake = document.getElementById('website_url_fake').value; // Honeypot
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
 
-            const formData = {
-                name: document.getElementById('contactName').value,
-                email: document.getElementById('contactEmail').value,
-                date: document.getElementById('contactDate').value,
-                time: document.getElementById('contactTime').value,
-                message: document.getElementById('contactMessage').value
-            };
-
-            if (!formData.date || !formData.time) {
+            if (!date || !time) {
                 alert('Prašome pasirinkti datą ir laiką.');
                 return;
             }
 
-            btn.disabled = true;
-            btn.textContent = 'Siunčiama...';
-
             try {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Siunčiama...';
+                submitBtn.disabled = true;
+
                 const response = await fetch('/api/velora/leads', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, email, date, time, message, website_url_fake })
                 });
 
                 if (response.ok) {
@@ -220,8 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error submitting form:', error);
                 alert('Tinklo klaida. Patikrinkite ryšį.');
             } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
             }
         });
     }
