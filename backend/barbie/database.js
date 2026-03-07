@@ -51,10 +51,8 @@ async function initDatabase() {
         await mongoose.connect(uri, {
             serverSelectionTimeoutMS: 5000 // 5 second timeout
         });
+        // await mongoose.connect(...) already handles the connection
         console.log('✅ Connected to MongoDB successfully');
-
-        // Disable buffering if connected
-        mongoose.set('bufferCommands', false);
 
         // Seed default Admin if not exists
         const adminCount = await Admin.countDocuments();

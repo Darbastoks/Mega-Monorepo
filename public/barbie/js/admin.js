@@ -367,8 +367,13 @@ function initSettingsView() {
     });
 
     // Service form submit
-    document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+    const serviceForm = document.getElementById('serviceForm');
+    const saveServiceBtn = serviceForm.querySelector('button[type="submit"]');
+
+    serviceForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        saveServiceBtn.classList.add('btn-loading');
+
         const id = document.getElementById('serviceId').value;
         const payload = {
             name: document.getElementById('serviceName').value,
@@ -390,8 +395,14 @@ function initSettingsView() {
                 showToast('✅', 'Paslauga išsaugota');
                 document.getElementById('serviceModal').style.display = 'none';
                 loadServices();
-            } else { showToast('❌', 'Klaida išsaugant'); }
-        } catch (err) { showToast('❌', 'Tinklo klaida'); }
+            } else {
+                showToast('❌', 'Klaida išsaugant');
+            }
+        } catch (err) {
+            showToast('❌', 'Tinklo klaida');
+        } finally {
+            saveServiceBtn.classList.remove('btn-loading');
+        }
     });
 }
 
