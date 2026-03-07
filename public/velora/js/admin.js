@@ -71,7 +71,52 @@ function updateStats() {
     document.getElementById('statTotal').textContent = allLeads.length;
     document.getElementById('statNew').textContent = allLeads.filter(l => l.status === 'new').length;
     document.getElementById('statContacted').textContent = allLeads.filter(l => l.status === 'contacted').length;
+    const resolvedEl = document.getElementById('statResolved');
+    if (resolvedEl) resolvedEl.textContent = allLeads.filter(l => l.status === 'resolved').length;
 }
+
+// --- Login Starfield ---
+(function initLoginStarfield() {
+    const canvas = document.getElementById('loginStarfield');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    const COUNT = 120;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function create() {
+        stars = [];
+        for (let i = 0; i < COUNT; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 0.5 + Math.random() * 2,
+                speed: 0.005 + Math.random() * 0.02,
+                phase: Math.random() * Math.PI * 2,
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const t = Date.now() * 0.001;
+        for (const s of stars) {
+            const opacity = 0.15 + 0.85 * Math.abs(Math.sin(t * s.speed * 10 + s.phase));
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+            ctx.fill();
+        }
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', () => { resize(); create(); });
+    resize(); create(); draw();
+})();
 
 function renderLeads() {
     const tbody = document.getElementById('leadsTableBody');
@@ -97,7 +142,7 @@ function renderLeads() {
     tbody.innerHTML = filtered.map(lead => `
         <tr>
             <td>
-                <span class="lead-date">${new Date(lead.created_at).toLocaleDateString()}</span>
+                <span class="lead-date">${lead.date || '-'}<br><small>${lead.time || ''}</small></span>
             </td>
             <td><span class="lead-name">${lead.name}</span></td>
             <td><a href="mailto:${lead.email}" style="color:var(--primary-color)">${lead.email}</a></td>

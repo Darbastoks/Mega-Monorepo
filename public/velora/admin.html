@@ -5,89 +5,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Velora Studio</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600&display=swap"
         rel="stylesheet">
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/admin.css">
 </head>
 
-<body class="admin-body">
+<body>
     <!-- Login Screen -->
-    <div id="loginScreen" class="admin-login-overlay">
+    <div id="loginScreen" class="login-overlay">
+        <canvas id="loginStarfield" class="login-starfield"></canvas>
         <div class="login-card">
-            <div class="login-header">
-                <h2>Velora Studio</h2>
-                <p>Prisijunkite prie valdymo pulto</p>
+            <div class="login-logo">
+                <span class="logo-icon"><i class="fas fa-bolt"></i></span>
+                <h1>Velora Studio</h1>
+                <p>Valdymo pultas</p>
             </div>
             <form id="loginForm">
-                <div class="form-group">
-                    <label for="username">Vartotojo vardas</label>
-                    <input type="text" id="username" placeholder="admin" required>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Vartotojo vardas" required>
                 </div>
-                <div class="form-group">
-                    <label for="password">Slaptažodis</label>
-                    <input type="password" id="password" placeholder="••••••••" required>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Slaptažodis" required>
                 </div>
-                <button type="submit" class="btn btn-primary"
-                    style="width: 100%; margin-top: 10px;">Prisijungti</button>
+                <button type="submit" class="login-btn">
+                    <span>Prisijungti</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
                 <div id="loginError" class="login-error"></div>
             </form>
-            <div style="margin-top: 20px; text-align: center;">
-                <a href="/velora" style="color: #666; text-decoration: none; font-size: 0.9rem;">← Grįžti į svetainę</a>
-            </div>
+            <a href="/velora" class="back-link"><i class="fas fa-arrow-left"></i> Grįžti į svetainę</a>
         </div>
     </div>
 
     <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
-        <header class="admin-header">
-            <div class="container admin-nav">
-                <div class="admin-logo">Velora Studio <span>Admin</span></div>
-                <div class="admin-actions">
-                    <a href="/velora" class="btn btn-outline btn-sm">Svetainė</a>
-                    <button id="logoutBtn" class="btn btn-secondary btn-sm">Atsijungti</button>
+    <div id="adminDashboard" class="dashboard" style="display: none;">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-inner">
+                <div class="topbar-brand">
+                    <span class="brand-icon"><i class="fas fa-bolt"></i></span>
+                    <span class="brand-text">Velora Studio</span>
+                    <span class="brand-divider">|</span>
+                    <span class="brand-admin">Admin</span>
+                </div>
+                <div class="topbar-actions">
+                    <a href="/velora" class="topbar-btn outline">
+                        <i class="fas fa-arrow-left"></i> Svetainė
+                    </a>
+                    <button id="logoutBtn" class="topbar-btn ghost">
+                        Atsijungti
+                    </button>
                 </div>
             </div>
         </header>
 
-        <main class="container admin-main">
-            <div class="admin-stats">
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stats Row -->
+            <div class="stats-row">
                 <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                    <div class="stat-info">
-                        <h3 id="statTotal">0</h3>
-                        <p>Viso užklausų</p>
-                    </div>
+                    <div class="stat-accent cyan"></div>
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">VISO UŽKLAUSŲ</div>
                 </div>
-                <div class="stat-card new">
-                    <div class="stat-icon"><i class="fas fa-bell"></i></div>
-                    <div class="stat-info">
-                        <h3 id="statNew">0</h3>
-                        <p>Naujos užklausos</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-accent pink"></div>
+                    <div class="stat-number" id="statNew">0</div>
+                    <div class="stat-label">NAUJOS</div>
                 </div>
-                <div class="stat-card contacted">
-                    <div class="stat-icon"><i class="fas fa-phone"></i></div>
-                    <div class="stat-info">
-                        <h3 id="statContacted">0</h3>
-                        <p>Susisiekta</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-accent green"></div>
+                    <div class="stat-number" id="statContacted">0</div>
+                    <div class="stat-label">SUSISIEKTA</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-accent purple"></div>
+                    <div class="stat-number" id="statResolved">0</div>
+                    <div class="stat-label">IŠSPRĘSTA</div>
                 </div>
             </div>
 
-            <div class="admin-controls">
+            <!-- Controls -->
+            <div class="controls-row">
                 <div class="filter-tabs">
                     <button class="filter-btn active" data-status="all">Visos</button>
                     <button class="filter-btn" data-status="new">Naujos</button>
                     <button class="filter-btn" data-status="contacted">Susisiekta</button>
                     <button class="filter-btn" data-status="resolved">Išspręsta</button>
+                    <button class="filter-btn" data-status="cancelled">Atšauktos</button>
                 </div>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
@@ -95,11 +106,12 @@
                 </div>
             </div>
 
-            <div class="admin-table-wrapper">
-                <table class="admin-table">
+            <!-- Table -->
+            <div class="table-wrapper">
+                <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Data</th>
+                            <th>Vizitas</th>
                             <th>Klientas</th>
                             <th>Kontaktai</th>
                             <th>Žinutė</th>
@@ -108,10 +120,9 @@
                         </tr>
                     </thead>
                     <tbody id="leadsTableBody">
-                        <!-- Leads will be loaded here -->
                     </tbody>
                 </table>
-                <div id="noLeads" class="no-data" style="display: none;">
+                <div id="noLeads" class="empty-state" style="display: none;">
                     <i class="fas fa-inbox"></i>
                     <p>Užklausų nerasta</p>
                 </div>
@@ -119,7 +130,7 @@
         </main>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Toast -->
     <div id="toast" class="toast"></div>
 
     <script src="js/admin.js"></script>
