@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
+const rLimit = require('express-rate-limit');
 
 // Barbie MongoDB models
 const { initDatabase, Admin, Service, Booking } = require('./backend/barbie/database');
@@ -214,7 +215,6 @@ app.patch('/api/nails/reservations/:id/status', (req, res) => {
 
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
-const rLimit = require('express-rate-limit');
 const hairLimiter = rLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 3,
