@@ -121,69 +121,19 @@ app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
 app.get('/api/barbie/bookings/times/:date', async (req, res) => {
     try {
         const dateStr = req.params.date;
-        const requestedServiceName = req.query.service; // Passed from frontend
+        // Static times 09:00 - 19:00 every 30 mins
+        const slots = [
+            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+            "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+            "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+            "18:00", "18:30"
+        ];
 
-        // 1. Fetch Settings & Services
-        const settings = await Settings.findOne();
-        const services = await Service.find();
+        // Only block if already booked for that literal time (simple check)
+        const booked = await Booking.find({ date: dateStr, status: { $ne: 'cancelled' } }, { time: 1, _id: 0 });
+        const bookedTimes = booked.map(b => b.time);
 
-        // Match req service duration
-        let requestedDuration = 30; // default
-        if (requestedServiceName) {
-            const reqSrv = services.find(s => s.name === requestedServiceName);
-            if (reqSrv) requestedDuration = reqSrv.duration;
-        }
-
-        // 2. Day of Week Check
-        const dayOfWeek = new Date(dateStr).getDay();
-        if (!settings.workingDays.includes(dayOfWeek)) {
-            return res.json([]); // Closed today
-        }
-
-        // 3. Time Helpers
-        const timeToMins = (t) => {
-            const [h, m] = t.split(':').map(Number);
-            return h * 60 + m;
-        };
-        const minsToTime = (m) => {
-            const hh = Math.floor(m / 60).toString().padStart(2, '0');
-            const mm = (m % 60).toString().padStart(2, '0');
-            return `${hh}:${mm}`;
-        };
-
-        const startOfDayMins = timeToMins(settings.startHour);
-        const endOfDayMins = timeToMins(settings.endHour);
-
-        // 4. Fetch existing bookings for this day
-        const bookings = await Booking.find({ date: dateStr, status: { $ne: 'cancelled' } });
-
-        // 5. Build Blocked Intervals
-        const blockedIntervals = bookings.map(b => {
-            const bSrv = services.find(s => s.name === b.service);
-            const bDuration = bSrv ? bSrv.duration : 30; // fallback 30
-            const bStartMins = timeToMins(b.time);
-            return {
-                start: bStartMins,
-                end: bStartMins + bDuration
-            };
-        });
-
-        // 6. Calculate Available Slots (every 30 mins)
-        const availableSlots = [];
-        for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
-            const reqStart = curr;
-            const reqEnd = curr + requestedDuration;
-
-            // Check if [reqStart, reqEnd] overlaps with ANY blocked interval
-            const overlaps = blockedIntervals.some(blocked => {
-                return reqStart < blocked.end && reqEnd > blocked.start;
-            });
-
-            if (!overlaps) {
-                availableSlots.push(minsToTime(curr));
-            }
-        }
-
+        const availableSlots = slots.filter(s => !bookedTimes.includes(s));
         res.json(availableSlots);
     } catch (err) {
         console.error('Time fetch error:', err);

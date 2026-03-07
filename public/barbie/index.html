@@ -218,11 +218,10 @@
                             <input type="date" id="bookingDate" name="date" required>
                         </div>
                         <div class="form-group">
-                            <label>Pasirinkite laiką *</label>
-                            <input type="hidden" id="bookingTime" name="time" required>
-                            <div id="timeSlotsGrid" class="time-slots-grid">
-                                <p class="time-placeholder">Pirma pasirinkite datą...</p>
-                            </div>
+                            <label for="bookingTime">Pasirinkite laiką *</label>
+                            <select id="bookingTime" name="time" required>
+                                <option value="">Pirma pasirinkite datą...</option>
+                            </select>
                         </div>
                     </div>
 

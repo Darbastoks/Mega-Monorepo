@@ -175,64 +175,50 @@ function scrollToBooking(serviceName) {
 // --- Booking Form ---
 function initBookingForm() {
     const form = document.getElementById('bookingForm');
-    const dateInput = document.getElementById('bookingDate');
-    const timeInput = document.getElementById('bookingTime');
-    const slotsGrid = document.getElementById('timeSlotsGrid');
+    if (!form) return;
 
-    if (!form || !dateInput || !timeInput || !slotsGrid) return;
+    const dateInput = document.getElementById('bookingDate');
+    const timeSelect = document.getElementById('bookingTime');
+    const serviceSelect = document.getElementById('bookingService');
+
+    if (!form || !dateInput || !timeSelect) return;
 
     // Set min date to today
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    dateInput.min = todayStr;
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
 
-    // Set max date to 30 days from now
-    const maxDate = new Date(today);
-    maxDate.setDate(maxDate.getDate() + 30);
-    dateInput.max = maxDate.toISOString().split('T')[0];
-
+    // Load available times when date changes
     const fetchTimes = async () => {
         const date = dateInput.value;
         if (!date) return;
 
-        slotsGrid.innerHTML = '<p class="time-placeholder">Kraunama...</p>';
-        timeInput.value = ''; // Reset selected time
+        timeSelect.innerHTML = '<option value="">Kraunama...</option>';
 
-        const serviceInput = document.getElementById('bookingService');
-        const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
+        const serviceName = serviceSelect ? encodeURIComponent(serviceSelect.value) : '';
 
         try {
             const res = await fetch(`/api/barbie/bookings/times/${date}?service=${serviceName}`);
-            const availableSlots = await res.json();
+            const slots = await res.json();
 
-            if (!availableSlots || availableSlots.length === 0) {
-                slotsGrid.innerHTML = '<p class="time-placeholder">Nėra laisvų laikų (arba nedirbame)</p>';
-                return;
-            }
-
-            slotsGrid.innerHTML = ''; // Clear picker
-            availableSlots.forEach(time => {
-                const chip = document.createElement('div');
-                chip.className = 'time-chip';
-                chip.textContent = time;
-                chip.addEventListener('click', () => {
-                    // Remove active from others
-                    slotsGrid.querySelectorAll('.time-chip').forEach(c => c.classList.remove('active'));
-                    chip.classList.add('active');
-                    timeInput.value = time;
+            if (!slots || slots.length === 0) {
+                timeSelect.innerHTML = '<option value="">Šią dieną laisvų laikų nėra</option>';
+            } else {
+                timeSelect.innerHTML = '<option value="">Pasirinkite laiką...</option>';
+                slots.forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    timeSelect.appendChild(option);
                 });
-                slotsGrid.appendChild(chip);
-            });
+            }
         } catch (err) {
-            slotsGrid.innerHTML = '<p class="time-placeholder">Klaida kraunant laikus</p>';
-            console.error(err);
+            console.error('Failed to load slots:', err);
+            timeSelect.innerHTML = '<option value="">Klaida kraunant laikus</option>';
         }
     };
 
-    // When date or service changes, load available times dynamically
     dateInput.addEventListener('change', fetchTimes);
-    const serviceDropdown = document.getElementById('bookingService');
-    if (serviceDropdown) serviceDropdown.addEventListener('change', fetchTimes);
+    if (serviceSelect) serviceSelect.addEventListener('change', fetchTimes);
 
     // Form submission
     form.addEventListener('submit', async (e) => {
