@@ -323,8 +323,21 @@ function initSettingsView() {
     });
 
     // Settings form submit
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+    const settingsForm = document.getElementById('settingsForm');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+    // Quick Presets
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('startHour').value = btn.dataset.start;
+            document.getElementById('endHour').value = btn.dataset.end;
+        });
+    });
+
+    settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        saveSettingsBtn.classList.add('btn-loading');
+
         const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
         const startHour = document.getElementById('startHour').value;
         const endHour = document.getElementById('endHour').value;
@@ -346,7 +359,11 @@ function initSettingsView() {
                     showToast('❌', 'Klaida: ' + (data.details || data.error || 'Serverio klaida'));
                 }
             }
-        } catch (err) { showToast('❌', 'Tinklo klaida'); }
+        } catch (err) {
+            showToast('❌', 'Tinklo klaida');
+        } finally {
+            saveSettingsBtn.classList.remove('btn-loading');
+        }
     });
 
     // Service form submit

@@ -18,7 +18,7 @@ const dbNails = require('./backend/nails/database');
 const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
 
 const mongoose = require('mongoose');
-mongoose.set('bufferCommands', false); // Disable buffering to prevent hanging
+// mongoose.set('bufferCommands', false); // Re-enabled buffering to prevent timeouts during slow connections
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -35,8 +35,8 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         maxAge: 24 * 60 * 60 * 1000,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        secure: false, // Ensure cookies work behind proxy
+        sameSite: 'lax'
     }
 }));
 

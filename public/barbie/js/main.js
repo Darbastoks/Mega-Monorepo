@@ -176,9 +176,10 @@ function scrollToBooking(serviceName) {
 function initBookingForm() {
     const form = document.getElementById('bookingForm');
     const dateInput = document.getElementById('bookingDate');
-    const timeSelect = document.getElementById('bookingTime');
+    const timeInput = document.getElementById('bookingTime');
+    const slotsGrid = document.getElementById('timeSlotsGrid');
 
-    if (!form || !dateInput || !timeSelect) return;
+    if (!form || !dateInput || !timeInput || !slotsGrid) return;
 
     // Set min date to today
     const today = new Date();
@@ -194,8 +195,8 @@ function initBookingForm() {
         const date = dateInput.value;
         if (!date) return;
 
-        timeSelect.innerHTML = '<option value="">Kraunama...</option>';
-        timeSelect.disabled = true;
+        slotsGrid.innerHTML = '<p class="time-placeholder">Kraunama...</p>';
+        timeInput.value = ''; // Reset selected time
 
         const serviceInput = document.getElementById('bookingService');
         const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
@@ -205,22 +206,25 @@ function initBookingForm() {
             const availableSlots = await res.json();
 
             if (!availableSlots || availableSlots.length === 0) {
-                timeSelect.innerHTML = '<option value="">Nėra laisvų laikų (arba nedirbame)</option>';
-                timeSelect.disabled = true;
+                slotsGrid.innerHTML = '<p class="time-placeholder">Nėra laisvų laikų (arba nedirbame)</p>';
                 return;
             }
 
-            timeSelect.innerHTML = '<option value="">Pasirinkite laiką...</option>';
+            slotsGrid.innerHTML = ''; // Clear picker
             availableSlots.forEach(time => {
-                const opt = document.createElement('option');
-                opt.value = time;
-                opt.textContent = time;
-                timeSelect.appendChild(opt);
+                const chip = document.createElement('div');
+                chip.className = 'time-chip';
+                chip.textContent = time;
+                chip.addEventListener('click', () => {
+                    // Remove active from others
+                    slotsGrid.querySelectorAll('.time-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    timeInput.value = time;
+                });
+                slotsGrid.appendChild(chip);
             });
-
-            timeSelect.disabled = false;
         } catch (err) {
-            timeSelect.innerHTML = '<option value="">Klaida kraunant laikus</option>';
+            slotsGrid.innerHTML = '<p class="time-placeholder">Klaida kraunant laikus</p>';
             console.error(err);
         }
     };
