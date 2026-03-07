@@ -335,8 +335,17 @@ function initSettingsView() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ workingDays: workDays, startHour, endHour })
             });
-            if (res.ok) showToast('✅', 'Darbo laikas išsaugotas');
-            else showToast('❌', 'Klaida išsaugant');
+            const data = await res.json();
+            if (res.ok) {
+                showToast('✅', 'Darbo laikas išsaugotas');
+            } else {
+                if (res.status === 401) {
+                    alert('Sesija pasibaigė. Prašome prisijungti iš naujo.');
+                    window.location.reload();
+                } else {
+                    showToast('❌', 'Klaida: ' + (data.details || data.error || 'Serverio klaida'));
+                }
+            }
         } catch (err) { showToast('❌', 'Tinklo klaida'); }
     });
 

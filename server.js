@@ -23,6 +23,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // 1. Body Parsers (MUST BE FIRST)
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -30,9 +31,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mega-monorepo-secret-2024',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    }
 }));
 
 // 3. Static Files (MUST BE BEFORE ROOT CATCH-ALL)
@@ -45,16 +50,30 @@ app.use(express.static(path.join(__dirname, 'public/velora')));
 // ==================== BARBIE BARBER API ====================
 app.get('/api/barbie/settings', async (req, res) => {
     try {
-        const settings = await Settings.findOne();
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = await Settings.create({});
+        }
         res.json(settings);
-    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+    } catch (err) { res.status(500).json({ error: 'Klaida', details: err.message }); }
 });
 
 app.put('/api/barbie/settings', requireBarbieAdmin, async (req, res) => {
     try {
-        await Settings.findOneAndUpdate({}, req.body, { upsert: true });
+        const { workingDays, startHour, endHour } = req.body;
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings();
+        }
+        settings.workingDays = workingDays;
+        settings.startHour = startHour;
+        settings.endHour = endHour;
+        await settings.save();
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Klaida' }); }
+    } catch (err) {
+        console.error('Barbie Settings Update Error:', err);
+        res.status(500).json({ error: 'Klaida', details: err.message });
+    }
 });
 
 app.get('/api/barbie/services', async (req, res) => {
