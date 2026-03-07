@@ -276,11 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Show/hide savings on PRO
-        const savingsPro = document.getElementById('savings-pro');
-        if (savingsPro) {
-            savingsPro.style.display = isMonthly ? 'none' : 'block';
-        }
+        // Show/hide savings on all cards
+        document.querySelectorAll('.annual-savings').forEach(el => {
+            el.style.display = isMonthly ? 'none' : 'block';
+        });
     }
 
     monthlyBtn.addEventListener('click', () => {
