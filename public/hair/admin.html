@@ -438,6 +438,14 @@
             <div>Hair Beauty <span>by Greta</span> | <strong>Admin</strong></div>
         </div>
         <div class="admin-nav-actions" id="navActions" style="display: none;">
+            <button class="admin-btn" id="viewSettingsBtn"
+                style="border-color: var(--accent-primary); color: var(--accent-primary); background: transparent; cursor: pointer;">
+                <i class="fa-solid fa-gear"></i> Nustatymai
+            </button>
+            <button class="admin-btn" id="viewBookingsBtn"
+                style="border-color: var(--accent-primary); color: var(--accent-primary); background: transparent; cursor: pointer; display: none;">
+                <i class="fa-regular fa-calendar"></i> Registracijos
+            </button>
             <a href="/hair" class="admin-btn">
                 <i class="fa-solid fa-arrow-left"></i> Svetainė
             </a>
@@ -464,49 +472,149 @@
     <!-- Admin Dashboard -->
     <div class="admin-container" id="dashboardScreen">
 
-        <!-- Summary Cards -->
-        <div class="summary-cards">
-            <div class="stat-card">
-                <div class="stat-value" id="countAll">0</div>
-                <div class="stat-label">Viso Registracijų</div>
+        <div id="bookingsSection">
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="stat-card">
+                    <div class="stat-value" id="countAll">0</div>
+                    <div class="stat-label">Viso Registracijų</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="countPending">0</div>
+                    <div class="stat-label">Laukiančios</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="countConfirmed">0</div>
+                    <div class="stat-label">Patvirtintos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="countCompleted">0</div>
+                    <div class="stat-label">Atliktos</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="countPending">0</div>
-                <div class="stat-label">Laukiančios</div>
+
+            <!-- Controls -->
+            <div class="dashboard-controls">
+                <div class="filter-tabs" id="filterTabs">
+                    <button class="filter-tab active" data-filter="all">Visos</button>
+                    <button class="filter-tab" data-filter="pending">Laukiančios</button>
+                    <button class="filter-tab" data-filter="confirmed">Patvirtintos</button>
+                    <button class="filter-tab" data-filter="completed">Atliktos</button>
+                    <button class="filter-tab" data-filter="cancelled">Atšauktos</button>
+                </div>
+
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="countConfirmed">0</div>
-                <div class="stat-label">Patvirtintos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="countCompleted">0</div>
-                <div class="stat-label">Atliktos</div>
+
+            <!-- Table -->
+            <div class="table-wrapper">
+                <div id="tableContainer">
+                    <!-- Data inserted by JS -->
+                </div>
             </div>
         </div>
 
-        <!-- Controls -->
-        <div class="dashboard-controls">
-            <div class="filter-tabs" id="filterTabs">
-                <button class="filter-tab active" data-filter="all">Visos</button>
-                <button class="filter-tab" data-filter="pending">Laukiančios</button>
-                <button class="filter-tab" data-filter="confirmed">Patvirtintos</button>
-                <button class="filter-tab" data-filter="completed">Atliktos</button>
-                <button class="filter-tab" data-filter="cancelled">Atšauktos</button>
-            </div>
+        <div id="settingsSection" style="display:none;">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+                <div
+                    style="background: var(--white); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+                    <h3 style="margin-bottom: 1rem; font-family: var(--font-heading); font-size: 1.5rem;">Darbo Laikas
+                    </h3>
+                    <form id="settingsForm">
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Darbo Dienos</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                <label><input type="checkbox" name="workDays" value="1"> Pr</label>
+                                <label><input type="checkbox" name="workDays" value="2"> An</label>
+                                <label><input type="checkbox" name="workDays" value="3"> Tr</label>
+                                <label><input type="checkbox" name="workDays" value="4"> Kt</label>
+                                <label><input type="checkbox" name="workDays" value="5"> Pn</label>
+                                <label><input type="checkbox" name="workDays" value="6"> Še</label>
+                                <label><input type="checkbox" name="workDays" value="0"> Se</label>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pradžia</label>
+                                <input type="time" id="startHour" required
+                                    style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pabaiga</label>
+                                <input type="time" id="endHour" required
+                                    style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+                            </div>
+                        </div>
+                        <button type="submit" class="admin-btn"
+                            style="width:100%; justify-content:center; background: var(--accent-primary); color: white;">Išsaugoti
+                            Darbo Laiką</button>
+                    </form>
+                </div>
 
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+                <div
+                    style="background: var(--white); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="font-family: var(--font-heading); font-size: 1.5rem;">Paslaugos</h3>
+                        <button class="admin-btn" onclick="openAddServiceModal()"
+                            style="border-color: var(--accent-primary); color: var(--accent-primary); background: transparent;">+
+                            Pridėti</button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pavadinimas</th>
+                                    <th>Trukmė</th>
+                                    <th>Kaina</th>
+                                    <th>Veiksmai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="table-wrapper">
-            <div id="tableContainer">
-                <!-- Data inserted by JS -->
+        <div id="serviceModal"
+            style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(61, 53, 44, 0.5); z-index:1000; justify-content:center; align-items:center;">
+            <div
+                style="background:var(--white); padding:2rem; border-radius:12px; width:450px; max-width:90%; box-shadow: var(--shadow-lg);">
+                <h3 id="serviceModalTitle"
+                    style="margin-bottom:1.5rem; font-family: var(--font-heading); font-size: 1.5rem;">Pridėti Paslaugą
+                </h3>
+                <form id="serviceForm">
+                    <input type="hidden" id="serviceId">
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Pavadinimas</label>
+                        <input type="text" id="serviceName" required
+                            style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Kaina (€)</label>
+                            <input type="number" id="servicePrice" required
+                                style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Trukmė (min)</label>
+                            <input type="number" id="serviceDuration" value="60" required
+                                style="width:100%; padding:0.75rem; border:1px solid var(--border); border-radius:6px; font-family:inherit;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:2rem;">
+                        <button type="button" class="admin-btn" style="flex:1; justify-content:center;"
+                            onclick="document.getElementById('serviceModal').style.display='none'">Atšaukti</button>
+                        <button type="submit" class="admin-btn"
+                            style="flex:1; justify-content:center; background: var(--accent-primary); color: white;">Išsaugoti</button>
+                    </div>
+                </form>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -567,6 +675,9 @@
                     showDashboard();
                     updateCounts();
                     renderTable();
+                    initSettingsView();
+                    loadSettings();
+                    loadServices();
                 } else {
                     logout();
                 }
@@ -756,6 +867,137 @@
                 alert('Nepavyko ištrinti.');
             }
         }
+
+        // ==================== SETTINGS & SERVICES ====================
+        let allServices = [];
+
+        function initSettingsView() {
+            document.getElementById('viewSettingsBtn').addEventListener('click', () => {
+                document.getElementById('bookingsSection').style.display = 'none';
+                document.getElementById('settingsSection').style.display = 'block';
+                document.getElementById('viewSettingsBtn').style.display = 'none';
+                document.getElementById('viewBookingsBtn').style.display = 'inline-flex';
+            });
+            document.getElementById('viewBookingsBtn').addEventListener('click', () => {
+                document.getElementById('bookingsSection').style.display = 'block';
+                document.getElementById('settingsSection').style.display = 'none';
+                document.getElementById('viewSettingsBtn').style.display = 'inline-flex';
+                document.getElementById('viewBookingsBtn').style.display = 'none';
+            });
+
+            document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
+                const startHour = document.getElementById('startHour').value;
+                const endHour = document.getElementById('endHour').value;
+
+                try {
+                    const res = await fetch(`${API_URL}/settings`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ workingDays: workDays, startHour, endHour })
+                    });
+                    if (res.ok) alert('Darbo laikas išsaugotas');
+                    else alert('Klaida išsaugant');
+                } catch (err) { alert('Tinklo klaida'); }
+            });
+
+            document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('serviceId').value;
+                const payload = {
+                    name: document.getElementById('serviceName').value,
+                    price: document.getElementById('servicePrice').value,
+                    duration: document.getElementById('serviceDuration').value
+                };
+
+                const method = id ? 'PATCH' : 'POST';
+                const url = id ? `${API_URL}/services/${id}` : `${API_URL}/services`;
+
+                try {
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        alert('Paslauga išsaugota');
+                        document.getElementById('serviceModal').style.display = 'none';
+                        loadServices();
+                    } else { alert('Klaida išsaugant'); }
+                } catch (err) { alert('Tinklo klaida'); }
+            });
+        }
+
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API_URL}/settings`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    if (settings) {
+                        document.getElementById('startHour').value = settings.startHour;
+                        document.getElementById('endHour').value = settings.endHour;
+                        document.querySelectorAll('input[name="workDays"]').forEach(cb => {
+                            cb.checked = settings.workingDays.includes(parseInt(cb.value));
+                        });
+                    }
+                }
+            } catch (err) { }
+        }
+
+        async function loadServices() {
+            try {
+                const res = await fetch(`${API_URL}/services`);
+                if (res.ok) {
+                    allServices = await res.json();
+                    renderServices();
+                }
+            } catch (err) { }
+        }
+
+        function renderServices() {
+            const tbody = document.getElementById('servicesBody');
+            tbody.innerHTML = allServices.map(s => `
+                <tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.duration} min</td>
+                    <td>${s.price} €</td>
+                    <td class="actions-cell">
+                        <button class="action-btn btn-confirm" onclick="editService('${s._id}')" title="Redaguoti"><i class="fa-solid fa-pen"></i></button>
+                        <button class="action-btn btn-delete" onclick="deleteService('${s._id}')" title="Ištrinti"><i class="fa-regular fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.openAddServiceModal = function () {
+            document.getElementById('serviceId').value = '';
+            document.getElementById('serviceForm').reset();
+            document.getElementById('serviceModalTitle').textContent = 'Pridėti Paslaugą';
+            document.getElementById('serviceModal').style.display = 'flex';
+        };
+
+        window.editService = function (id) {
+            const s = allServices.find(srv => srv._id === id);
+            if (!s) return;
+            document.getElementById('serviceId').value = s._id;
+            document.getElementById('serviceName').value = s.name;
+            document.getElementById('servicePrice').value = s.price;
+            document.getElementById('serviceDuration').value = s.duration;
+            document.getElementById('serviceModalTitle').textContent = 'Redaguoti Paslaugą';
+            document.getElementById('serviceModal').style.display = 'flex';
+        };
+
+        window.deleteService = async function (id) {
+            if (!confirm('Ar tikrai norite ištrinti šią paslaugą?')) return;
+            try {
+                const res = await fetch(`${API_URL}/services/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('Paslauga ištrinta');
+                    loadServices();
+                } else alert('Klaida trinant');
+            } catch (err) { alert('Tinklo klaida'); }
+        };
     </script>
 </body>
 

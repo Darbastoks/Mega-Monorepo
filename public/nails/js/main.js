@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = new Date().toISOString().split('T')[0];
         bDate.setAttribute('min', today);
 
-        bDate.addEventListener('change', async () => {
+        const fetchTimes = async () => {
             const selectedDate = bDate.value;
             if (!selectedDate) {
                 bTime.innerHTML = '<option value="" disabled selected>Pirmiau pasirinkite datą</option>';
@@ -68,19 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
             bTime.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
             bTime.disabled = true;
 
+            const serviceInput = document.getElementById('bService');
+            const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
+
             try {
-                const response = await fetch(`/api/nails/available-times?date=${selectedDate}`);
+                const response = await fetch(`/api/nails/available-times?date=${selectedDate}&service=${serviceName}`);
                 const data = await response.json();
 
-                const bookedTimes = data.bookedTimes || [];
-
-                // Define working hours 09:00 to 18:00
-                const allTimes = [
-                    '09:00', '10:00', '11:00', '12:00', '13:00',
-                    '14:00', '15:00', '16:00', '17:00', '18:00'
-                ];
-
-                const availableTimes = allTimes.filter(t => !bookedTimes.includes(t));
+                const availableTimes = data.availableSlots || [];
 
                 if (availableTimes.length === 0) {
                     bTime.innerHTML = '<option value="" disabled selected>Visi laikai užimti šią dieną</option>';
@@ -99,7 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error(err);
                 bTime.innerHTML = '<option value="" disabled selected>Klaida kraunant laikus</option>';
             }
-        });
+        };
+
+        bDate.addEventListener('change', fetchTimes);
+        const bService = document.getElementById('bService');
+        if (bService) {
+            bService.addEventListener('change', fetchTimes);
+        }
     }
 
     // Booking Form Submission to Node.js / SQLite Backend

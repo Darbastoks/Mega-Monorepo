@@ -21,12 +21,15 @@
 
 <body class="admin-body">
 
-    <!-- Admin Top Navigation -->
     <nav class="admin-nav">
         <div class="admin-logo">
             nails.by.lukra <span>| Admin</span>
         </div>
         <div class="admin-nav-actions">
+            <button class="btn-admin-outline" id="viewSettingsBtn" style="border:none; cursor:pointer;">⚙
+                Nustatymai</button>
+            <button class="btn-admin-outline" id="viewBookingsBtn" style="border:none; cursor:pointer; display:none;">📅
+                Registracijos</button>
             <a href="/nails" class="btn-admin-outline">
                 <i class="fas fa-arrow-left"></i> Svetainė
             </a>
@@ -59,25 +62,127 @@
             </div>
         </div>
 
-        <!-- Filters and Search -->
-        <div class="admin-filters">
-            <div class="filter-tabs">
-                <div class="filter-tab active">Visos</div>
-                <div class="filter-tab">Laukiančios</div>
-                <div class="filter-tab">Patvirtintos</div>
-                <div class="filter-tab">Atliktos</div>
-                <div class="filter-tab">Atšauktos</div>
+        <div id="bookingsSection">
+            <!-- Filters and Search -->
+            <div class="admin-filters">
+                <div class="filter-tabs">
+                    <div class="filter-tab active" data-status="all">Visos</div>
+                    <div class="filter-tab" data-status="pending">Laukiančios</div>
+                    <div class="filter-tab" data-status="confirmed">Patvirtintos</div>
+                    <div class="filter-tab" data-status="completed">Atliktos</div>
+                    <div class="filter-tab" data-status="cancelled">Atšauktos</div>
+                </div>
+
+                <div class="admin-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+                </div>
             </div>
 
-            <div class="admin-search">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Ieškoti pagal vardą ar telefoną...">
+            <!-- Data Table / Empty State -->
+            <div class="admin-table-container">
+                <p>Pagal šiuos filtrus rezervacijų nerasta.</p>
             </div>
         </div>
 
-        <!-- Data Table / Empty State -->
-        <div class="admin-table-container">
-            <p>Pagal šiuos filtrus rezervacijų nerasta.</p>
+        <!-- Settings & Services Section -->
+        <div id="settingsSection" style="display:none; margin-top:2rem;">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+
+                <!-- Working Hours Form -->
+                <div
+                    style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light);">
+                    <h3 style="margin-bottom: 1rem;">Darbo Laikas</h3>
+                    <form id="settingsForm">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Darbo Dienos</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                <label><input type="checkbox" name="workDays" value="1"> Pr</label>
+                                <label><input type="checkbox" name="workDays" value="2"> An</label>
+                                <label><input type="checkbox" name="workDays" value="3"> Tr</label>
+                                <label><input type="checkbox" name="workDays" value="4"> Kt</label>
+                                <label><input type="checkbox" name="workDays" value="5"> Pn</label>
+                                <label><input type="checkbox" name="workDays" value="6"> Še</label>
+                                <label><input type="checkbox" name="workDays" value="0"> Se</label>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pradžia</label>
+                                <input type="time" id="startHour" required
+                                    style="width:100%; padding:0.5rem; border:1px solid var(--border-light); border-radius:4px; font-family:inherit;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pabaiga</label>
+                                <input type="time" id="endHour" required
+                                    style="width:100%; padding:0.5rem; border:1px solid var(--border-light); border-radius:4px; font-family:inherit;">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit" style="width:100%;">Išsaugoti Darbo Laiką</button>
+                    </form>
+                </div>
+
+                <!-- Services Manager -->
+                <div
+                    style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>Paslaugos</h3>
+                        <button class="btn-admin-outline" onclick="openAddServiceModal()"
+                            style="border: 1px solid var(--primary); color: var(--primary); background: transparent; cursor: pointer;">+
+                            Pridėti</button>
+                    </div>
+                    <div>
+                        <table style="width:100%; border-collapse: collapse; text-align: left;">
+                            <thead style="border-bottom: 2px solid var(--border-light);">
+                                <tr>
+                                    <th style="padding: 0.75rem;">Pavadinimas</th>
+                                    <th style="padding: 0.75rem;">Trukmė</th>
+                                    <th style="padding: 0.75rem;">Kaina</th>
+                                    <th style="padding: 0.75rem;">Veiksmai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesBody">
+                                <!-- Loaded via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Modal -->
+        <div id="serviceModal"
+            style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+            <div style="background:var(--bg-card); padding:2rem; border-radius:12px; width:400px; max-width:90%;">
+                <h3 id="serviceModalTitle" style="margin-bottom:1.5rem;">Pridėti Paslaugą</h3>
+                <form id="serviceForm">
+                    <input type="hidden" id="serviceId">
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Pavadinimas</label>
+                        <input type="text" id="serviceName" required
+                            style="width:100%; padding:0.75rem; border:1px solid var(--border-light); border-radius:4px; font-family:inherit;">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Kaina (€)</label>
+                            <input type="number" id="servicePrice" required
+                                style="width:100%; padding:0.75rem; border:1px solid var(--border-light); border-radius:4px; font-family:inherit;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Trukmė (min)</label>
+                            <input type="number" id="serviceDuration" value="60" required
+                                style="width:100%; padding:0.75rem; border:1px solid var(--border-light); border-radius:4px; font-family:inherit;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-top:2rem;">
+                        <button type="button" class="btn-admin-outline"
+                            style="flex:1; background:transparent; border:1px solid var(--text-light); color:var(--text-main); cursor:pointer;"
+                            onclick="document.getElementById('serviceModal').style.display='none'">Atšaukti</button>
+                        <button type="submit" class="btn-submit" style="flex:1;">Išsaugoti</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- Scripts -->

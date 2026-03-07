@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeSelect = document.getElementById('time');
     const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
-    dateInput.addEventListener('change', async () => {
+    const fetchTimes = async () => {
         const date = dateInput.value;
         if (!date) {
             timeSelect.disabled = true;
@@ -34,28 +34,36 @@ document.addEventListener('DOMContentLoaded', () => {
         timeSelect.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
         timeSelect.disabled = true;
 
-        try {
-            const response = await fetch(`/api/hair/bookings/times/${date}`);
-            const bookedTimes = await response.json();
+        const serviceInput = document.getElementById('service');
+        const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
 
-            timeSelect.innerHTML = '<option value="" disabled selected>Pasirinkite laiką</option>';
-            timeSlots.forEach(slot => {
-                const isBooked = bookedTimes.includes(slot);
-                const option = document.createElement('option');
-                option.value = slot;
-                option.textContent = slot;
-                if (isBooked) {
-                    option.disabled = true;
-                    option.textContent += ' (Užimta)';
-                }
-                timeSelect.appendChild(option);
-            });
-            timeSelect.disabled = false;
+        try {
+            const response = await fetch(`/api/hair/bookings/times/${date}?service=${serviceName}`);
+            const availableSlots = await response.json();
+
+            if (availableSlots.length === 0) {
+                timeSelect.innerHTML = '<option value="" disabled selected>Visi laikai užimti šią dieną</option>';
+            } else {
+                timeSelect.innerHTML = '<option value="" disabled selected>Pasirinkite laiką</option>';
+                availableSlots.forEach(slot => {
+                    const option = document.createElement('option');
+                    option.value = slot;
+                    option.textContent = slot;
+                    timeSelect.appendChild(option);
+                });
+                timeSelect.disabled = false;
+            }
         } catch (error) {
             console.error('Error fetching times:', error);
             timeSelect.innerHTML = '<option value="" disabled selected>Klaida kraunant laikus</option>';
         }
-    });
+    };
+
+    dateInput.addEventListener('change', fetchTimes);
+    const serviceInput = document.getElementById('service');
+    if (serviceInput) {
+        serviceInput.addEventListener('change', fetchTimes);
+    }
 
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();

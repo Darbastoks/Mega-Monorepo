@@ -49,6 +49,9 @@
                 <h2>G SPOT <span class="logo-accent">Admin</span></h2>
             </div>
             <div class="admin-header-right">
+                <button class="btn btn-primary btn-sm" id="viewSettingsBtn">⚙ Nustatymai</button>
+                <button class="btn btn-primary btn-sm" id="viewBookingsBtn" style="display:none;">📅
+                    Registracijos</button>
                 <a href="/barbie" class="btn btn-outline btn-sm">← Svetainė</a>
                 <button class="btn btn-outline btn-sm" id="logoutBtn">Atsijungti</button>
             </div>
@@ -88,28 +91,130 @@
             </div>
         </div>
 
-        <!-- Bookings Table -->
-        <div class="admin-table-wrap">
-            <table class="admin-table" id="bookingsTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Vardas</th>
-                        <th>Telefonas</th>
-                        <th>Paslauga</th>
-                        <th>Data</th>
-                        <th>Laikas</th>
-                        <th>Statusas</th>
-                        <th>Veiksmai</th>
-                    </tr>
-                </thead>
-                <tbody id="bookingsBody">
-                    <!-- Rows loaded dynamically -->
-                </tbody>
-            </table>
-            <div class="admin-empty" id="emptyState" style="display:none;">
-                <span>📋</span>
-                <p>Registracijų nerasta</p>
+        <!-- Bookings Section -->
+        <div id="bookingsSection">
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Vardas</th>
+                            <th>Telefonas</th>
+                            <th>Paslauga</th>
+                            <th>Data</th>
+                            <th>Laikas</th>
+                            <th>Statusas</th>
+                            <th>Veiksmai</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsBody">
+                        <!-- Rows loaded dynamically -->
+                    </tbody>
+                </table>
+                <div class="admin-empty" id="emptyState" style="display:none;">
+                    <span>📋</span>
+                    <p>Registracijų nerasta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings & Services Section -->
+        <div id="settingsSection" style="display:none;">
+            <div class="settings-grid"
+                style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; margin-top: 1rem;">
+
+                <!-- Working Hours Form -->
+                <div class="settings-card"
+                    style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 1rem;">Darbo Laikas</h3>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label>Darbo Dienos</label>
+                            <div class="checkbox-group"
+                                style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem;">
+                                <label><input type="checkbox" name="workDays" value="1"> Pr</label>
+                                <label><input type="checkbox" name="workDays" value="2"> An</label>
+                                <label><input type="checkbox" name="workDays" value="3"> Tr</label>
+                                <label><input type="checkbox" name="workDays" value="4"> Kt</label>
+                                <label><input type="checkbox" name="workDays" value="5"> Pn</label>
+                                <label><input type="checkbox" name="workDays" value="6"> Še</label>
+                                <label><input type="checkbox" name="workDays" value="0"> Se</label>
+                            </div>
+                        </div>
+                        <div class="form-row" style="display: flex; gap: 1rem;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Pradžia</label>
+                                <input type="time" id="startHour" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Pabaiga</label>
+                                <input type="time" id="endHour" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;">Išsaugoti Darbo
+                            Laiką</button>
+                    </form>
+                </div>
+
+                <!-- Services Manager -->
+                <div class="services-card"
+                    style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>Paslaugos</h3>
+                        <button class="btn btn-outline btn-sm" onclick="openAddServiceModal()">+ Pridėti
+                            Paslaugą</button>
+                    </div>
+                    <div class="admin-table-wrap" style="box-shadow: none; border: 1px solid var(--border-color);">
+                        <table class="admin-table" id="servicesTable">
+                            <thead>
+                                <tr>
+                                    <th>Pavadinimas</th>
+                                    <th>Trukmė</th>
+                                    <th>Kaina</th>
+                                    <th>Veiksmai</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesBody">
+                                <!-- Loaded via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Service Modal -->
+        <div class="modal" id="serviceModal" style="display:none;">
+            <div class="modal-content">
+                <h3 id="serviceModalTitle">Pridėti Paslaugą</h3>
+                <form id="serviceForm">
+                    <input type="hidden" id="serviceId">
+                    <div class="form-group">
+                        <label>Pavadinimas</label>
+                        <input type="text" id="serviceName" required>
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Kaina (€)</label>
+                            <input type="number" id="servicePrice" required>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Trukmė (min)</label>
+                            <input type="number" id="serviceDuration" value="30" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Aprašymas</label>
+                        <textarea id="serviceDesc" rows="2"></textarea>
+                    </div>
+                    <div class="form-actions" style="margin-top: 1rem;">
+                        <button type="button" class="btn btn-outline"
+                            onclick="document.getElementById('serviceModal').style.display='none'">Atšaukti</button>
+                        <button type="submit" class="btn btn-primary">Išsaugoti</button>
+                    </div>
+                </form>
             </div>
         </div>
 

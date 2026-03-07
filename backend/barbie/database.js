@@ -7,6 +7,12 @@ const adminSchema = new mongoose.Schema({
     password: { type: String, required: true }
 });
 
+const settingsSchema = new mongoose.Schema({
+    workingDays: { type: [Number], default: [1, 2, 3, 4, 5, 6] }, // 0=Sun, 1=Mon, ..., 6=Sat
+    startHour: { type: String, default: '09:00' },
+    endHour: { type: String, default: '19:00' }
+});
+
 const serviceSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
@@ -29,6 +35,7 @@ const bookingSchema = new mongoose.Schema({
 
 // Compile Models
 const Admin = mongoose.model('Admin', adminSchema);
+const Settings = mongoose.model('Settings', settingsSchema);
 const Service = mongoose.model('Service', serviceSchema);
 const Booking = mongoose.model('Booking', bookingSchema);
 
@@ -57,6 +64,13 @@ async function initDatabase() {
             console.log('✅ Default admin account created (admin / barber2024)');
         }
 
+        // Seed default Settings if not exists
+        const settingsCount = await Settings.countDocuments();
+        if (settingsCount === 0) {
+            await Settings.create({});
+            console.log('✅ Default settings created');
+        }
+
         // Seed default Services if not exists
         const servicesCount = await Service.countDocuments();
         if (servicesCount === 0) {
@@ -83,6 +97,7 @@ async function initDatabase() {
 module.exports = {
     initDatabase,
     Admin,
+    Settings,
     Service,
     Booking
 };

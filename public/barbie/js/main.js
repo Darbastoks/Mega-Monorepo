@@ -190,52 +190,31 @@ function initBookingForm() {
     maxDate.setDate(maxDate.getDate() + 30);
     dateInput.max = maxDate.toISOString().split('T')[0];
 
-    // When date changes, load available times
-    dateInput.addEventListener('change', async () => {
+    const fetchTimes = async () => {
         const date = dateInput.value;
         if (!date) return;
 
         timeSelect.innerHTML = '<option value="">Kraunama...</option>';
         timeSelect.disabled = true;
 
+        const serviceInput = document.getElementById('bookingService');
+        const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
+
         try {
-            const res = await fetch(`/api/barbie/bookings/times/${date}`);
-            const bookedTimes = await res.json();
+            const res = await fetch(`/api/barbie/bookings/times/${date}?service=${serviceName}`);
+            const availableSlots = await res.json();
 
-            // Generate time slots (9:00 - 19:00, every 30 min)
-            const selectedDate = new Date(date);
-            const dayOfWeek = selectedDate.getDay();
-
-            let startHour = 9, endHour = 19;
-
-            // Saturday hours
-            if (dayOfWeek === 6) {
-                startHour = 10;
-                endHour = 16;
-            }
-
-            // Sunday - closed
-            if (dayOfWeek === 0) {
-                timeSelect.innerHTML = '<option value="">Sekmadienį nedirbame</option>';
+            if (!availableSlots || availableSlots.length === 0) {
+                timeSelect.innerHTML = '<option value="">Nėra laisvų laikų (arba nedirbame)</option>';
                 timeSelect.disabled = true;
                 return;
             }
 
-            const slots = [];
-            for (let h = startHour; h < endHour; h++) {
-                for (let m = 0; m < 60; m += 30) {
-                    const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-                    const isBooked = bookedTimes.includes(time);
-                    slots.push({ time, isBooked });
-                }
-            }
-
             timeSelect.innerHTML = '<option value="">Pasirinkite laiką...</option>';
-            slots.forEach(slot => {
+            availableSlots.forEach(time => {
                 const opt = document.createElement('option');
-                opt.value = slot.time;
-                opt.textContent = slot.time + (slot.isBooked ? ' (užimta)' : '');
-                opt.disabled = slot.isBooked;
+                opt.value = time;
+                opt.textContent = time;
                 timeSelect.appendChild(opt);
             });
 
@@ -244,7 +223,12 @@ function initBookingForm() {
             timeSelect.innerHTML = '<option value="">Klaida kraunant laikus</option>';
             console.error(err);
         }
-    });
+    };
+
+    // When date or service changes, load available times dynamically
+    dateInput.addEventListener('change', fetchTimes);
+    const serviceDropdown = document.getElementById('bookingService');
+    if (serviceDropdown) serviceDropdown.addEventListener('change', fetchTimes);
 
     // Form submission
     form.addEventListener('submit', async (e) => {

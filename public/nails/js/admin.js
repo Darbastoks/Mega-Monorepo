@@ -34,6 +34,7 @@ if (adminDashboard) {
     }
 
     let allReservations = [];
+    let allServices = [];
 
     async function fetchReservations() {
         try {
@@ -54,6 +55,9 @@ if (adminDashboard) {
         updateStats(reservations);
         renderTable(reservations);
         setupFilterTabs();
+        initSettingsView();
+        loadSettings();
+        loadServices();
     }
 
     function updateStats(reservations) {
@@ -196,4 +200,136 @@ if (adminDashboard) {
 
     // Initial Load
     fetchReservations();
+
+    // ==================== SETTINGS & SERVICES ====================
+
+    function initSettingsView() {
+        document.getElementById('viewSettingsBtn').addEventListener('click', () => {
+            document.getElementById('bookingsSection').style.display = 'none';
+            document.getElementById('settingsSection').style.display = 'block';
+            document.getElementById('viewSettingsBtn').style.display = 'none';
+            document.getElementById('viewBookingsBtn').style.display = 'inline-block';
+        });
+        document.getElementById('viewBookingsBtn').addEventListener('click', () => {
+            document.getElementById('bookingsSection').style.display = 'block';
+            document.getElementById('settingsSection').style.display = 'none';
+            document.getElementById('viewSettingsBtn').style.display = 'inline-block';
+            document.getElementById('viewBookingsBtn').style.display = 'none';
+        });
+
+        // Settings form submit
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
+            const startHour = document.getElementById('startHour').value;
+            const endHour = document.getElementById('endHour').value;
+
+            try {
+                const res = await fetch('/api/nails/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workingDays: workDays, startHour, endHour })
+                });
+                if (res.ok) alert('Darbo laikas išsaugotas');
+                else alert('Klaida išsaugant');
+            } catch (err) { alert('Tinklo klaida'); }
+        });
+
+        // Service form submit
+        document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('serviceId').value;
+            const payload = {
+                name: document.getElementById('serviceName').value,
+                price: document.getElementById('servicePrice').value,
+                duration: document.getElementById('serviceDuration').value
+            };
+
+            const method = id ? 'PATCH' : 'POST';
+            const url = id ? `/api/nails/services/${id}` : '/api/nails/services';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    alert('Paslauga išsaugota');
+                    document.getElementById('serviceModal').style.display = 'none';
+                    loadServices();
+                } else { alert('Klaida išsaugant'); }
+            } catch (err) { alert('Tinklo klaida'); }
+        });
+    }
+
+    async function loadSettings() {
+        try {
+            const res = await fetch('/api/nails/settings');
+            if (res.ok) {
+                const settings = await res.json();
+                if (settings) {
+                    document.getElementById('startHour').value = settings.startHour;
+                    document.getElementById('endHour').value = settings.endHour;
+                    document.querySelectorAll('input[name="workDays"]').forEach(cb => {
+                        cb.checked = settings.workingDays.includes(parseInt(cb.value));
+                    });
+                }
+            }
+        } catch (err) { }
+    }
+
+    async function loadServices() {
+        try {
+            const res = await fetch('/api/nails/services');
+            if (res.ok) {
+                allServices = await res.json();
+                renderServices();
+            }
+        } catch (err) { }
+    }
+
+    function renderServices() {
+        const tbody = document.getElementById('servicesBody');
+        tbody.innerHTML = allServices.map(s => `
+            <tr style="border-bottom: 1px solid var(--border-light)">
+                <td style="padding: 0.75rem;"><strong>${s.name}</strong></td>
+                <td style="padding: 0.75rem;">${s.duration} min</td>
+                <td style="padding: 0.75rem;">${s.price} €</td>
+                <td style="padding: 0.75rem;">
+                    <button onclick="editService(${s.id})" style="background:transparent; border:none; cursor:pointer;" title="Redaguoti">✏️</button>
+                    <button onclick="deleteService(${s.id})" style="background:transparent; border:none; cursor:pointer; color:red;" title="Ištrinti">🗑</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.openAddServiceModal = function () {
+        document.getElementById('serviceId').value = '';
+        document.getElementById('serviceForm').reset();
+        document.getElementById('serviceModalTitle').textContent = 'Pridėti Paslaugą';
+        document.getElementById('serviceModal').style.display = 'flex';
+    };
+
+    window.editService = function (id) {
+        const s = allServices.find(srv => srv.id === id);
+        if (!s) return;
+        document.getElementById('serviceId').value = s.id;
+        document.getElementById('serviceName').value = s.name;
+        document.getElementById('servicePrice').value = s.price;
+        document.getElementById('serviceDuration').value = s.duration;
+        document.getElementById('serviceModalTitle').textContent = 'Redaguoti Paslaugą';
+        document.getElementById('serviceModal').style.display = 'flex';
+    };
+
+    window.deleteService = async function (id) {
+        if (!confirm('Ar tikrai norite ištrinti šią paslaugą?')) return;
+        try {
+            const res = await fetch(`/api/nails/services/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Paslauga ištrinta');
+                loadServices();
+            } else alert('Klaida trinant');
+        } catch (err) { alert('Tinklo klaida'); }
+    };
 }

@@ -9,9 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initFilters();
     initSearch();
     initChangePassword();
+    initSettingsView();
 });
 
 let allBookings = [];
+let allServices = [];
 let currentFilter = 'all';
 
 // --- Check if already logged in ---
@@ -88,6 +90,8 @@ async function loadBookings() {
         allBookings = await res.json();
         updateStats();
         renderBookings();
+        loadSettings();
+        loadServices();
     } catch (err) {
         console.error('Failed to load bookings:', err);
     }
@@ -301,3 +305,137 @@ function showToast(icon, message) {
 // Make functions globally available
 window.updateBookingStatus = updateBookingStatus;
 window.deleteBooking = deleteBooking;
+
+// ==================== SETTINGS & SERVICES ====================
+
+function initSettingsView() {
+    document.getElementById('viewSettingsBtn').addEventListener('click', () => {
+        document.getElementById('bookingsSection').style.display = 'none';
+        document.getElementById('settingsSection').style.display = 'block';
+        document.getElementById('viewSettingsBtn').style.display = 'none';
+        document.getElementById('viewBookingsBtn').style.display = 'inline-block';
+    });
+    document.getElementById('viewBookingsBtn').addEventListener('click', () => {
+        document.getElementById('bookingsSection').style.display = 'block';
+        document.getElementById('settingsSection').style.display = 'none';
+        document.getElementById('viewSettingsBtn').style.display = 'inline-block';
+        document.getElementById('viewBookingsBtn').style.display = 'none';
+    });
+
+    // Settings form submit
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
+        const startHour = document.getElementById('startHour').value;
+        const endHour = document.getElementById('endHour').value;
+
+        try {
+            const res = await fetch('/api/barbie/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workingDays: workDays, startHour, endHour })
+            });
+            if (res.ok) showToast('✅', 'Darbo laikas išsaugotas');
+            else showToast('❌', 'Klaida išsaugant');
+        } catch (err) { showToast('❌', 'Tinklo klaida'); }
+    });
+
+    // Service form submit
+    document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('serviceId').value;
+        const payload = {
+            name: document.getElementById('serviceName').value,
+            price: document.getElementById('servicePrice').value,
+            duration: document.getElementById('serviceDuration').value,
+            description: document.getElementById('serviceDesc').value
+        };
+
+        const method = id ? 'PATCH' : 'POST';
+        const url = id ? `/api/barbie/services/${id}` : '/api/barbie/services';
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                showToast('✅', 'Paslauga išsaugota');
+                document.getElementById('serviceModal').style.display = 'none';
+                loadServices();
+            } else { showToast('❌', 'Klaida išsaugant'); }
+        } catch (err) { showToast('❌', 'Tinklo klaida'); }
+    });
+}
+
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/barbie/settings');
+        if (res.ok) {
+            const settings = await res.json();
+            if (settings) {
+                document.getElementById('startHour').value = settings.startHour;
+                document.getElementById('endHour').value = settings.endHour;
+                document.querySelectorAll('input[name="workDays"]').forEach(cb => {
+                    cb.checked = settings.workingDays.includes(parseInt(cb.value));
+                });
+            }
+        }
+    } catch (err) { }
+}
+
+async function loadServices() {
+    try {
+        const res = await fetch('/api/barbie/services');
+        if (res.ok) {
+            allServices = await res.json();
+            renderServices();
+        }
+    } catch (err) { }
+}
+
+function renderServices() {
+    const tbody = document.getElementById('servicesBody');
+    tbody.innerHTML = allServices.map(s => `
+        <tr>
+            <td><strong>${escapeHtml(s.name)}</strong></td>
+            <td>${s.duration} min</td>
+            <td>${s.price} €</td>
+            <td>
+                <button class="action-btn action-confirm" onclick="editService('${s._id}')">✏️</button>
+                <button class="action-btn action-delete" onclick="deleteService('${s._id}')">🗑</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+window.openAddServiceModal = function () {
+    document.getElementById('serviceId').value = '';
+    document.getElementById('serviceForm').reset();
+    document.getElementById('serviceModalTitle').textContent = 'Pridėti Paslaugą';
+    document.getElementById('serviceModal').style.display = 'flex';
+};
+
+window.editService = function (id) {
+    const s = allServices.find(srv => srv._id === id);
+    if (!s) return;
+    document.getElementById('serviceId').value = s._id;
+    document.getElementById('serviceName').value = s.name;
+    document.getElementById('servicePrice').value = s.price;
+    document.getElementById('serviceDuration').value = s.duration;
+    document.getElementById('serviceDesc').value = s.description || '';
+    document.getElementById('serviceModalTitle').textContent = 'Redaguoti Paslaugą';
+    document.getElementById('serviceModal').style.display = 'flex';
+};
+
+window.deleteService = async function (id) {
+    if (!confirm('Ar tikrai norite ištrinti šią paslaugą?')) return;
+    try {
+        const res = await fetch(`/api/barbie/services/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('✅', 'Paslauga ištrinta');
+            loadServices();
+        } else showToast('❌', 'Klaida trinant');
+    } catch (err) { showToast('❌', 'Tinklo klaida'); }
+};
