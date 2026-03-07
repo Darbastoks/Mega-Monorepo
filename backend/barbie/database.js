@@ -48,25 +48,30 @@ async function initDatabase() {
         }
 
         const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+        // Disable buffering before connecting to catch initial connection errors immediately
+        mongoose.set('bufferCommands', false);
+
         await mongoose.connect(uri, {
-            serverSelectionTimeoutMS: 5000 // 5 second timeout
+            serverSelectionTimeoutMS: 5000, // 5 second timeout for initial connection
+            connectTimeoutMS: 10000,
         });
-        // await mongoose.connect(...) already handles the connection
-        console.log('✅ Connected to MongoDB successfully');
+
+        console.log('✅ Barbie MongoDB: Connected successfully');
 
         // Seed default Admin if not exists
         const adminCount = await Admin.countDocuments();
         if (adminCount === 0) {
             const hashedPassword = bcrypt.hashSync('barber2024', 10);
             await Admin.create({ username: 'admin', password: hashedPassword });
-            console.log('✅ Default admin account created (admin / barber2024)');
+            console.log('✅ Barbie MongoDB: Default admin created');
         }
 
         // Seed default Settings if not exists
         const settingsCount = await Settings.countDocuments();
         if (settingsCount === 0) {
             await Settings.create({});
-            console.log('✅ Default settings created');
+            console.log('✅ Barbie MongoDB: Default settings created');
         }
 
         // Seed default Services if not exists
@@ -83,12 +88,12 @@ async function initDatabase() {
                 { name: 'Kompleksas (viskas)', price: 50, description: 'Kirpimas + barzda + karšti rankšluosčiai + kaukė', duration: 75, sort_order: 8 }
             ];
             await Service.insertMany(defaultServices);
-            console.log('✅ Default services inserted');
+            console.log('✅ Barbie MongoDB: Default services inserted');
         }
 
     } catch (error) {
-        console.error('❌ MongoDB Connection Error:', error.message);
-        // Do NOT exit process, let fallback login work
+        console.error('❌ Barbie MongoDB Connection Error:', error.message);
+        throw error; // Re-throw to prevent server from starting without DB
     }
 }
 

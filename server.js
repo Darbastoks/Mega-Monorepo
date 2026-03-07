@@ -763,14 +763,26 @@ app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 
 
-// Start Database Connections (Non-blocking)
-console.log('Attempting to initialize databases...');
-initDatabase().catch(err => console.error('MongoDB (Barbie) Error:', err.message));
-initVeloraDatabase().catch(err => console.error('MongoDB (Velora) Error:', err.message));
+// Start Database Connections & Then Start Server
+async function startServer() {
+    console.log('Attempting to initialize databases...');
+    try {
+        // Wait for both databases to initialize/attempt connection
+        await Promise.all([
+            initDatabase(),
+            initVeloraDatabase()
+        ]);
 
-app.listen(PORT, () => {
-    console.log(`MEGA-MONOREPO Server running on port ${PORT}`);
-    console.log(` - Velora: http://localhost:${PORT}/`);
-    console.log(` - Barbie: http://localhost:${PORT}/barbie/`);
-    console.log(` - Nails:  http://localhost:${PORT}/nails/`);
-});
+        app.listen(PORT, () => {
+            console.log(`✅ MEGA-MONOREPO Server running on port ${PORT}`);
+            console.log(` - Velora: http://localhost:${PORT}/`);
+            console.log(` - Barbie: http://localhost:${PORT}/barbie/`);
+            console.log(` - Nails:  http://localhost:${PORT}/nails/`);
+        });
+    } catch (err) {
+        console.error('CRITICAL: Failed to start server due to database error:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
