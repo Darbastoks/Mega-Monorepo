@@ -6,8 +6,8 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const rLimit = require('express-rate-limit');
 
-// Barbie MongoDB models
-const { initDatabase, Admin, Settings, Service, Booking } = require('./backend/barbie/database');
+// Barbie SQLite models
+const { initDatabase, Admin, Booking } = require('./backend/barbie/database');
 // HairBeauty// Database Models
 const GretaBooking = require('./backend/hair/GretaBooking');
 const GretaSettings = require('./backend/hair/GretaSettings');
@@ -118,8 +118,7 @@ app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
             return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
         }
 
-        const newBooking = new Booking({ name, phone, email, service, date, time, message });
-        await newBooking.save();
+        await Booking.create({ name, phone, email, service, date, time, message });
         res.status(201).json({ success: true });
     } catch (err) {
         console.error('Barbie Book DB Save Error:', err.message);
@@ -186,8 +185,8 @@ app.get('/api/barbie/admin/check', requireBarbieAdmin, (req, res) => res.json({ 
 
 app.get('/api/barbie/admin/bookings', requireBarbieAdmin, async (req, res) => {
     try {
-        const bookings = await Booking.find().sort({ date: -1, time: 1 });
-        res.json(bookings.map(b => ({ ...b.toObject(), id: b._id })));
+        const bookings = await Booking.find({}, { sort: { date: -1, time: 1 } });
+        res.json(bookings.map(b => ({ ...b, id: b.id })));
     } catch (err) {
         console.error('Admin Bookings Fetch Error:', err.message);
         res.status(500).json({ error: 'Klaida kraunant registracijas' });
@@ -215,8 +214,8 @@ app.post('/api/barbie/admin/change-password', requireBarbieAdmin, async (req, re
         if (!admin || !bcrypt.compareSync(currentPassword, admin.password)) {
             return res.status(401).json({ error: 'Neteisingas dabartinis slaptažodis' });
         }
-        admin.password = bcrypt.hashSync(newPassword, 10);
-        await admin.save();
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        await Admin.updatePassword(admin._id, hashedPassword);
         res.json({ success: true, message: 'Slaptažodis pakeistas sėkmingai' });
     } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
