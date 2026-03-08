@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroParticles();
     initCounterAnimation();
     initScrollReveal();
-    loadServices();
     initBookingForm();
 });
 
@@ -16,6 +15,7 @@ function initNavbar() {
     const navbar = document.getElementById('navbar');
     const navToggle = document.getElementById('navToggle');
     const navLinks = document.getElementById('navLinks');
+    if (!navbar || !navToggle || !navLinks) return;
 
     window.addEventListener('scroll', () => {
         navbar.classList.toggle('scrolled', window.scrollY > 50);
@@ -26,7 +26,6 @@ function initNavbar() {
         navLinks.classList.toggle('active');
     });
 
-    // Close mobile menu on link click
     navLinks.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
             navToggle.classList.remove('active');
@@ -55,7 +54,6 @@ function initHeroParticles() {
 // --- Counter animation for hero stats ---
 function initCounterAnimation() {
     const counters = document.querySelectorAll('.stat-number[data-target]');
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -66,26 +64,22 @@ function initCounterAnimation() {
             }
         });
     }, { threshold: 0.5 });
-
     counters.forEach(c => observer.observe(c));
 }
 
 function animateCounter(el, target) {
     const duration = 2000;
     const start = performance.now();
-
     function update(now) {
         const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
         el.textContent = Math.floor(eased * target).toLocaleString();
-
         if (progress < 1) {
             requestAnimationFrame(update);
         } else {
             el.textContent = target.toLocaleString() + '+';
         }
     }
-
     requestAnimationFrame(update);
 }
 
@@ -94,7 +88,6 @@ function initScrollReveal() {
     const revealElements = document.querySelectorAll(
         '.about-card, .service-card, .gallery-item, .info-card, .section-header'
     );
-
     revealElements.forEach(el => el.classList.add('reveal'));
 
     const observer = new IntersectionObserver((entries) => {
@@ -107,69 +100,7 @@ function initScrollReveal() {
             }
         });
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
     revealElements.forEach(el => observer.observe(el));
-}
-
-// --- Load services from API ---
-async function loadServices() {
-    try {
-        const res = await fetch('/api/barbie/services');
-        const services = await res.json();
-
-        // Render service cards
-        const grid = document.getElementById('servicesGrid');
-        if (grid) {
-            grid.innerHTML = services.map(s => `
-                <div class="service-card reveal">
-                    <div class="service-card-header">
-                        <h3>${s.name}</h3>
-                        <span class="service-price">${s.price}€</span>
-                    </div>
-                    <p class="service-desc">${s.description || ''}</p>
-                    <span class="service-duration">🕐 ~${s.duration} min</span>
-                    <button class="service-book-btn" onclick="scrollToBooking('${s.name}')">
-                        Registruotis →
-                    </button>
-                </div>
-            `).join('');
-
-            // Re-init reveal for dynamic content
-            grid.querySelectorAll('.reveal').forEach(el => {
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('revealed');
-                            observer.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.1 });
-                observer.observe(el);
-            });
-        }
-
-        // Populate booking form select
-        const select = document.getElementById('bookingService');
-        if (select) {
-            services.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.name;
-                opt.textContent = `${s.name} — ${s.price}€`;
-                select.appendChild(opt);
-            });
-        }
-    } catch (err) {
-        console.error('Failed to load services:', err);
-    }
-}
-
-// Scroll to booking and pre-select service
-function scrollToBooking(serviceName) {
-    const select = document.getElementById('bookingService');
-    if (select) {
-        select.value = serviceName;
-    }
-    document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
 }
 
 // --- Booking Form ---
@@ -181,23 +112,20 @@ function initBookingForm() {
     const timeSelect = document.getElementById('bookingTime');
     const serviceSelect = document.getElementById('bookingService');
 
-    if (!form || !dateInput || !timeSelect) return;
+    if (!dateInput || !timeSelect) return;
 
     // Set min date to today
     const today = new Date().toISOString().split('T')[0];
     dateInput.setAttribute('min', today);
 
-    // Load available times when date changes
     const fetchTimes = async () => {
         const date = dateInput.value;
         if (!date) return;
 
         timeSelect.innerHTML = '<option value="">Kraunama...</option>';
 
-        const serviceName = serviceSelect ? encodeURIComponent(serviceSelect.value) : '';
-
         try {
-            const res = await fetch(`/api/barbie/bookings/times/${date}?service=${serviceName}`);
+            const res = await fetch(`/api/barbie/bookings/times/${date}`);
             const slots = await res.json();
 
             if (!slots || slots.length === 0) {
@@ -218,25 +146,22 @@ function initBookingForm() {
     };
 
     dateInput.addEventListener('change', fetchTimes);
-    if (serviceSelect) serviceSelect.addEventListener('change', fetchTimes);
 
-    // Form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const submitBtn = document.getElementById('bookingSubmit');
         submitBtn.disabled = true;
-        submitBtn.querySelector('span').textContent = 'Siunčiama...';
+        submitBtn.innerHTML = '<span>Siunčiama...</span>';
 
         const formData = {
-            name: document.getElementById('bookingName').value.trim(),
-            phone: document.getElementById('bookingPhone').value.trim(),
-            email: document.getElementById('bookingEmail').value.trim(),
+            name: document.getElementById('bookingName').value,
+            phone: document.getElementById('bookingPhone').value,
+            email: document.getElementById('bookingEmail').value,
             service: document.getElementById('bookingService').value,
             date: document.getElementById('bookingDate').value,
             time: document.getElementById('bookingTime').value,
-            message: document.getElementById('bookingMessage').value.trim(),
-            website_url_fake: document.getElementById('website_url_fake').value // Anti-Spam Honeypot
+            message: document.getElementById('bookingMessage').value,
+            website_url_fake: document.getElementById('website_url_fake').value
         };
 
         try {
@@ -249,35 +174,36 @@ function initBookingForm() {
             const data = await res.json();
 
             if (res.ok) {
-                showToast('✅', data.message);
+                showToast('✅', 'Registracija sėkminga! Susisieksime su jumis.');
                 form.reset();
-                document.getElementById('bookingTime').innerHTML = '<option value="">Pirma pasirinkite datą...</option>';
+                timeSelect.innerHTML = '<option value="">Pirma pasirinkite datą...</option>';
             } else {
-                showToast('❌', data.error);
+                showToast('❌', data.error || 'Serverio klaida');
             }
         } catch (err) {
             showToast('❌', 'Tinklo klaida. Bandykite dar kartą.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Registruotis</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>';
         }
-
-        submitBtn.disabled = false;
-        submitBtn.querySelector('span').textContent = 'Registruotis';
     });
 }
 
-// --- Toast notification ---
 function showToast(icon, message) {
     const toast = document.getElementById('toast');
     const toastIcon = document.getElementById('toastIcon');
     const toastMessage = document.getElementById('toastMessage');
+    if (!toast || !toastIcon || !toastMessage) return;
 
     toastIcon.textContent = icon;
     toastMessage.textContent = message;
     toast.classList.add('show');
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 4000);
+    setTimeout(() => toast.classList.remove('show'), 4000);
 }
 
-// Make scrollToBooking available globally
-window.scrollToBooking = scrollToBooking;
+// Helper per User Request to pre-select service when clicking "scrollToBooking" if it existed
+window.scrollToBooking = (serviceName) => {
+    const select = document.getElementById('bookingService');
+    if (select) select.value = serviceName;
+    document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
+};

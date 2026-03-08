@@ -127,7 +127,62 @@
                 <p class="section-desc">Pasirinkite jums tinkamiausią paslaugą ir registruokitės online</p>
             </div>
             <div class="services-grid" id="servicesGrid">
-                <!-- Services loaded dynamically via JS -->
+                <div class="service-card" onclick="scrollToBooking('Plaukų kirpimas')">
+                    <div class="service-info">
+                        <h3>Plaukų kirpimas</h3>
+                        <p>Profesionalus vyrų plaukų kirpimas</p>
+                    </div>
+                    <div class="service-price">25 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Barzdos modeliavimas')">
+                    <div class="service-info">
+                        <h3>Barzdos modeliavimas</h3>
+                        <p>Barzdos formavimas ir modeliavimas</p>
+                    </div>
+                    <div class="service-price">25 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Barzda su karštų rankšluosčių')">
+                    <div class="service-info">
+                        <h3>Barzda su karštų rankšluosčių</h3>
+                        <p>Barzdos tvarkymas su karštais rankšluosčiais</p>
+                    </div>
+                    <div class="service-price">25 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Kirpimas + barzdos modeliavimas')">
+                    <div class="service-info">
+                        <h3>Kirpimas + barzdos modeliavimas</h3>
+                        <p>Plaukų kirpimas kartu su barzdos modeliavimu</p>
+                    </div>
+                    <div class="service-price">35 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Grožio kaukė + antakių korekcija')">
+                    <div class="service-info">
+                        <h3>Grožio kaukė + antakių korekcija</h3>
+                        <p>Veido kaukė ir antakių korekcija</p>
+                    </div>
+                    <div class="service-price">15 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Dažymo konsultacija')">
+                    <div class="service-info">
+                        <h3>Dažymo konsultacija</h3>
+                        <p>Konsultacija dėl plaukų dažymo</p>
+                    </div>
+                    <div class="service-price">5 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Kirpimas + barzda + grožio kaukė')">
+                    <div class="service-info">
+                        <h3>Kirpimas + barzda + grožio kaukė</h3>
+                        <p>Pilnas kompleksas: kirpimas, barzda ir kaukė</p>
+                    </div>
+                    <div class="service-price">40 €</div>
+                </div>
+                <div class="service-card" onclick="scrollToBooking('Kompleksas (viskas)')">
+                    <div class="service-info">
+                        <h3>Kompleksas (viskas)</h3>
+                        <p>Kirpimas + barzda + karšti rankšluosčiai + kaukė</p>
+                    </div>
+                    <div class="service-price">50 €</div>
+                </div>
             </div>
         </div>
     </section>
@@ -209,7 +264,17 @@
                         <label for="bookingService">Paslauga *</label>
                         <select id="bookingService" name="service" required>
                             <option value="">Pasirinkite paslaugą...</option>
-                            <!-- Options loaded dynamically -->
+                            <option value="Plaukų kirpimas">Plaukų kirpimas - 25€</option>
+                            <option value="Barzdos modeliavimas">Barzdos modeliavimas - 25€</option>
+                            <option value="Barzda su karštų rankšluosčių">Barzda su karštų rankšluosčių - 25€</option>
+                            <option value="Kirpimas + barzdos modeliavimas">Kirpimas + barzdos modeliavimas - 35€
+                            </option>
+                            <option value="Grožio kaukė + antakių korekcija">Grožio kaukė + antakių korekcija - 15€
+                            </option>
+                            <option value="Dažymo konsultacija">Dažymo konsultacija - 5€</option>
+                            <option value="Kirpimas + barzda + grožio kaukė">Kirpimas + barzda + grožio kaukė - 40€
+                            </option>
+                            <option value="Kompleksas (viskas)">Kompleksas (viskas) - 50€</option>
                         </select>
                     </div>
                     <div class="form-row">
