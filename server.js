@@ -119,17 +119,11 @@ app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
         }
 
         const newBooking = new Booking({ name, phone, email, service, date, time, message });
-        try {
-            await newBooking.save();
-        } catch (saveErr) {
-            console.error('Barbie Book DB Save Error:', saveErr.message);
-            // Even if DB save fails, we return success if it's "blocking" but log it
-            // Or better, return a graceful error that isn't a 500 if we can
-        }
+        await newBooking.save();
         res.status(201).json({ success: true });
     } catch (err) {
-        console.error('Barbie Book Critical Error:', err);
-        res.json({ success: true }); // Cheat for 100% working feel, but log error
+        console.error('Barbie Book DB Save Error:', err.message);
+        res.status(500).json({ error: 'Serverio klaida. Nepavyko išsaugoti registracijos.' });
     }
 });
 
@@ -195,8 +189,8 @@ app.get('/api/barbie/admin/bookings', requireBarbieAdmin, async (req, res) => {
         const bookings = await Booking.find().sort({ date: -1, time: 1 });
         res.json(bookings.map(b => ({ ...b.toObject(), id: b._id })));
     } catch (err) {
-        console.error('Admin Bookings Fetch Error:', err);
-        res.json([]); // Return empty array instead of 500 to keep UI stable
+        console.error('Admin Bookings Fetch Error:', err.message);
+        res.status(500).json({ error: 'Klaida kraunant registracijas' });
     }
 });
 
