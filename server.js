@@ -699,7 +699,7 @@ app.delete('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) =
 app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
 app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
 app.get('/hair', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'index.html')));
-app.get('/zaislu_gamyba/?', (req, res) => res.sendFile(path.join(__dirname, 'public/zaislu_gamyba', 'index.html')));
+app.get(['/zaislu_gamyba', '/zaislu_gamyba/'], (req, res) => res.sendFile(path.join(__dirname, 'public/zaislu_gamyba', 'index.html')));
 // Admin panel routes
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
