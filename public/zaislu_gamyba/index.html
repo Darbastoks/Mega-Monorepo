@@ -294,7 +294,7 @@
 
         <!-- 2 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_goal_1772968434371.png" class="bg-image" alt="Medinių žaislų paskirtis">
+            <img data-src="images/toy_goal_1772968434371.png" class="bg-image" alt="Medinių žaislų paskirtis">
             <div class="glass-panel">
                 <h2>Kodėl mediniai žaislai?</h2>
                 <p>Nors parduotuvėse apstu plastikinių žaislų, mediniai gaminiai išlieka labai populiarūs dėl kelių
@@ -312,7 +312,7 @@
 
         <!-- 3 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_materials_1772968448422.png" class="bg-image" alt="Žaliavos ir įrankiai">
+            <img data-src="images/toy_materials_1772968448422.png" class="bg-image" alt="Žaliavos ir įrankiai">
             <div class="glass-panel">
                 <h2>Ko reikia gamybai?</h2>
                 <p>Medinių žaislų gamybai nereikia sudėtingos gamyklinės įrangos, tačiau būtinos tinkamos medžiagos.</p>
@@ -329,7 +329,7 @@
 
         <!-- 4 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_design_1772968462314.png" class="bg-image" alt="Eskizai">
+            <img data-src="images/toy_design_1772968462314.png" class="bg-image" alt="Eskizai">
             <div class="glass-panel">
                 <h2>Pasiruošimas ir projektavimas</h2>
                 <p>Gamybos procesas visada prasideda nuo aiškios idėjos, kurią svarbu apgalvoti ir nusibraižyti ant
@@ -347,7 +347,7 @@
 
         <!-- 5 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_cutting_1772968476567.png" class="bg-image" alt="Pjovimas">
+            <img data-src="images/toy_cutting_1772968476567.png" class="bg-image" alt="Pjovimas">
             <div class="glass-panel">
                 <h2>Pjaustymas ir formavimas</h2>
                 <p>Pagal nupieštus kontūrus medienos dalys išpjaunamos. Šis procesas reikalauja didelio atidumo rankoms.
@@ -365,7 +365,7 @@
 
         <!-- 6 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_assembly_1772968495177.png" class="bg-image" alt="Šlifavimas">
+            <img data-src="images/toy_assembly_1772968495177.png" class="bg-image" alt="Šlifavimas">
             <div class="glass-panel">
                 <h2>Šlifavimas ir detalių sujungimas</h2>
                 <p>Išpjautos detalės dar nėra paruoštos – jų kraštai būna nelygūs. Jas būtina pirma nušlifuoti, ir tada
@@ -383,7 +383,7 @@
 
         <!-- 7 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_painting_1772968511328.png" class="bg-image" alt="Dažymas">
+            <img data-src="images/toy_painting_1772968511328.png" class="bg-image" alt="Dažymas">
             <div class="glass-panel">
                 <h2>Dažymas ir dekoravimas</h2>
                 <p>Kai žaislas tvirtai surinktas, o klijai išdžiūvę, pereinama prie kūrybingiausio etapo – žaislo
@@ -401,7 +401,7 @@
 
         <!-- 8 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_final_1772968524251.png" class="bg-image" alt="Galutinis produktas">
+            <img data-src="images/toy_final_1772968524251.png" class="bg-image" alt="Galutinis produktas">
             <div class="glass-panel">
                 <h2>Galutinis rezultatas</h2>
                 <p>Pabaigus pjaustymo, šlifavimo, klijavimo ir dažymo etapus, mūsų lakuotas medinis žaislas yra visiškai
@@ -419,7 +419,7 @@
 
         <!-- 9 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_learning_1772968537603.png" class="bg-image" alt="Įrankių paskirtis">
+            <img data-src="images/toy_learning_1772968537603.png" class="bg-image" alt="Įrankių paskirtis">
             <div class="glass-panel">
                 <h2>Pagrindiniai technologiniai įrankiai</h2>
                 <p>Gaminant nedidelius medinius žaislus tiesiog per pamoką, milžiniškų staklių neprireiks. Darbui
@@ -437,7 +437,7 @@
 
         <!-- 10 Skaidrė -->
         <div class="slide">
-            <img src="images/toy_testing.png" class="bg-image" alt="Kokybės kontrolė">
+            <img data-src="images/toy_testing.png" class="bg-image" alt="Kokybės kontrolė">
             <div class="glass-panel">
                 <h2>Griežta kokybės ir saugumo patikra</h2>
                 <p>Prieš atiduodant pagamintą medžio žaislą naudoti, būtina jį atidžiai patikrinti iš visų pusių.</p>
@@ -454,7 +454,7 @@
 
         <!-- 11 Skaidrė -->
         <div class="slide title-slide">
-            <img src="images/toy_end_1772968550532.png" class="bg-image" alt="Pabaiga">
+            <img data-src="images/toy_end_1772968550532.png" class="bg-image" alt="Pabaiga">
             <div class="glass-panel">
                 <h1 style="font-size: 5rem; margin-bottom: 2rem;">AČIŪ UŽ DĖMESĮ</h1>
                 <div class="presenters" style="font-size: 1rem;">
@@ -495,6 +495,22 @@
             slides.forEach((slide, index) => {
                 if (index === currentSlide) {
                     slide.classList.add('active');
+                    // Tingus užkrovimas: užkrauti tik rodomą arba sekančią nuotrauką
+                    const img = slide.querySelector('.bg-image');
+                    if (img && img.hasAttribute('data-src')) {
+                        img.src = img.getAttribute('data-src');
+                        img.removeAttribute('data-src');
+                    }
+
+                    // Iš anksto užkrauti ir sekančią skaidrę, kad nebūtų strigimo
+                    if (currentSlide + 1 < slides.length) {
+                        const nextImg = slides[currentSlide + 1].querySelector('.bg-image');
+                        if (nextImg && nextImg.hasAttribute('data-src')) {
+                            nextImg.src = nextImg.getAttribute('data-src');
+                            nextImg.removeAttribute('data-src');
+                        }
+                    }
+
                 } else {
                     slide.classList.remove('active');
                 }
