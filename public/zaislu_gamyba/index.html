@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medinių Žaislų Gamyba</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Roboto:wght@300;400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: #1c1917;
+            color: #f5f5f4;
+            overflow: hidden;
+        }
+
+        .slider-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0.97);
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: stretch;
+            justify-content: space-between;
+            padding: 6vh 5vw 12vh 5vw;
+            /* Palikti vietos valdikliams (controls) apačioje */
+            gap: 4vw;
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+            z-index: 10;
+        }
+
+        /* Turinio skaidrių paveikslėlis (dešinėje) */
+        .bg-image {
+            width: 45%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            filter: brightness(0.85) saturate(1.1);
+            transform: translateX(40px);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+        }
+
+        .slide.active .bg-image {
+            transform: translateX(0);
+            opacity: 1;
+            filter: brightness(0.95) saturate(1.1);
+        }
+
+        /* Turinio skaidrių tekstas (kairėje) */
+        .glass-panel {
+            background: rgba(41, 37, 36, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(214, 211, 209, 0.1);
+            border-radius: 20px;
+            padding: 3rem 4.5rem;
+            width: 50%;
+            /* Teksto bloko plotis */
+            max-width: none;
+            text-align: left;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            transform: translateX(-40px);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .slide.active .glass-panel {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Pirmai ir paskutinei skaidrei: per visą ekraną su centruotu tekstu */
+        .slide.title-slide {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            gap: 0;
+        }
+
+        .slide.title-slide .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            box-shadow: none;
+            z-index: -2;
+            transform: scale(1.02);
+            opacity: 1;
+            filter: brightness(0.3) saturate(0.8);
+            transition: filter 0.8s ease-in-out;
+        }
+
+        .slide.title-slide.active .bg-image {
+            filter: brightness(0.4) saturate(1);
+            transform: scale(1);
+        }
+
+        .slide.title-slide .glass-panel {
+            position: relative;
+            transform: translateY(30px);
+            text-align: center;
+            align-items: center;
+            width: 90%;
+            max-width: 1100px;
+            padding: 4rem;
+            z-index: 2;
+        }
+
+        .slide.title-slide.active .glass-panel {
+            transform: translateY(0);
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            color: #d6d3d1;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            color: #d6d3d1;
+            font-weight: 500;
+            border-bottom: 2px solid #78716c;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.35rem;
+            line-height: 1.7;
+            color: #a8a29e;
+            font-weight: 300;
+        }
+
+        ul {
+            list-style-type: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+
+        li {
+            padding: 1.2rem 1.8rem;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 8px;
+            font-size: 1.25rem;
+            color: #e7e5e4;
+            border-left: 4px solid #a8a29e;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        strong {
+            color: #d6d3d1;
+            font-weight: 500;
+        }
+
+        .presenters {
+            margin-top: 3rem;
+            font-size: 1.2rem;
+            color: #78716c;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(214, 211, 209, 0.2);
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            background: rgba(28, 25, 23, 0.8);
+            padding: 15px 35px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(214, 211, 209, 0.1);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #78716c;
+            color: #d6d3d1;
+            padding: 10px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 400;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-btn:hover {
+            background: #78716c;
+            color: #1c1917;
+        }
+
+        .dots {
+            display: flex;
+            gap: 12px;
+            margin: 0 15px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #78716c;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            opacity: 0.5;
+        }
+
+        .dot:hover {
+            opacity: 1;
+        }
+
+        .dot.active {
+            background: #d6d3d1;
+            opacity: 1;
+            transform: scale(1.3);
+        }
+
+        .hint {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            z-index: 100;
+            color: #78716c;
+            font-size: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slider-container" id="slider">
+
+        <!-- 1 Skaidrė -->
+        <div class="slide active title-slide">
+            <img src="images/toy_title_1772968420213.png" class="bg-image" alt="Pristatymo fonas">
+            <div class="glass-panel">
+                <h1>Medinių Žaislų Gamyba</h1>
+                <div class="presenters">
+                    Pristato: Rokas Razmas, Danielius Bardeckij, Bernardas Šimkūnas
+                </div>
+            </div>
+        </div>
+
+        <!-- 2 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_goal_1772968434371.png" class="bg-image" alt="Medinių žaislų paskirtis">
+            <div class="glass-panel">
+                <h2>Kodėl mediniai žaislai?</h2>
+                <p>Nors parduotuvėse apstu plastikinių žaislų, mediniai gaminiai išlieka labai populiarūs dėl kelių
+                    priežasčių.</p>
+                <ul>
+                    <li><strong>Ilgaamžiškumas:</strong> Mediena yra tvirta medžiaga, todėl iš jos pagaminti žaislai
+                        atlaiko daugybę smūgių ir lūžta daug rečiau.</li>
+                    <li><strong>Ekologiškumas:</strong> Tai natūrali, gamtai draugiška medžiaga, pagaminama su daug
+                        mažesne žala aplinkai nei sintetiniai plastikai.</li>
+                    <li><strong>Paviršius:</strong> Medinė tekstūra yra natūrali ir maloni liesti, todėl su tokiais
+                        žaislais smagu žaisti.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 3 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_materials_1772968448422.png" class="bg-image" alt="Žaliavos ir įrankiai">
+            <div class="glass-panel">
+                <h2>Ko reikia gamybai?</h2>
+                <p>Medinių žaislų gamybai nereikia sudėtingos gamyklinės įrangos, tačiau būtinos tinkamos medžiagos.</p>
+                <ul>
+                    <li><strong>Mediena:</strong> Dažniausiai pasirenkama fanera arba minkšta mediena (pvz., liepa), nes
+                        ją daug lengviau pjauti ir formuoti.</li>
+                    <li><strong>Sujungimai:</strong> Siekiant išvengti susižeidimų, vietoj metalinių vinių ar varžtų
+                        dažniausiai naudojami saugūs medžio klijai (PVA).</li>
+                    <li><strong>Apdaila:</strong> Žaislų dažymui pasirenkami netoksiški, vandens pagrindo dažai ir
+                        lakai, kurie neturi stipraus cheminio kvapo.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 4 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_design_1772968462314.png" class="bg-image" alt="Eskizai">
+            <div class="glass-panel">
+                <h2>Pasiruošimas ir projektavimas</h2>
+                <p>Gamybos procesas visada prasideda nuo aiškios idėjos, kurią svarbu apgalvoti ir nusibraižyti ant
+                    popieriaus.</p>
+                <ul>
+                    <li><strong>Idėjos gryninimas:</strong> Pirmiausia nusprendžiama, koks tai bus žaislas –
+                        automobilis, traukinukas ar dėlionė.</li>
+                    <li><strong>Eskizo kūrimas:</strong> Ant popieriaus lapo nupiešiamas pasirinkto žaislo modelis ir
+                        apgalvojami matmenys.</li>
+                    <li><strong>Žymėjimas ant medžio:</strong> Paruošti brėžiniai perkeliami tiesiai ant medinės
+                        plokštės aiškioms pjovimo linijoms.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 5 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_cutting_1772968476567.png" class="bg-image" alt="Pjovimas">
+            <div class="glass-panel">
+                <h2>Pjaustymas ir formavimas</h2>
+                <p>Pagal nupieštus kontūrus medienos dalys išpjaunamos. Šis procesas reikalauja didelio atidumo rankoms.
+                </p>
+                <ul>
+                    <li><strong>Įrankių naudojimas:</strong> Smulkioms detalėms pjauti dažniausiai naudojamas plonas
+                        rankinis pjūklelis arba siaurapjūklis.</li>
+                    <li><strong>Svarbus tikslumas:</strong> Dirbant reikia pjauti būtent ant linijos brūkšnio ir
+                        neskubėti. Klaidingas pjūvis sugadins detalę.</li>
+                    <li><strong>Darbo sauga:</strong> Kadangi skraido pjuvenos, būtina dėvėti apsauginius akinius ir
+                        atidžiai dirbti su įrankiais.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 6 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_assembly_1772968495177.png" class="bg-image" alt="Šlifavimas">
+            <div class="glass-panel">
+                <h2>Šlifavimas ir detalių sujungimas</h2>
+                <p>Išpjautos detalės dar nėra paruoštos – jų kraštai būna nelygūs. Jas būtina pirma nušlifuoti, ir tada
+                    ruošti jungimui.</p>
+                <ul>
+                    <li><strong>Medienos šlifavimas:</strong> Švitriniu popieriumi pašalinami visi nelygumai. Medis
+                        tampa glotnus, nelieka rakščių.</li>
+                    <li><strong>Kampų apvalinimas:</strong> Tam, kad žaislas atrodytų gražiau ir nekeltų pavojaus,
+                        smailūs kampai yra suapvalinami.</li>
+                    <li><strong>Galutinis surinkimas:</strong> Paruoštos detalės sutepamos medžio klijais ir sujungiamos
+                        lyg dėlionė prieš džiūvimą.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 7 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_painting_1772968511328.png" class="bg-image" alt="Dažymas">
+            <div class="glass-panel">
+                <h2>Dažymas ir dekoravimas</h2>
+                <p>Kai žaislas tvirtai surinktas, o klijai išdžiūvę, pereinama prie kūrybingiausio etapo – žaislo
+                    spalvinimo.</p>
+                <ul>
+                    <li><strong>Spalvų parinkimas pagal brėžinį:</strong> Atsižvelgiant į pirminį dizainą, paruošiami
+                        vandens pagrindo dažai.</li>
+                    <li><strong>Dažymo procesas:</strong> Mažais teptukais atvira mediena padengiama spalva taip, kad
+                        medžio raštai nepersišviestų.</li>
+                    <li><strong>Papildomas apsauginis sluoksnis:</strong> Išdžiūvus dažams, paviršius padengiamas saugiu
+                        laku. Tai padeda žaislui nenusitrinti ir netepti dažais.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 8 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_final_1772968524251.png" class="bg-image" alt="Galutinis produktas">
+            <div class="glass-panel">
+                <h2>Galutinis rezultatas</h2>
+                <p>Pabaigus pjaustymo, šlifavimo, klijavimo ir dažymo etapus, mūsų lakuotas medinis žaislas yra visiškai
+                    paruoštas naudoti.</p>
+                <ul>
+                    <li><strong>Išskirtinė estetika:</strong> Nušlifuotas, o vėliau ryškiai nudažytas gaminys atrodo
+                        nuostabiai ir išsiskiria spalvomis.</li>
+                    <li><strong>Tvirtumas rankose:</strong> Dėl gero sujungimo klijais ir kietos medžiagos, žaislas
+                        atlaikys intensyvų žaidimą bei netikėtus kritimus.</li>
+                    <li><strong>Darbo šiluma ir unikalumas:</strong> Kiekvienas pamokoje ar dirbtuvėse pagamintas rankų
+                        darbo daiktas yra labai unikalus.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 9 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_learning_1772968537603.png" class="bg-image" alt="Įrankių paskirtis">
+            <div class="glass-panel">
+                <h2>Pagrindiniai technologiniai įrankiai</h2>
+                <p>Gaminant nedidelius medinius žaislus tiesiog per pamoką, milžiniškų staklių neprireiks. Darbui
+                    pakanka šių trijų įrankių:</p>
+                <ul>
+                    <li><strong>Siaurapjūklis:</strong> Mažas pjūklelis stabiliu lankeliu. Jis specialiai sukurtas iš
+                        faneros lengvai išpjauti apvalias kreives.</li>
+                    <li><strong>Švitrinis popierius:</strong> Grubaus paviršiaus popierėlis, su kuriuo lėtai trinant mes
+                        visus nelygumus paverčiame švelnia apdaila.</li>
+                    <li><strong>Metalinė dildė:</strong> Daro lygiai tą patį, ką ir popierius, tik yra tvirtesnė ir
+                        aštresnė. Idealiai tinka greitai suapvalinti aštrų kampą.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 10 Skaidrė -->
+        <div class="slide">
+            <img src="images/toy_testing.png" class="bg-image" alt="Kokybės kontrolė">
+            <div class="glass-panel">
+                <h2>Griežta kokybės ir saugumo patikra</h2>
+                <p>Prieš atiduodant pagamintą medžio žaislą naudoti, būtina jį atidžiai patikrinti iš visų pusių.</p>
+                <ul>
+                    <li><strong>Paviršiaus lytėjimo patikra:</strong> Atidžiai lytimas visas dažytas paviršius ieškant
+                        pamirštų smulkių medienos nelygumų, atplaišų, aštrių kampų.</li>
+                    <li><strong>Stiprūs jėgos testai:</strong> Bandome judančias detales, klijavimo tvirtumą. Reikia
+                        stumtelėti ratukus, kad niekas lengvai neatsiskirtų.</li>
+                    <li><strong>Medžiagų ir dažų įvertinimas:</strong> Įsitikinama, kad dažai ir apsauginis lakas pilnai
+                        išdžiūvo be lipnių žymių, o detalės neturi sintetinio kvapo.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 11 Skaidrė -->
+        <div class="slide title-slide">
+            <img src="images/toy_end_1772968550532.png" class="bg-image" alt="Pabaiga">
+            <div class="glass-panel">
+                <h1 style="font-size: 5rem; margin-bottom: 2rem;">AČIŪ UŽ DĖMESĮ</h1>
+                <div class="presenters" style="font-size: 1rem;">
+                    Pristatė: Rokas Razmas, Danielius Bardeckij, Bernardas Šimkūnas
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Valdikliai -->
+    <div class="controls">
+        <button class="nav-btn" id="prevBtn">Atgal</button>
+        <div class="dots" id="dotsContainer"></div>
+        <button class="nav-btn" id="nextBtn">Pirmyn</button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const dotsContainer = document.getElementById('dotsContainer');
+
+        let currentSlide = 0;
+
+        // Sukurti dots
+        slides.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToSlide(index));
+            dotsContainer.appendChild(dot);
+        });
+
+        const dots = document.querySelectorAll('.dot');
+
+        function updateSlider() {
+            slides.forEach((slide, index) => {
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+
+            prevBtn.style.opacity = currentSlide === 0 ? "0.3" : "1";
+            prevBtn.style.cursor = currentSlide === 0 ? "default" : "pointer";
+
+            nextBtn.style.opacity = currentSlide === slides.length - 1 ? "0.3" : "1";
+            nextBtn.style.cursor = currentSlide === slides.length - 1 ? "default" : "pointer";
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlider();
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlider();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlider();
+            }
+        }
+
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        updateSlider();
+
+    </script>
+</body>
+
+</html>
