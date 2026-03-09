@@ -274,6 +274,83 @@
             font-weight: 300;
             letter-spacing: 1px;
         }
+
+        @media (max-width: 768px) {
+            .slide {
+                flex-direction: column;
+                justify-content: flex-start;
+                padding: 3vh 5vw 15vh 5vw;
+                gap: 2vh;
+                overflow-y: auto;
+                /* Allow scrolling if content is too long on very small screens */
+            }
+
+            .bg-image {
+                width: 100%;
+                height: 35vh;
+                min-height: 250px;
+                border-radius: 15px;
+            }
+
+            .glass-panel {
+                width: 100%;
+                padding: 1.5rem;
+                gap: 1rem;
+            }
+
+            .slide.title-slide .glass-panel {
+                width: 95%;
+                padding: 2rem 1rem;
+            }
+
+            h1 {
+                font-size: 2.8rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+                padding-bottom: 0.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            p {
+                font-size: 1.1rem;
+                line-height: 1.5;
+            }
+
+            ul {
+                gap: 0.8rem;
+                margin-top: 0.5rem;
+            }
+
+            li {
+                padding: 1rem 1.2rem;
+                font-size: 1.05rem;
+                line-height: 1.4;
+            }
+
+            .presenters {
+                margin-top: 2rem;
+                font-size: 0.9rem;
+            }
+
+            .controls {
+                width: 90%;
+                padding: 12px 15px;
+                bottom: 20px;
+                gap: 15px;
+            }
+
+            .nav-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .dots {
+                margin: 0 5px;
+                gap: 8px;
+            }
+        }
     </style>
 </head>
 
