@@ -5,6 +5,19 @@ const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const rLimit = require('express-rate-limit');
+const https = require('https');
+const http = require('http');
+
+// ==================== STRIPE SETUP ====================
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
+const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
+
+const PRICES = {
+    start:  { monthly: process.env.STRIPE_PRICE_START_MONTHLY,  annual: process.env.STRIPE_PRICE_START_ANNUAL  },
+    growth: { monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY, annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL },
+    pro:    { monthly: process.env.STRIPE_PRICE_PRO_MONTHLY,     annual: process.env.STRIPE_PRICE_PRO_ANNUAL    },
+};
+const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
 
 // Barbie SQLite models
 const { initDatabase, Admin, Booking } = require('./backend/barbie/database');
@@ -24,6 +37,68 @@ const PORT = process.env.PORT || 3000;
 
 // 1. Body Parsers (MUST BE FIRST)
 app.set('trust proxy', 1);
+
+// ==================== STRIPE WEBHOOK ====================
+// MUST be registered BEFORE express.json() so we get the raw body
+// (Stripe signature verification requires the raw Buffer, not parsed JSON)
+app.post('/webhook/stripe',
+    express.raw({ type: 'application/json' }),
+    async (req, res) => {
+        const sig = req.headers['stripe-signature'];
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+        if (!webhookSecret) {
+            console.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature check');
+            return res.json({ received: true });
+        }
+
+        let event;
+        try {
+            event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+        } catch (err) {
+            console.error('Stripe webhook signature error:', err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object;
+            console.log('✅ Payment completed:', session.customer_email, session.amount_total);
+
+            const n8nUrl = process.env.N8N_WEBHOOK_URL;
+            if (n8nUrl) {
+                const payload = JSON.stringify({
+                    event: 'checkout.session.completed',
+                    customer_email: session.customer_email,
+                    customer_name: session.customer_details?.name || '',
+                    amount_total: session.amount_total,
+                    currency: session.currency,
+                    session_id: session.id,
+                    subscription_id: session.subscription,
+                    timestamp: new Date().toISOString(),
+                });
+                try {
+                    const url = new URL(n8nUrl);
+                    const lib = url.protocol === 'https:' ? https : http;
+                    const options = {
+                        hostname: url.hostname,
+                        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+                        path: url.pathname + url.search,
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+                    };
+                    const r2 = lib.request(options);
+                    r2.on('error', (e) => console.error('n8n notification error:', e.message));
+                    r2.write(payload);
+                    r2.end();
+                } catch (e) {
+                    console.error('Failed to send n8n notification:', e.message);
+                }
+            }
+        }
+        res.json({ received: true });
+    }
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -40,12 +115,42 @@ app.use(session({
     }
 }));
 
+// ==================== STRIPE API ====================
+// Returns public price IDs (not secret — safe to expose to browser)
+app.get('/api/prices', (req, res) => {
+    res.json(PRICES);
+});
+
+// Creates a Stripe Checkout session and returns the redirect URL
+app.post('/create-checkout-session', async (req, res) => {
+    const { priceId } = req.body;
+    if (!priceId || !VALID_PRICE_IDS.has(priceId)) {
+        return res.status(400).json({ error: 'Neteisingas plano ID.' });
+    }
+    try {
+        const session = await stripe.checkout.sessions.create({
+            mode: 'subscription',
+            line_items: [{ price: priceId, quantity: 1 }],
+            success_url: `${SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${SITE_URL}/#kainos`,
+            locale: 'lt',
+            billing_address_collection: 'auto',
+        });
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('Stripe checkout error:', err.message);
+        res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
+    }
+});
+
 // 3. Static Files (MUST BE BEFORE ROOT CATCH-ALL)
 app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
 app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
 app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
 app.use('/zaislu_gamyba', express.static(path.join(__dirname, 'public/zaislu_gamyba')));
-app.use(express.static(path.join(__dirname, 'public/velora')));
+app.use('/velora', express.static(path.join(__dirname, 'public/velora')));
+// Root serves the Velora Studio BUSINESS website
+app.use(express.static(path.join(__dirname, 'public/website')));
 
 
 // ==================== BARBIE BARBER API ====================
@@ -700,13 +805,16 @@ app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbi
 app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
 app.get('/hair', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'index.html')));
 app.get(['/zaislu_gamyba', '/zaislu_gamyba/'], (req, res) => res.sendFile(path.join(__dirname, 'public/zaislu_gamyba', 'index.html')));
+app.get(['/velora', '/velora/'], (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 // Admin panel routes
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
 app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'admin.html')));
 app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'admin.html')));
-// Fallback: everything else goes to Velora Studio
-app.use((req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
+// Business website pages
+app.get('/thank-you', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'thank-you.html')));
+// Fallback: root business website
+app.use((req, res) => res.sendFile(path.join(__dirname, 'public/website', 'index.html')));
 
 
 // Start Database Connections & Then Start Server

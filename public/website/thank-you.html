@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ačiū! Mokėjimas gautas — Velora Studio</title>
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* Thank-you page specific overrides */
+        .ty-hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ty-hero .aurora-bg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .ty-content {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .ty-check {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px;
+            font-size: 2rem;
+            color: #0a0e17;
+            box-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
+        }
+
+        .ty-hero h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 18px;
+            line-height: 1.2;
+        }
+
+        .ty-hero p {
+            font-size: 1.1rem;
+            color: rgba(248, 250, 252, 0.7);
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+
+        .ty-timeline {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(34, 211, 238, 0.08);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            padding: 14px 22px;
+            font-size: 0.9rem;
+            color: #22d3ee;
+            margin-bottom: 52px;
+            font-weight: 500;
+        }
+
+        .ty-divider {
+            border: none;
+            border-top: 1px solid rgba(248, 250, 252, 0.08);
+            margin: 0 0 48px;
+        }
+
+        .ty-form-section {
+            padding: 0 20px 100px;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .ty-form-section h2 {
+            text-align: center;
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+        }
+
+        .ty-form-section .sub {
+            text-align: center;
+            color: rgba(248, 250, 252, 0.55);
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+        }
+
+        /* Tally iframe wrapper */
+        .tally-wrapper {
+            background: #111827;
+            border-radius: 16px;
+            border: 1px solid rgba(248, 250, 252, 0.08);
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .tally-wrapper iframe {
+            width: 100%;
+            min-height: 600px;
+            border: none;
+            display: block;
+        }
+
+        /* Fallback if no Tally URL is configured */
+        .tally-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            gap: 16px;
+            color: rgba(248, 250, 252, 0.4);
+            font-size: 0.95rem;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .tally-placeholder i {
+            font-size: 2.5rem;
+            color: rgba(34, 211, 238, 0.3);
+        }
+
+        .steps-row {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 52px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 16px 20px;
+            max-width: 200px;
+            text-align: left;
+        }
+
+        .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+            color: #0a0e17;
+            font-weight: 700;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .step-text {
+            font-size: 0.85rem;
+            color: rgba(248, 250, 252, 0.7);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">Velora Studio</a>
+            <ul class="nav-links">
+                <li><a href="/#kainos">Kainos</a></li>
+                <li><a href="/#kontaktai" class="btn btn-nav">Susisiekti</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Thank-you Hero -->
+    <section class="ty-hero">
+        <div class="aurora-bg">
+            <div class="aurora-glow-1"></div>
+            <div class="aurora-glow-2"></div>
+            <div class="aurora-glow-3"></div>
+        </div>
+        <div class="ty-content fade-in">
+            <div class="ty-check">
+                <i class="fas fa-check"></i>
+            </div>
+            <h1><em>Ačiū!</em> Mokėjimas gautas.</h1>
+            <p>
+                Jūsų užsakymas sėkmingai apdorotas.<br>
+                Kitame žingsnyje užpildykite trumpą formą apie savo saloną —<br>
+                ir mes pradėsime kurti jūsų svetainę.
+            </p>
+            <div class="ty-timeline">
+                <i class="fas fa-clock"></i>
+                Jūsų svetainė bus paruošta per 7 darbo dienas nuo formos užpildymo.
+            </div>
+
+            <!-- What happens next -->
+            <div class="steps-row">
+                <div class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-text">Užpildykite formą žemiau apie savo saloną</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-text">Mes sukuriame jūsų svetainę pagal jūsų stilių</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-text">Gaunate nuorodą peržiūrai ir patvirtinimui</div>
+                </div>
+                <div class="step-item">
+                    <div class="step-num">4</div>
+                    <div class="step-text">Svetainė paleidžiama — klientai jau gali registruotis</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="ty-divider">
+
+    <!-- Onboarding Form Section -->
+    <section class="ty-form-section">
+        <h2>Papasakokite apie savo <em>saloną</em></h2>
+        <p class="sub">Šią informaciją naudosime kuriant jūsų svetainę. Užtruksite apie 3–5 minutes.</p>
+
+        <div class="tally-wrapper" id="tally-container">
+            <!--
+                VELORA STUDIO — TALLY SETUP:
+
+                1. Go to https://tally.so and create a free account
+                2. Create a new form with these fields:
+                   - Salono pavadinimas (text, required)
+                   - Kontaktinis tel. numeris (phone, required)
+                   - El. pašto adresas (email, required)
+                   - Instagram profilis (text, optional)
+                   - Salono adresas (text, optional)
+                   - Logo (file upload, optional)
+                   - Paslaugos ir kainos (long text — e.g. "Kirpimas – 20€")
+                   - Darbo valandos (long text — e.g. "Pn–Pt 9:00–19:00")
+                   - Pageidaujamos spalvos (text, optional)
+                   - Domenas (text, optional — "Jei turite savo domeną, įrašykite jį")
+                   - Dizaino pageidavimas (multiple choice):
+                       • Naudoti mano Instagram stilių
+                       • Individualus dizainas
+                       • Man nesvarbu
+                3. In Tally form settings → Integrations → Webhooks
+                   Add your n8n webhook URL for onboarding form submissions
+                4. Get your embed URL (Share → Embed) and replace the src below
+            -->
+            <div class="tally-placeholder" id="tally-placeholder">
+                <i class="fas fa-clipboard-list"></i>
+                <strong style="color: rgba(248,250,252,0.7)">Forma bus čia</strong>
+                <span>Administratorius dar neprijungė formos. Susisiekite su mumis tiesiogiai.</span>
+                <a href="mailto:info@velorastudio.lt" class="btn btn-primary" style="margin-top: 8px; text-decoration: none; display: inline-block;">
+                    <i class="fas fa-envelope"></i> Parašyti el. paštu
+                </a>
+            </div>
+            <!--
+                Once you have your Tally embed URL, replace the placeholder above with:
+
+                <iframe
+                    src="https://tally.so/embed/YOUR_FORM_ID?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+                    loading="lazy"
+                    title="Salono informacijos forma">
+                </iframe>
+
+                And remove the tally-placeholder div.
+            -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="kontaktai" class="footer">
+        <div class="container fade-in">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h2>Velora Studio</h2>
+                    <p>Modernios svetainės grožio verslams.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://instagram.com/velorastudio.lt" target="_blank" rel="noopener">
+                        <i class="fab fa-instagram"></i> Instagram
+                    </a>
+                    <a href="mailto:info@velorastudio.lt">
+                        <i class="fas fa-envelope"></i> El. paštas
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Velora Studio. Visos teisės saugomos.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+</body>
+
+</html>
