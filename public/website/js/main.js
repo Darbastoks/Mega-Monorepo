@@ -135,6 +135,74 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', e => {
+            const id = link.getAttribute('href');
+            if (id === '#') return;
+            const target = document.querySelector(id);
+            if (target) {
+                e.preventDefault();
+                const offset = 80; // navbar height
+                const top = target.getBoundingClientRect().top + window.scrollY - offset;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
+        });
+    });
+
+    // Active nav link highlight on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
+
+    const navObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                navAnchors.forEach(a => {
+                    a.classList.toggle('nav-active', a.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+
+    sections.forEach(s => navObserver.observe(s));
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = btn.parentElement;
+            const wasActive = item.classList.contains('active');
+            document.querySelectorAll('.faq-item.active').forEach(el => el.classList.remove('active'));
+            if (!wasActive) item.classList.add('active');
+        });
+    });
+
+    // Stats count-up on scroll
+    const statNums = document.querySelectorAll('.stat-number');
+    if (statNums.length) {
+        const statObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const target = parseInt(el.dataset.target, 10);
+                    const suffix = el.dataset.suffix || '';
+                    const prefix = el.dataset.prefix || '';
+                    const duration = 1200;
+                    const start = performance.now();
+                    function tick(now) {
+                        const t = Math.min((now - start) / duration, 1);
+                        const ease = 1 - Math.pow(1 - t, 3);
+                        el.textContent = prefix + Math.round(target * ease) + suffix;
+                        if (t < 1) requestAnimationFrame(tick);
+                    }
+                    requestAnimationFrame(tick);
+                    statObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.5 });
+        statNums.forEach(el => statObserver.observe(el));
+    }
 });
 
 // ================================================================
@@ -160,8 +228,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let isAnnual = false;
 
+    // Animated price counter
+    function animateValue(el, from, to, duration, suffix, prefix) {
+        const start = performance.now();
+        prefix = prefix || '';
+        function tick(now) {
+            const t = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+            const val = Math.round(from + (to - from) * ease);
+            el.innerHTML = prefix + val + '€<span>' + suffix + '</span>';
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function extractPrice(html) {
+        // Extract the main price number (ignoring old-price spans)
+        const clean = html.replace(/<span class="old-price">.*?<\/span>\s*/g, '');
+        const m = clean.match(/(\d+)€/);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
+    function extractOldPrice(html) {
+        const m = html.match(/<span class="old-price">(\d+)€<\/span>/);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
     function updateToggleUI() {
-        // Label active states
         if (isAnnual) {
             labelMonthly.classList.remove('active');
             labelAnnual.classList.add('active');
@@ -170,10 +263,18 @@ document.addEventListener('DOMContentLoaded', () => {
             labelAnnual.classList.remove('active');
         }
 
-        // Swap price display HTML on each card
         priceDisplays.forEach(el => {
-            const html = isAnnual ? el.dataset.annualHtml : el.dataset.monthlyHtml;
-            if (html) el.innerHTML = html;
+            const fromHtml = isAnnual ? el.dataset.monthlyHtml : el.dataset.annualHtml;
+            const toHtml = isAnnual ? el.dataset.annualHtml : el.dataset.monthlyHtml;
+            if (!toHtml) return;
+
+            const fromVal = extractPrice(fromHtml);
+            const toVal = extractPrice(toHtml);
+            const suffix = isAnnual ? '/metus' : '/mėn';
+            const oldPrice = extractOldPrice(toHtml);
+            const prefix = oldPrice ? '<span class="old-price">' + oldPrice + '€</span> ' : '';
+
+            animateValue(el, fromVal, toVal, 600, suffix, prefix);
         });
     }
 
