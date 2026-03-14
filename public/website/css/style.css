@@ -580,6 +580,27 @@ section {
 }
 
 /* Pricing */
+.pricing {
+    position: relative;
+    overflow: hidden;
+}
+
+#pricingWaveCanvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.8;
+}
+
+#pricingWaveCanvas canvas {
+    pointer-events: none;
+}
+
+.pricing > .container {
+    position: relative;
+    z-index: 1;
+}
+
 .pricing-grid {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     align-items: center;
