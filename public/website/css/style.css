@@ -5,9 +5,9 @@
     /* Soft cyan glow */
     --primary-hover: #67e8f9;
 
-    --bg-main: #0a0e17;
+    --bg-main: #060a12;
     /* Very dark base */
-    --bg-light: #10172a;
+    --bg-light: #0a0e17;
     /* Slightly lighter for sections */
     --bg-card: #1e293b;
     /* Card background */
@@ -478,6 +478,27 @@ section {
 }
 
 /* Services */
+.services {
+    position: relative;
+    overflow: hidden;
+}
+
+.services > .container {
+    position: relative;
+    z-index: 1;
+}
+
+.particle-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.8;
+}
+
+.particle-canvas canvas {
+    pointer-events: none;
+}
+
 .services-grid {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
@@ -487,6 +508,15 @@ section {
     padding: 40px 24px;
     position: relative;
     overflow: hidden;
+    background: rgba(10, 14, 23, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.service-card:hover {
+    background: rgba(10, 14, 23, 0.55);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .service-card::before {
