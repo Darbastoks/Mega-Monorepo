@@ -188,23 +188,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return card.offsetWidth + 24; // card width + gap
         }
 
+        let isTransitioning = false;
+
         function advance() {
+            if (isTransitioning) return;
             currentIndex++;
             const step = getCardStep();
             track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
             track.style.transform = 'translateX(-' + (currentIndex * step) + 'px)';
 
             if (currentIndex >= totalOriginal) {
+                isTransitioning = true;
                 setTimeout(function() {
                     track.style.transition = 'none';
                     currentIndex = 0;
                     track.style.transform = 'translateX(0)';
-                }, 620);
+                    // Force reflow before allowing next transition
+                    track.offsetHeight;
+                    isTransitioning = false;
+                }, 650);
             }
         }
 
         function startAuto() {
-            autoInterval = setInterval(advance, 4000);
+            stopAuto();
+            autoInterval = setInterval(advance, 3500);
         }
 
         function stopAuto() {
