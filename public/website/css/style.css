@@ -1119,3 +1119,203 @@ button.plan-btn.btn-primary:hover:not(:disabled) {
     box-shadow: 0 8px 28px rgba(236, 72, 153, 0.45);
     color: #fff;
 }
+
+/* ================================================================
+   HERO STATS — trust metrics row
+   ================================================================ */
+.hero-stats {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    margin: 28px 0 36px;
+    flex-wrap: wrap;
+}
+
+.hero-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.hero-stat strong {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #22d3ee;
+    line-height: 1;
+}
+
+.hero-stat span {
+    font-size: 0.78rem;
+    color: rgba(248, 250, 252, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ================================================================
+   HOW IT WORKS — 4 step cards
+   ================================================================ */
+.how-it-works {
+    padding: 80px 0;
+}
+
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+}
+
+.step-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 36px 24px 28px;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.step-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(34, 211, 238, 0.2);
+}
+
+.step-number {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+    color: #0a0e17;
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-icon {
+    font-size: 1.8rem;
+    color: #22d3ee;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.step-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: #f8fafc;
+}
+
+.step-card p {
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.55);
+    line-height: 1.5;
+}
+
+/* ================================================================
+   COMPARISON — Treatwell vs Velora
+   ================================================================ */
+.comparison {
+    padding: 80px 0;
+}
+
+.comparison-subtitle {
+    text-align: center;
+    color: rgba(248, 250, 252, 0.55);
+    font-size: 0.95rem;
+    max-width: 540px;
+    margin: -10px auto 40px;
+}
+
+.comparison-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+    .comparison-table {
+        grid-template-columns: 1fr;
+    }
+}
+
+.comparison-col {
+    border-radius: 16px;
+    padding: 32px 28px;
+    border: 1px solid;
+}
+
+.comparison-bad {
+    background: rgba(239, 68, 68, 0.04);
+    border-color: rgba(239, 68, 68, 0.15);
+}
+
+.comparison-good {
+    background: rgba(34, 211, 238, 0.04);
+    border-color: rgba(34, 211, 238, 0.2);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.06);
+}
+
+.comparison-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.comparison-header h3 {
+    font-size: 1rem;
+    color: #f8fafc;
+}
+
+.comparison-icon {
+    font-size: 1.2rem;
+}
+
+.comparison-bad .comparison-icon {
+    color: #ef4444;
+}
+
+.comparison-good .comparison-icon {
+    color: #22d3ee;
+}
+
+.comparison-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.comparison-col li {
+    font-size: 0.88rem;
+    color: rgba(248, 250, 252, 0.7);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.comparison-bad li i {
+    color: #ef4444;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.comparison-good li i {
+    color: #22d3ee;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.comparison-good li strong {
+    color: #22d3ee;
+}
