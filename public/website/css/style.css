@@ -709,14 +709,9 @@ section {
 
 .features li {
     padding: 14px 0;
-    border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     gap: 12px;
-}
-
-.features li:last-child {
-    border-bottom: none;
 }
 
 .features i {
