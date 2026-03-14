@@ -251,5 +251,69 @@
     <!-- Tally auto-resize script (official) — removes scrolling inside iframe -->
     <script src="https://tally.so/widgets/embed.js"></script>
 
+    <!-- Blue confetti on page load -->
+    <canvas id="confetti-canvas" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></canvas>
+    <script>
+    (function() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H;
+        const particles = [];
+        const colors = ['#22d3ee','#0ea5e9','#38bdf8','#7dd3fc','#bae6fd','#0284c7','#0369a1'];
+        const count = 150;
+
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        resize();
+        window.addEventListener('resize', resize);
+
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x: Math.random() * W,
+                y: Math.random() * -H,
+                w: 4 + Math.random() * 6,
+                h: 6 + Math.random() * 10,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: (Math.random() - 0.5) * 4,
+                vy: 2 + Math.random() * 4,
+                rot: Math.random() * 360,
+                rotV: (Math.random() - 0.5) * 8,
+                opacity: 1,
+            });
+        }
+
+        let frame = 0;
+        const maxFrames = 200;
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            frame++;
+            const fade = frame > maxFrames * 0.7 ? 1 - (frame - maxFrames * 0.7) / (maxFrames * 0.3) : 1;
+
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.04;
+                p.rot += p.rotV;
+                p.opacity = Math.max(0, fade);
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot * Math.PI / 180);
+                ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            }
+
+            if (frame < maxFrames) {
+                requestAnimationFrame(draw);
+            } else {
+                canvas.remove();
+            }
+        }
+        draw();
+    }());
+    </script>
+
 </body>
 </html>
