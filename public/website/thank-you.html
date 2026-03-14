@@ -4,313 +4,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ačiū! Mokėjimas gautas — Velora Studio</title>
+    <title>Mokėjimas gautas — Velora Studio</title>
     <meta name="robots" content="noindex, nofollow">
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Shared styles -->
-    <link rel="stylesheet" href="css/style.css">
-
     <style>
-        /* Thank-you page specific overrides */
-        .ty-hero {
-            min-height: 100vh;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #0a0e17;
+            color: #f8fafc;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Navbar --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 32px;
+            background: rgba(10, 14, 23, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 120px 20px 80px;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #f8fafc;
+            text-decoration: none;
+        }
+        .nav-link {
+            color: rgba(248,250,252,0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: #22d3ee; }
+
+        /* --- Confirmation Banner --- */
+        .confirm-banner {
+            margin-top: 73px;
+            padding: 48px 24px 40px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
-
-        .ty-hero .aurora-bg {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .ty-content {
-            position: relative;
-            z-index: 1;
-            max-width: 680px;
-            margin: 0 auto;
-        }
-
-        .ty-check {
-            width: 72px;
-            height: 72px;
+        .confirm-icon {
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             background: linear-gradient(135deg, #22d3ee, #0ea5e9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 28px;
-            font-size: 2rem;
-            color: #0a0e17;
-            box-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
-        }
-
-        .ty-hero h1 {
-            font-size: clamp(2rem, 5vw, 3rem);
-            margin-bottom: 18px;
-            line-height: 1.2;
-        }
-
-        .ty-hero p {
-            font-size: 1.1rem;
-            color: rgba(248, 250, 252, 0.7);
-            margin-bottom: 32px;
-            line-height: 1.7;
-        }
-
-        .ty-timeline {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(34, 211, 238, 0.08);
-            border: 1px solid rgba(34, 211, 238, 0.2);
-            border-radius: 12px;
-            padding: 14px 22px;
-            font-size: 0.9rem;
-            color: #22d3ee;
-            margin-bottom: 52px;
-            font-weight: 500;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #0a0e17;
+            margin-bottom: 20px;
+            box-shadow: 0 0 32px rgba(34, 211, 238, 0.35);
         }
-
-        .ty-divider {
-            border: none;
-            border-top: 1px solid rgba(248, 250, 252, 0.08);
-            margin: 0 0 48px;
-        }
-
-        .ty-form-section {
-            padding: 0 20px 100px;
-            max-width: 760px;
-            margin: 0 auto;
-        }
-
-        .ty-form-section h2 {
-            text-align: center;
-            font-size: 1.6rem;
+        .confirm-banner h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 600;
             margin-bottom: 10px;
         }
-
-        .ty-form-section .sub {
-            text-align: center;
-            color: rgba(248, 250, 252, 0.55);
+        .confirm-banner h1 em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+        .confirm-banner p {
+            color: rgba(248,250,252,0.55);
             font-size: 0.95rem;
-            margin-bottom: 40px;
+            max-width: 520px;
+            margin: 0 auto 24px;
         }
 
-        /* Tally iframe wrapper */
-        .tally-wrapper {
-            background: #111827;
-            border-radius: 16px;
-            border: 1px solid rgba(248, 250, 252, 0.08);
-            overflow: hidden;
-            min-height: 600px;
-        }
-
-        .tally-wrapper iframe {
-            width: 100%;
-            min-height: 600px;
-            border: none;
-            display: block;
-        }
-
-        /* Fallback if no Tally URL is configured */
-        .tally-placeholder {
+        /* --- Steps Row --- */
+        .steps {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            gap: 16px;
-            color: rgba(248, 250, 252, 0.4);
-            font-size: 0.95rem;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .tally-placeholder i {
-            font-size: 2.5rem;
-            color: rgba(34, 211, 238, 0.3);
-        }
-
-        .steps-row {
-            display: flex;
-            gap: 16px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 52px;
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        .step-item {
+        .step {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
+            align-items: center;
+            gap: 10px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 12px;
-            padding: 16px 20px;
-            max-width: 200px;
-            text-align: left;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.82rem;
+            color: rgba(248,250,252,0.65);
         }
-
-        .step-num {
-            width: 28px;
-            height: 28px;
+        .step-n {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+            background: #22d3ee;
             color: #0a0e17;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            margin-top: 2px;
         }
 
-        .step-text {
-            font-size: 0.85rem;
-            color: rgba(248, 250, 252, 0.7);
-            line-height: 1.5;
+        /* --- Timeline pill --- */
+        .timeline-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34,211,238,0.08);
+            border: 1px solid rgba(34,211,238,0.18);
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.82rem;
+            color: #22d3ee;
+            font-weight: 500;
+            margin-bottom: 28px;
         }
+
+        /* --- Form Section --- */
+        .form-section {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 48px 20px 80px;
+        }
+        .form-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .form-section h2 em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+        .form-sub {
+            text-align: center;
+            color: rgba(248,250,252,0.45);
+            font-size: 0.85rem;
+            margin-bottom: 32px;
+        }
+
+        /* --- Tally form container --- */
+        .form-card {
+            background: #ffffff;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.4);
+        }
+        .form-card iframe {
+            width: 100%;
+            border: none;
+            display: block;
+            min-height: 900px;
+        }
+
+        /* --- Footer --- */
+        .ty-footer {
+            text-align: center;
+            padding: 32px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            color: rgba(248,250,252,0.3);
+            font-size: 0.8rem;
+        }
+        .ty-footer a {
+            color: rgba(248,250,252,0.4);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .ty-footer a:hover { color: #22d3ee; }
     </style>
 </head>
 
 <body>
+
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="container nav-container">
+        <div class="nav-inner">
             <a href="/" class="logo">Velora Studio</a>
-            <ul class="nav-links">
-                <li><a href="/#kainos">Kainos</a></li>
-                <li><a href="/#kontaktai" class="btn btn-nav">Susisiekti</a></li>
-            </ul>
+            <a href="/" class="nav-link"><i class="fas fa-arrow-left"></i> Grįžti</a>
         </div>
     </nav>
 
-    <!-- Thank-you Hero -->
-    <section class="ty-hero">
-        <div class="aurora-bg">
-            <div class="aurora-glow-1"></div>
-            <div class="aurora-glow-2"></div>
-            <div class="aurora-glow-3"></div>
+    <!-- Confirmation -->
+    <section class="confirm-banner">
+        <div class="confirm-icon"><i class="fas fa-check"></i></div>
+        <h1><em>Mokėjimas gautas</em></h1>
+        <p>Užpildykite formą žemiau ir mes pradėsime kurti jūsų svetainę.</p>
+        <div class="timeline-pill">
+            <i class="fas fa-clock"></i>
+            Svetainė bus paruošta per 7 darbo dienas
         </div>
-        <div class="ty-content fade-in">
-            <div class="ty-check">
-                <i class="fas fa-check"></i>
-            </div>
-            <h1><em>Ačiū!</em> Mokėjimas gautas.</h1>
-            <p>
-                Jūsų užsakymas sėkmingai apdorotas.<br>
-                Kitame žingsnyje užpildykite trumpą formą apie savo saloną —<br>
-                ir mes pradėsime kurti jūsų svetainę.
-            </p>
-            <div class="ty-timeline">
-                <i class="fas fa-clock"></i>
-                Jūsų svetainė bus paruošta per 7 darbo dienas nuo formos užpildymo.
-            </div>
-
-            <!-- What happens next -->
-            <div class="steps-row">
-                <div class="step-item">
-                    <div class="step-num">1</div>
-                    <div class="step-text">Užpildykite formą žemiau apie savo saloną</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">2</div>
-                    <div class="step-text">Mes sukuriame jūsų svetainę pagal jūsų stilių</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">3</div>
-                    <div class="step-text">Gaunate nuorodą peržiūrai ir patvirtinimui</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">4</div>
-                    <div class="step-text">Svetainė paleidžiama — klientai jau gali registruotis</div>
-                </div>
-            </div>
+        <div class="steps">
+            <div class="step"><div class="step-n">1</div> Užpildykite formą</div>
+            <div class="step"><div class="step-n">2</div> Kuriame svetainę</div>
+            <div class="step"><div class="step-n">3</div> Peržiūrite ir patvirtinate</div>
+            <div class="step"><div class="step-n">4</div> Svetainė gyva!</div>
         </div>
     </section>
 
-    <hr class="ty-divider">
+    <!-- Form -->
+    <section class="form-section">
+        <h2>Apie jūsų <em>saloną</em></h2>
+        <p class="form-sub">Užtruksite apie 3 minutes</p>
 
-    <!-- Onboarding Form Section -->
-    <section class="ty-form-section">
-        <h2>Papasakokite apie savo <em>saloną</em></h2>
-        <p class="sub">Šią informaciją naudosime kuriant jūsų svetainę. Užtruksite apie 3–5 minutes.</p>
-
-        <div class="tally-wrapper" id="tally-container">
-            <!--
-                VELORA STUDIO — TALLY SETUP:
-
-                1. Go to https://tally.so and create a free account
-                2. Create a new form with these fields:
-                   - Salono pavadinimas (text, required)
-                   - Kontaktinis tel. numeris (phone, required)
-                   - El. pašto adresas (email, required)
-                   - Instagram profilis (text, optional)
-                   - Salono adresas (text, optional)
-                   - Logo (file upload, optional)
-                   - Paslaugos ir kainos (long text — e.g. "Kirpimas – 20€")
-                   - Darbo valandos (long text — e.g. "Pn–Pt 9:00–19:00")
-                   - Pageidaujamos spalvos (text, optional)
-                   - Domenas (text, optional — "Jei turite savo domeną, įrašykite jį")
-                   - Dizaino pageidavimas (multiple choice):
-                       • Naudoti mano Instagram stilių
-                       • Individualus dizainas
-                       • Man nesvarbu
-                3. In Tally form settings → Integrations → Webhooks
-                   Add your n8n webhook URL for onboarding form submissions
-                4. Get your embed URL (Share → Embed) and replace the src below
-            -->
+        <div class="form-card">
             <iframe
-                src="https://tally.so/embed/Gx0vqO?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+                data-tally-src="https://tally.so/embed/Gx0vqO?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
                 loading="lazy"
                 title="Salono informacijos forma">
             </iframe>
-            <!--
-
-                And remove the tally-placeholder div.
-            -->
         </div>
     </section>
 
     <!-- Footer -->
-    <footer id="kontaktai" class="footer">
-        <div class="container fade-in">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <h2>Velora Studio</h2>
-                    <p>Modernios svetainės grožio verslams.</p>
-                </div>
-                <div class="footer-links">
-                    <a href="https://instagram.com/velorastudio.lt" target="_blank" rel="noopener">
-                        <i class="fab fa-instagram"></i> Instagram
-                    </a>
-                    <a href="mailto:info@velorastudio.lt">
-                        <i class="fas fa-envelope"></i> El. paštas
-                    </a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Velora Studio. Visos teisės saugomos.</p>
-            </div>
-        </div>
+    <footer class="ty-footer">
+        <p>
+            <a href="https://instagram.com/velorastudio.lt" target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
+            <a href="mailto:info@velorastudio.lt"><i class="fas fa-envelope"></i> El. paštas</a>
+        </p>
+        <p style="margin-top: 10px;">&copy; 2026 Velora Studio</p>
     </footer>
 
-    <script src="js/main.js" defer></script>
-</body>
+    <!-- Tally auto-resize script (official) — removes scrolling inside iframe -->
+    <script src="https://tally.so/widgets/embed.js"></script>
 
+</body>
 </html>
