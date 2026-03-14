@@ -1251,6 +1251,101 @@ h3.glow-active,
 }
 
 /* ================================================================
+   SECTION TRANSITIONS — Smooth visual flow between sections
+   ================================================================ */
+
+/* Sections that need positioning for pseudo-elements */
+.portfolio,
+.testimonials,
+.faq,
+.cta,
+.comparison {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fade canvas sections (services, pricing) into neighbors */
+.services::before,
+.pricing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 140px;
+    background: linear-gradient(to bottom, var(--bg-main), transparent);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.services::after,
+.pricing::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 140px;
+    background: linear-gradient(to top, var(--bg-main), transparent);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Subtle glow bridge: portfolio → stats bar */
+.portfolio::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(34, 211, 238, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Subtle glow bridge: comparison → testimonials */
+.comparison::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(34, 211, 238, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* FAQ → CTA: gradual cyan lead-in */
+.faq::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 160px;
+    background: linear-gradient(to bottom, transparent, rgba(34, 211, 238, 0.03));
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* CTA → Footer: darken into footer */
+.cta::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to bottom, transparent, #060a12);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ================================================================
    PRICING TOGGLE — Monthly / Annual switch
    ================================================================ */
 .pricing-toggle {
