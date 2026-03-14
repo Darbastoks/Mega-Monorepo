@@ -442,7 +442,6 @@ section {
     box-shadow: var(--shadow-lg);
     transform: translateY(-4px);
     border-color: rgba(34, 211, 238, 0.3);
-    background: var(--bg-glass);
 }
 
 .card:active {
@@ -597,7 +596,6 @@ section {
     box-shadow: 0 0 30px rgba(34, 211, 238, 0.15);
     transform: scale(1.05);
     z-index: 2;
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(34, 211, 238, 0.05) 100%);
 }
 
 .pricing-card.featured:hover {
@@ -622,7 +620,6 @@ section {
 .pricing-card.best-value {
     border: 1px solid #ec4899;
     box-shadow: 0 0 30px rgba(236, 72, 153, 0.15);
-    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(236, 72, 153, 0.05) 100%);
     overflow: hidden;
 }
 
