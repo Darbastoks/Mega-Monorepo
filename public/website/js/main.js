@@ -168,6 +168,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sections.forEach(s => navObserver.observe(s));
 
+    // Testimonials carousel
+    const carousel = document.querySelector('.testimonials-carousel');
+    const track = document.querySelector('.testimonials-track');
+    if (carousel && track) {
+        const cards = Array.from(track.querySelectorAll('.testimonial-card'));
+        const totalOriginal = cards.length;
+        let currentIndex = 0;
+        let autoInterval;
+
+        // Clone first 3 cards for seamless loop
+        const clonesNeeded = Math.min(3, totalOriginal);
+        for (let i = 0; i < clonesNeeded; i++) {
+            track.appendChild(cards[i].cloneNode(true));
+        }
+
+        function getCardStep() {
+            const card = track.querySelector('.testimonial-card');
+            return card.offsetWidth + 24; // card width + gap
+        }
+
+        function advance() {
+            currentIndex++;
+            const step = getCardStep();
+            track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            track.style.transform = 'translateX(-' + (currentIndex * step) + 'px)';
+
+            if (currentIndex >= totalOriginal) {
+                setTimeout(function() {
+                    track.style.transition = 'none';
+                    currentIndex = 0;
+                    track.style.transform = 'translateX(0)';
+                }, 620);
+            }
+        }
+
+        function startAuto() {
+            autoInterval = setInterval(advance, 4000);
+        }
+
+        function stopAuto() {
+            clearInterval(autoInterval);
+        }
+
+        carousel.addEventListener('mouseenter', stopAuto);
+        carousel.addEventListener('mouseleave', startAuto);
+
+        startAuto();
+    }
+
     // FAQ accordion
     document.querySelectorAll('.faq-question').forEach(btn => {
         btn.addEventListener('click', () => {
