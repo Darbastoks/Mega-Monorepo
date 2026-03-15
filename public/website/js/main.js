@@ -267,45 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Lead capture form
-    const leadForm = document.getElementById('leadForm');
-    const leadSuccess = document.getElementById('leadSuccess');
-    if (leadForm && leadSuccess) {
-        leadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(leadForm);
-            const submitBtn = leadForm.querySelector('.lead-submit');
-            const originalHTML = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Siunčiama...';
-            try {
-                const res = await fetch('/api/website/lead', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: formData.get('name'),
-                        contact: formData.get('contact'),
-                        salon_name: formData.get('salon_name'),
-                        website_url_fake: formData.get('website_url_fake')
-                    })
-                });
-                if (res.ok) {
-                    leadForm.style.display = 'none';
-                    leadSuccess.style.display = 'block';
-                } else {
-                    const data = await res.json();
-                    alert(data.error || 'Klaida. Bandykite dar kartą.');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalHTML;
-                }
-            } catch (err) {
-                alert('Tinklo klaida. Bandykite dar kartą.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalHTML;
-            }
-        });
-    }
-
     // Stats count-up on scroll
     const statNums = document.querySelectorAll('.stat-number');
     if (statNums.length) {
