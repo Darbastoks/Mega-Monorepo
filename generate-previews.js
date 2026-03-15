@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const API_KEY = 'AIzaSyDnuk-v_HFzb9LU8VOhfkS2u8LZ3weLOzk';
+const API_KEY = process.env.GEMINI_API_KEY || '';
 const OUTPUT_DIR = path.join(__dirname, 'public', 'website', 'images');
 
 const prompts = [
