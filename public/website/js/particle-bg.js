@@ -7,8 +7,9 @@
     container.appendChild(canvas);
     var ctx = canvas.getContext('2d');
 
-    var PARTICLE_DENSITY = 0.00015;
-    var BG_DENSITY = 0.00005;
+    var isMobile = window.innerWidth <= 768;
+    var PARTICLE_DENSITY = isMobile ? 0.00005 : 0.00015;
+    var BG_DENSITY = isMobile ? 0.00002 : 0.00005;
     var MOUSE_RADIUS = 180;
     var RETURN_SPEED = 0.08;
     var DAMPING = 0.90;

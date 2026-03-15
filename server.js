@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const rLimit = require('express-rate-limit');
 const https = require('https');
 const http = require('http');
+const fs = require('fs');
 
 // ==================== STRIPE SETUP ====================
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
@@ -141,6 +142,31 @@ app.post('/create-checkout-session', async (req, res) => {
         console.error('Stripe checkout error:', err.message);
         res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
     }
+});
+
+// ==================== WEBSITE LEAD CAPTURE ====================
+const LEADS_DIR = path.join(__dirname, 'data');
+const LEADS_FILE = path.join(LEADS_DIR, 'website-leads.json');
+if (!fs.existsSync(LEADS_DIR)) fs.mkdirSync(LEADS_DIR, { recursive: true });
+
+const websiteLeadLimiter = rLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 3,
+    message: { error: 'Per daug bandymų. Pabandykite vėliau.' }
+});
+
+app.post('/api/website/lead', websiteLeadLimiter, (req, res) => {
+    const { name, contact, salon_name, website_url_fake } = req.body;
+    if (website_url_fake) return res.status(200).json({ success: true });
+    if (!name || !contact) return res.status(400).json({ error: 'Vardas ir kontaktai yra privalomi.' });
+
+    const lead = { name, contact, salon_name: salon_name || '', created_at: new Date().toISOString(), status: 'new' };
+    let leads = [];
+    try { if (fs.existsSync(LEADS_FILE)) leads = JSON.parse(fs.readFileSync(LEADS_FILE, 'utf8')); } catch (e) { /* empty */ }
+    leads.push(lead);
+    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
+    console.log('New website lead:', name, contact);
+    res.status(201).json({ success: true });
 });
 
 // 3. Static Files (MUST BE BEFORE ROOT CATCH-ALL)

@@ -39,6 +39,10 @@
 </head>
 
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-logo">V</div>
+    </div>
     <!-- Mouse Glow -->
     <div class="cursor-glow"></div>
     <!-- Navbar -->
@@ -72,7 +76,7 @@
                     internetinę svetainę.</p>
                 <div class="hero-buttons">
                     <a href="#pavyzdziai" class="btn btn-secondary">Peržiūrėti pavyzdžius</a>
-                    <a href="#kontaktai" class="btn btn-primary">Gauti demonstraciją</a>
+                    <a href="#kontaktai-form" class="btn btn-primary">Gauti demonstraciją</a>
                 </div>
             </div>
             <div class="scroll-indicator">
@@ -85,10 +89,36 @@
         <div class="container fade-in">
             <h2 style="margin-bottom: 20px;"><em>Apie mus</em> – Velora Studio</h2>
             <p class="about-text">Velora Studio – tai komanda, kuri kuria modernias, greitas ir patogias internetines svetaines grožio verslams. Mūsų tikslas – padėti jūsų salonui atrodyti profesionaliai internete, pritraukti daugiau klientų ir automatizuoti kasdienius procesus.</p>
-            <p class="about-text">Mes suprantame, kad grožio verslas yra greitas ir dinamiškas. Todėl dirbame efektyviai – paprastą svetainę paruošiame per 3 darbo dienas, sudėtingesnę – per 7. Kiekvienas projektas gaunamas su online registracijos sistema, Google Maps integracija ir pilna technine priežiūra. Jūs koncentruojatės į savo klientus, o mes pasirūpiname visa kita.</p>
+            <p class="about-text">Mes suprantame, kad grožio verslas yra greitas ir dinamiškas. Todėl dirbame efektyviai – paprastą svetainę paruošiame per 3 darbo dienas, sudėtingesnę – per 7. Kiekvienas projektas gaunamas su online registracijos sistema, Google Maps integracija ir pilna technine priežiūra.</p>
+            <div class="about-values">
+                <div class="about-value">
+                    <div class="about-value-icon"><i class="fas fa-bolt"></i></div>
+                    <h3>Greitis</h3>
+                    <p>Svetainę paruošiame per 3–7 dienas. Jokio ilgo laukimo ar biurokratijos.</p>
+                </div>
+                <div class="about-value">
+                    <div class="about-value-icon"><i class="fas fa-gem"></i></div>
+                    <h3>Kokybė</h3>
+                    <p>Kiekviena svetainė kuriama individualiai — ne šablonai, o tikras dizainas.</p>
+                </div>
+                <div class="about-value">
+                    <div class="about-value-icon"><i class="fas fa-headset"></i></div>
+                    <h3>Palaikymas</h3>
+                    <p>Techninė priežiūra ir pagalba įtraukta į kainą. Jūs nesirūpinate technologijomis.</p>
+                </div>
+                <div class="about-value">
+                    <div class="about-value-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                    <h3>0% komisijų</h3>
+                    <p>Mokate tik fiksuotą mėnesinį mokestį. Jokių paslėptų mokesčių.</p>
+                </div>
+            </div>
+            <div class="about-mission">
+                <p><em>„Mūsų misija — kad kiekvienas grožio verslas Lietuvoje turėtų profesionalią svetainę, kuri dirba už jus 24/7."</em></p>
+            </div>
             <div class="floor-glow"></div>
         </div>
     </section>
+    <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,0 C360,60 1080,0 1440,40 L1440,60 L0,60 Z" fill="#0a0e17"/></svg></div>
     <!-- Services Section -->
     <section id="paslaugos" class="services bg-light">
         <div class="particle-canvas"></div>
@@ -121,6 +151,7 @@
             </div>
         </div>
     </section>
+    <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,40 C360,0 1080,60 1440,0 L1440,60 L0,60 Z" fill="#060a12"/></svg></div>
     <!-- Examples / Portfolio -->
     <section id="pavyzdziai" class="portfolio">
         <div class="container fade-in">
@@ -176,6 +207,28 @@
                 <div class="stat-item">
                     <span class="stat-number" data-target="0" data-suffix="%" data-prefix="">0</span>
                     <span class="stat-label">Komisijų</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Client Logos -->
+    <section class="client-logos">
+        <div class="container">
+            <p class="client-logos-label">Mumis pasitiki</p>
+            <div class="logos-marquee">
+                <div class="logos-track">
+                    <a href="/barbie/" class="logo-item">Barbie Barber</a>
+                    <span class="logo-dot"></span>
+                    <a href="/hair/" class="logo-item">Hair Beauty</a>
+                    <span class="logo-dot"></span>
+                    <a href="/nails/" class="logo-item">Nails by Lukra</a>
+                    <span class="logo-dot"></span>
+                    <a href="/barbie/" class="logo-item">Barbie Barber</a>
+                    <span class="logo-dot"></span>
+                    <a href="/hair/" class="logo-item">Hair Beauty</a>
+                    <span class="logo-dot"></span>
+                    <a href="/nails/" class="logo-item">Nails by Lukra</a>
+                    <span class="logo-dot"></span>
                 </div>
             </div>
         </div>
@@ -348,6 +401,7 @@
         </div>
     </section>
 
+    <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,0 C360,60 1080,0 1440,40 L1440,60 L0,60 Z" fill="#0a0e17"/></svg></div>
     <!-- Pricing Section -->
     <section id="kainos" class="pricing bg-light">
         <div id="pricingWaveCanvas"></div>
@@ -364,6 +418,11 @@
                     <span class="toggle-slider"></span>
                 </label>
                 <span class="toggle-label" id="label-annual">Metinis <span class="save-badge">Sutaupykite 2 mėn.</span></span>
+            </div>
+
+            <div class="guarantee-badge">
+                <i class="fas fa-shield-alt"></i>
+                <span>Jei svetainė visiškai neveikia per pirmąsias 14 dienų — grąžiname pinigus.</span>
             </div>
 
             <div class="grid pricing-grid">
@@ -495,14 +554,36 @@
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta">
+    <!-- Lead Capture Form -->
+    <section class="lead-capture" id="kontaktai-form">
         <div class="container fade-in">
-            <h2>Norite savo svetainės?</h2>
-            <p>Parašykite mums ir galime parodyti demonstracinę svetainę jūsų salonui.</p>
-            <a href="https://instagram.com/velorastudio.lt" target="_blank" class="btn btn-primary btn-large">
-                <i class="fab fa-instagram"></i> Parašyti Instagram
-            </a>
+            <div class="lead-card">
+                <h2>Norite savo svetainės?</h2>
+                <p>Palikite savo kontaktus ir susisieksime per 24 valandas.</p>
+                <form id="leadForm" class="lead-form" novalidate>
+                    <input type="text" name="website_url_fake" style="display:none" tabindex="-1" autocomplete="off">
+                    <div class="form-group">
+                        <label for="lead-name">Jūsų vardas</label>
+                        <input type="text" id="lead-name" name="name" required placeholder="pvz. Jonas">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-contact">Telefonas arba el. paštas</label>
+                        <input type="text" id="lead-contact" name="contact" required placeholder="pvz. +370 600 12345">
+                    </div>
+                    <div class="form-group">
+                        <label for="lead-salon">Salono pavadinimas</label>
+                        <input type="text" id="lead-salon" name="salon_name" placeholder="pvz. Beauty Studio">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large lead-submit">
+                        <i class="fas fa-paper-plane"></i> Susisiekti
+                    </button>
+                </form>
+                <div id="leadSuccess" class="lead-success" style="display:none;">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Ačiū!</h3>
+                    <p>Susisieksime su jumis per 24 valandas.</p>
+                </div>
+            </div>
         </div>
     </section>
     <!-- Contact & Footer Section -->
@@ -539,7 +620,7 @@
     <div id="previewModal" class="modal">
         <div class="modal-content">
             <span class="close-modal"><i class="fas fa-times"></i></span>
-            <img id="previewImage" src="" alt="Peržiūra">
+            <img id="previewImage" src="" alt="Peržiūra" loading="lazy">
         </div>
     </div>
 
@@ -563,8 +644,16 @@
         })();
     </script>
 
-    <script src="js/main.js"></script>
-    <script src="js/particle-bg.js"></script>
+    <!-- Stripe Loading Overlay -->
+    <div id="stripeOverlay" class="stripe-overlay" style="display:none;">
+        <div class="stripe-overlay-content">
+            <div class="stripe-spinner"></div>
+            <p>Nukreipiame į mokėjimą...</p>
+        </div>
+    </div>
+
+    <script src="js/main.js" defer></script>
+    <script src="js/particle-bg.js" defer></script>
 </body>
 
 </html>

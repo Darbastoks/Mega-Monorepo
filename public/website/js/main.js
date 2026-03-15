@@ -1,3 +1,14 @@
+// Loading screen
+window.addEventListener('load', () => {
+    const loader = document.getElementById('loadingScreen');
+    if (loader) {
+        setTimeout(() => {
+            loader.classList.add('fade-out');
+            setTimeout(() => loader.remove(), 400);
+        }, 800);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Mobile menu toggle
     const hamburger = document.querySelector('.hamburger');
@@ -222,6 +233,27 @@ document.addEventListener('DOMContentLoaded', () => {
         carousel.addEventListener('mouseenter', stopAuto);
         carousel.addEventListener('mouseleave', startAuto);
 
+        // Touch/swipe support
+        let touchStartX = 0;
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            stopAuto();
+        }, { passive: true });
+        carousel.addEventListener('touchend', (e) => {
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    advance();
+                } else if (!isTransitioning && currentIndex > 0) {
+                    currentIndex--;
+                    const step = getCardStep();
+                    track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+                    track.style.transform = 'translateX(-' + (currentIndex * step) + 'px)';
+                }
+            }
+            startAuto();
+        }, { passive: true });
+
         startAuto();
     }
 
@@ -234,6 +266,45 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!wasActive) item.classList.add('active');
         });
     });
+
+    // Lead capture form
+    const leadForm = document.getElementById('leadForm');
+    const leadSuccess = document.getElementById('leadSuccess');
+    if (leadForm && leadSuccess) {
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(leadForm);
+            const submitBtn = leadForm.querySelector('.lead-submit');
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Siunčiama...';
+            try {
+                const res = await fetch('/api/website/lead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        contact: formData.get('contact'),
+                        salon_name: formData.get('salon_name'),
+                        website_url_fake: formData.get('website_url_fake')
+                    })
+                });
+                if (res.ok) {
+                    leadForm.style.display = 'none';
+                    leadSuccess.style.display = 'block';
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Klaida. Bandykite dar kartą.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHTML;
+                }
+            } catch (err) {
+                alert('Tinklo klaida. Bandykite dar kartą.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHTML;
+            }
+        });
+    }
 
     // Stats count-up on scroll
     const statNums = document.querySelectorAll('.stat-number');
@@ -343,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Wire checkout buttons
     planBtns.forEach(btn => {
         btn.addEventListener('click', async function () {
-            const plan = this.dataset.plan; // 'start' | 'growth' | 'pro'
+            const plan = this.dataset.plan;
             const billingCycle = isAnnual ? 'annual' : 'monthly';
             const priceId = prices[plan] && prices[plan][billingCycle];
 
@@ -352,8 +423,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const originalText = this.textContent;
-            this.textContent = 'Kraunama...';
+            if (this.disabled) return;
+            const overlay = document.getElementById('stripeOverlay');
+            if (overlay) overlay.style.display = 'flex';
             this.disabled = true;
 
             try {
@@ -372,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.error('Checkout error:', e);
                 alert('Nepavyko atidaryti mokėjimo. Bandykite dar kartą arba susisiekite su mumis.');
-                this.textContent = originalText;
+                if (overlay) overlay.style.display = 'none';
                 this.disabled = false;
             }
         });
