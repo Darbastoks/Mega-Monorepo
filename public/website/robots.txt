@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /barbie/admin
+Disallow: /nails/admin
+Disallow: /hair/admin
+Disallow: /velora/admin
+
+Sitemap: https://mega-monorepo.onrender.com/sitemap.xml

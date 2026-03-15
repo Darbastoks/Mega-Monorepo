@@ -147,7 +147,6 @@ app.post('/create-checkout-session', async (req, res) => {
 app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
 app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
 app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
-app.use('/zaislu_gamyba', express.static(path.join(__dirname, 'public/zaislu_gamyba')));
 app.use('/velora', express.static(path.join(__dirname, 'public/velora')));
 // Root serves the Velora Studio BUSINESS website
 app.use(express.static(path.join(__dirname, 'public/website')));
@@ -263,7 +262,7 @@ function requireBarbieAdmin(req, res, next) {
 
 app.post('/api/barbie/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === 'barber2024') {
+    if (username === 'admin' && password === (process.env.BARBIE_ADMIN_PASS || 'changeme')) {
         req.session.isBarbieAdmin = true;
         req.session.barbieAdminId = 'system-admin';
         return res.json({ success: true });
@@ -335,7 +334,7 @@ function requireNailsAdmin(req, res, next) {
 
 app.post('/api/nails/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === 'nails2024') {
+    if (password === (process.env.NAILS_ADMIN_PASS || 'changeme')) {
         req.session.isNailsAdmin = true;
         return res.json({ success: true });
     }
@@ -649,7 +648,7 @@ app.get('/api/hair/bookings/times/:date', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-const GRETA_ADMIN_PASS = 'greta123';
+const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || 'changeme';
 
 // Explicit route for hair admin to ensure latest file is served
 app.get('/hair/admin', (req, res) => {
@@ -755,7 +754,7 @@ app.post('/api/velora/admin/login', async (req, res) => {
         const { username, password } = req.body;
 
         // Fallback for admin login
-        if (username === 'admin' && password === 'velora2024') {
+        if (username === 'admin' && password === (process.env.VELORA_ADMIN_PASS || 'changeme')) {
             req.session.isVeloraAdmin = true;
             return res.json({ success: true });
         }
@@ -804,7 +803,6 @@ app.delete('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) =
 app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
 app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
 app.get('/hair', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'index.html')));
-app.get(['/zaislu_gamyba', '/zaislu_gamyba/'], (req, res) => res.sendFile(path.join(__dirname, 'public/zaislu_gamyba', 'index.html')));
 app.get(['/velora', '/velora/'], (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'index.html')));
 // Admin panel routes
 app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'admin.html')));
@@ -813,8 +811,18 @@ app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/h
 app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'admin.html')));
 // Business website pages
 app.get('/thank-you', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'thank-you.html')));
-// Fallback: root business website
-app.use((req, res) => res.sendFile(path.join(__dirname, 'public/website', 'index.html')));
+app.get('/privatumo-politika', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'privatumo-politika.html')));
+app.get('/paslaugos-salygos', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'paslaugos-salygos.html')));
+// SEO files
+app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
+app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
+// 404 fallback
+app.use((req, res) => {
+    if (req.accepts('html')) {
+        return res.status(404).sendFile(path.join(__dirname, 'public/website', '404.html'));
+    }
+    res.status(404).json({ error: 'Not found' });
+});
 
 
 // Start Database Connections & Then Start Server

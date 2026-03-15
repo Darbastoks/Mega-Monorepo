@@ -5,8 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Velora Studio | Modernios svetainės grožio verslams</title>
-    <meta name="description"
-        content="Padedame kirpykloms, barberiams ir grožio specialistams pritraukti daugiau klientų per profesionalią internetinę svetainę.">
+    <meta name="description" content="Velora Studio – modernios svetainės grožio salonams su online registracija. Nuo 25€/mėn. Paruošiame per 3 dienas.">
+    <meta name="keywords" content="svetainė salonui, grožio verslas, online registracija, kirpykla svetainė, barber shop svetainė">
+    <meta property="og:title" content="Velora Studio – Svetainės grožio verslui">
+    <meta property="og:description" content="Modernios svetainės su online registracija grožio salonams. Paruošiame per 3 dienas.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="lt_LT">
+    <link rel="canonical" href="https://mega-monorepo.onrender.com/">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23060a12'/><text x='50' y='72' font-size='60' text-anchor='middle' fill='%2322d3ee' font-family='serif'>V</text></svg>">
+
+    <!-- Google Analytics — replace G-XXXXXXXXXX with your GA4 measurement ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('consent', 'default', { analytics_storage: 'denied' });
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -119,8 +135,7 @@
                     </div>
                     <div class="portfolio-content">
                         <h3>Barber shop</h3>
-                        <a href="https://barbie-barber-website.onrender.com/#hero" class="btn btn-outline"
-                            target="_blank">Peržiūrėti</a>
+                        <a href="/barbie/" class="btn btn-outline">Peržiūrėti</a>
                     </div>
                 </div>
                 <div class="card portfolio-card">
@@ -128,8 +143,7 @@
                     </div>
                     <div class="portfolio-content">
                         <h3>Hair salon</h3>
-                        <a href="https://hairbeauty-website-1.onrender.com" class="btn btn-outline"
-                            target="_blank">Peržiūrėti</a>
+                        <a href="/hair/" class="btn btn-outline">Peržiūrėti</a>
                     </div>
                 </div>
                 <div class="card portfolio-card">
@@ -137,8 +151,7 @@
                     </div>
                     <div class="portfolio-content">
                         <h3>Nail studio</h3>
-                        <a href="https://nailsbylukra.onrender.com" class="btn btn-outline"
-                            target="_blank">Peržiūrėti</a>
+                        <a href="/nails/" class="btn btn-outline">Peržiūrėti</a>
                     </div>
                 </div>
             </div>
@@ -512,6 +525,10 @@
                     </a>
                 </div>
             </div>
+            <div class="footer-legal">
+                <a href="/privatumo-politika">Privatumo politika</a>
+                <a href="/paslaugos-salygos">Paslaugų sąlygos</a>
+            </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 Velora Studio. Visos teisės saugomos.</p>
             </div>
@@ -525,6 +542,26 @@
             <img id="previewImage" src="" alt="Peržiūra">
         </div>
     </div>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookieBanner" class="cookie-banner" style="display:none;">
+        <p>Ši svetainė naudoja slapukus, kad pagerintų jūsų patirtį. <a href="/privatumo-politika">Privatumo politika</a></p>
+        <button id="cookieAccept" class="btn btn-primary btn-sm">Sutinku</button>
+    </div>
+    <script>
+        (function(){
+            if (!localStorage.getItem('cookieConsent')) {
+                document.getElementById('cookieBanner').style.display = 'flex';
+            }
+            document.getElementById('cookieAccept').addEventListener('click', function(){
+                localStorage.setItem('cookieConsent', 'true');
+                document.getElementById('cookieBanner').style.display = 'none';
+                if (typeof gtag === 'function') {
+                    gtag('consent', 'update', { analytics_storage: 'granted' });
+                }
+            });
+        })();
+    </script>
 
     <script src="js/main.js"></script>
     <script src="js/particle-bg.js"></script>
