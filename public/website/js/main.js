@@ -10,34 +10,78 @@ window.addEventListener('load', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
+    // ============ TYPEWRITER EFFECT ============
+    (function initTypewriter() {
+        const el = document.getElementById('typewriter');
+        if (!el) return;
+        const words = ['kirpykloms', 'barberiams', 'nagų salonams', 'grožio studijoms'];
+        let wordIdx = 0, charIdx = 0, isDeleting = false;
+
+        function tick() {
+            const word = words[wordIdx];
+            if (isDeleting) {
+                charIdx--;
+                el.textContent = word.substring(0, charIdx);
+                if (charIdx === 0) {
+                    isDeleting = false;
+                    wordIdx = (wordIdx + 1) % words.length;
+                    setTimeout(tick, 300);
+                    return;
+                }
+                setTimeout(tick, 40);
+            } else {
+                charIdx++;
+                el.textContent = word.substring(0, charIdx);
+                if (charIdx === word.length) {
+                    isDeleting = true;
+                    setTimeout(tick, 2000);
+                    return;
+                }
+                setTimeout(tick, 80);
+            }
+        }
+        setTimeout(tick, 500);
+    })();
+
+    // ============ SCROLL PROGRESS BAR ============
+    (function initScrollProgress() {
+        const bar = document.getElementById('scrollProgress');
+        if (!bar) return;
+        window.addEventListener('scroll', function() {
+            var h = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + '%';
+        }, { passive: true });
+    })();
+
+    // ============ MOBILE MENU (slide-in + overlay) ============
     const hamburger = document.querySelector('.hamburger');
     const navLinks = document.querySelector('.nav-links');
+    const menuOverlay = document.querySelector('.menu-overlay');
+
+    function closeMenu() {
+        if (!navLinks) return;
+        navLinks.classList.remove('active');
+        if (menuOverlay) menuOverlay.classList.remove('active');
+        const icon = hamburger && hamburger.querySelector('i');
+        if (icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+    }
 
     if (hamburger && navLinks) {
         hamburger.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
+            const isOpen = navLinks.classList.toggle('active');
+            if (menuOverlay) menuOverlay.classList.toggle('active', isOpen);
             const icon = hamburger.querySelector('i');
-            if (navLinks.classList.contains('active')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
+            icon.classList.toggle('fa-bars', !isOpen);
+            icon.classList.toggle('fa-times', isOpen);
         });
     }
 
+    if (menuOverlay) menuOverlay.addEventListener('click', closeMenu);
+
     // Close mobile menu when clicking a link
-    const links = document.querySelectorAll('.nav-links a');
-    links.forEach(link => {
+    document.querySelectorAll('.nav-links a').forEach(link => {
         link.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                navLinks.classList.remove('active');
-                const icon = hamburger.querySelector('i');
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
+            if (window.innerWidth <= 768) closeMenu();
         });
     });
 
@@ -266,6 +310,91 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!wasActive) item.classList.add('active');
         });
     });
+
+    // ============ FLIP CARDS ============
+    document.querySelectorAll('.flip-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const wasFlipped = card.classList.contains('flipped');
+            document.querySelectorAll('.flip-card.flipped').forEach(c => c.classList.remove('flipped'));
+            if (!wasFlipped) card.classList.add('flipped');
+        });
+    });
+
+    // ============ ABOUT ICON BOUNCE ON SCROLL ============
+    const aboutIcons = document.querySelectorAll('.about-value-icon');
+    if (aboutIcons.length) {
+        const iconObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const icons = entry.target.querySelectorAll('.about-value-icon');
+                    icons.forEach((icon, i) => {
+                        setTimeout(() => icon.classList.add('icon-visible'), i * 150);
+                    });
+                    iconObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        const aboutSection = document.querySelector('.about-values');
+        if (aboutSection) iconObserver.observe(aboutSection);
+    }
+
+    // ============ STEP SEQUENTIAL ANIMATION ============
+    const steps = document.querySelectorAll('.step');
+    if (steps.length) {
+        const stepObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const allSteps = entry.target.querySelectorAll('.step');
+                    allSteps.forEach((step, i) => {
+                        setTimeout(() => step.classList.add('step-visible'), i * 200);
+                    });
+                    stepObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.2 });
+        const stepsGrid = document.querySelector('.steps-grid');
+        if (stepsGrid) stepObserver.observe(stepsGrid);
+    }
+
+    // ============ COMPARISON ANIMATED ITEMS ============
+    const compSection = document.querySelector('.comparison');
+    if (compSection) {
+        const compObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const items = compSection.querySelectorAll('.comparison-col ul li');
+                    items.forEach((li, i) => {
+                        setTimeout(() => li.classList.add('comp-visible'), i * 100);
+                    });
+                    compObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        compObserver.observe(compSection);
+    }
+
+    // ============ SUBTLE PARALLAX ============
+    if (window.innerWidth > 768) {
+        const auroraGlows = document.querySelectorAll('.aurora-glow-1, .aurora-glow-2, .aurora-glow-3');
+        const floorGlow = document.querySelector('.floor-glow');
+        let ticking = false;
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const y = window.scrollY;
+                    auroraGlows.forEach(el => {
+                        el.style.transform = 'translateY(' + (y * 0.3) + 'px)';
+                    });
+                    if (floorGlow) {
+                        floorGlow.style.transform = 'translateY(' + (y * 0.15) + 'px)';
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
 
     // Stats count-up on scroll
     const statNums = document.querySelectorAll('.stat-number');

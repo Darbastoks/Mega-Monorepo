@@ -915,26 +915,9 @@ section {
 }
 
 @media (max-width: 768px) {
-    .nav-links {
-        display: none;
-        position: absolute;
-        top: 80px;
-        left: 0;
-        width: 100%;
-        background: rgba(18, 16, 22, 0.98);
-        backdrop-filter: blur(20px);
-        flex-direction: column;
-        padding: 24px;
-        border-bottom: 1px solid var(--border-color);
-        gap: 20px;
-    }
-
-    .nav-links.active {
-        display: flex;
-    }
-
     .hamburger {
         display: block;
+        z-index: 1000;
     }
 
     .hero {
@@ -2010,5 +1993,409 @@ button.plan-btn.btn-primary:hover:not(:disabled) {
 /* will-change performance hints */
 .aurora-glow-1, .aurora-glow-2, .aurora-glow-3 {
     will-change: transform, opacity;
+}
+
+/* ============================
+   SCROLL PROGRESS BAR
+   ============================ */
+#scrollProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    z-index: 10000;
+    background: linear-gradient(90deg, #22d3ee, #ec4899, #22d3ee);
+    background-size: 200% 100%;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.5), 0 0 20px rgba(236, 72, 153, 0.3);
+    transition: width 0.05s linear;
+    pointer-events: none;
+}
+
+/* ============================
+   HERO TYPEWRITER
+   ============================ */
+.typewriter-text {
+    color: var(--primary-color);
+    border-right: 3px solid var(--primary-color);
+    animation: blink-cursor 0.7s step-end infinite;
+}
+
+@keyframes blink-cursor {
+    0%, 100% { border-color: var(--primary-color); }
+    50% { border-color: transparent; }
+}
+
+.hero-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 8px;
+    opacity: 0;
+    animation: fadeInUp 0.6s ease 1s forwards;
+}
+
+.hero-trust i {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================
+   FLIP CARDS (About Values)
+   ============================ */
+.flip-card {
+    perspective: 1000px;
+    cursor: pointer;
+    min-height: 200px;
+}
+
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
+.flip-front, .flip-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.flip-back {
+    transform: rotateY(180deg);
+    background: rgba(34, 211, 238, 0.08);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    padding: 24px;
+}
+
+.flip-back p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+}
+
+/* Icon bounce on scroll */
+.about-value-icon {
+    opacity: 0;
+    transform: scale(0);
+}
+
+.about-value-icon.icon-visible {
+    animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0); }
+    60% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ============================
+   HOW IT WORKS — 3 STEPS
+   ============================ */
+.how-it-works {
+    padding: 80px 0;
+    position: relative;
+}
+
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    margin-top: 48px;
+    position: relative;
+}
+
+.steps-grid::before {
+    content: '';
+    position: absolute;
+    top: 44px;
+    left: 15%;
+    right: 15%;
+    height: 2px;
+    border-top: 2px dashed rgba(34, 211, 238, 0.2);
+}
+
+.step {
+    text-align: center;
+    position: relative;
+}
+
+.step::before {
+    content: attr(data-step);
+    position: absolute;
+    top: -12px;
+    right: -8px;
+    width: 28px;
+    height: 28px;
+    background: var(--primary-color);
+    color: var(--bg-main);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: var(--primary-color);
+}
+
+.step h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.step p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* Step sequential animation */
+.step {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.step.step-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.step.step-visible .step-icon {
+    animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@media (max-width: 768px) {
+    .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    .steps-grid::before {
+        display: none;
+    }
+}
+
+/* ============================
+   GRADIENT SECTION TRANSITIONS
+   ============================ */
+.hero::after,
+.about::after,
+.how-it-works::after,
+.services::after,
+.portfolio::after,
+.stats-bar::after,
+.client-logos::after,
+.comparison::after,
+.testimonials::after,
+.pricing::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, var(--bg-main));
+    pointer-events: none;
+    z-index: 1;
+}
+
+.services::after,
+.comparison::after,
+.pricing::after {
+    background: linear-gradient(to bottom, transparent, var(--bg-light));
+}
+
+.about::before,
+.how-it-works::before,
+.portfolio::before,
+.stats-bar::before,
+.testimonials::before,
+.faq::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to top, transparent, var(--bg-main));
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hero, .about, .how-it-works, .services, .portfolio,
+.stats-bar, .client-logos, .comparison, .testimonials,
+.pricing, .faq {
+    position: relative;
+}
+
+/* ============================
+   COMPARISON ANIMATED ITEMS
+   ============================ */
+.comparison-col ul li {
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.comparison-bad ul li {
+    transform: translateX(-20px);
+}
+
+.comparison-good ul li {
+    transform: translateX(20px);
+}
+
+.comparison-col ul li.comp-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.comparison-col ul li.comp-visible i {
+    animation: bounceIn 0.3s ease forwards;
+}
+
+/* ============================
+   BUTTON MICRO-ANIMATIONS
+   ============================ */
+.hero-buttons .btn-primary {
+    animation: subtlePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes subtlePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+.hero-buttons .btn-primary:hover {
+    animation: none;
+}
+
+.btn i, button i {
+    transition: transform 0.2s ease;
+}
+
+.btn:hover i, button:hover i {
+    transform: translateX(3px);
+}
+
+/* ============================
+   FLOATING INSTAGRAM BUTTON
+   ============================ */
+.floating-ig {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(214, 36, 159, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: igPulse 3s ease-in-out infinite;
+}
+
+.floating-ig:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(214, 36, 159, 0.6);
+    animation: none;
+}
+
+@keyframes igPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(214, 36, 159, 0.4); }
+    50% { box-shadow: 0 4px 30px rgba(214, 36, 159, 0.7); }
+}
+
+@media (max-width: 768px) {
+    .floating-ig {
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+        font-size: 1.3rem;
+    }
+}
+
+/* ============================
+   MOBILE MENU SLIDE-IN
+   ============================ */
+.menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 998;
+}
+
+.menu-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+    .nav-links {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        right: -300px;
+        width: 280px;
+        height: 100vh;
+        flex-direction: column;
+        padding: 100px 32px 32px;
+        background: rgba(6, 10, 18, 0.98);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid var(--border-color);
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 999;
+        gap: 20px;
+    }
+
+    .nav-links.active {
+        right: 0;
+    }
 }
 

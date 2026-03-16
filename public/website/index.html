@@ -39,6 +39,7 @@
 </head>
 
 <body>
+    <div id="scrollProgress"></div>
     <!-- Loading Screen -->
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-logo">V</div>
@@ -61,6 +62,7 @@
             </div>
         </div>
     </nav>
+    <div class="menu-overlay"></div>
     <!-- Hero Section -->
     <section class="hero">
         <div class="aurora-bg">
@@ -71,9 +73,10 @@
         <div class="container hero-container fade-in">
             <div class="hero-content">
                 <div class="hero-badge"><span class="dot"></span> KURIA SVETAINES SALONAMS</div>
-                <h1><em>Modernios</em> svetainės <br>grožio verslams</h1>
+                <h1><em>Modernios</em> svetainės<br><span id="typewriter" class="typewriter-text"></span></h1>
                 <p>Padedame kirpykloms, barberiams ir grožio specialistams pritraukti daugiau klientų per profesionalią
                     internetinę svetainę.</p>
+                <p class="hero-trust"><i class="fas fa-check-circle"></i> Jau 15+ salonų naudoja Velora</p>
                 <div class="hero-buttons">
                     <a href="#pavyzdziai" class="btn btn-secondary">Peržiūrėti pavyzdžius</a>
                     <a href="#kainos" class="btn btn-primary">Pasirinkti planą</a>
@@ -91,25 +94,53 @@
             <p class="about-text">Velora Studio – tai komanda, kuri kuria modernias, greitas ir patogias internetines svetaines grožio verslams. Mūsų tikslas – padėti jūsų salonui atrodyti profesionaliai internete, pritraukti daugiau klientų ir automatizuoti kasdienius procesus.</p>
             <p class="about-text">Mes suprantame, kad grožio verslas yra greitas ir dinamiškas. Todėl dirbame efektyviai – paprastą svetainę paruošiame per 3 darbo dienas, sudėtingesnę – per 7. Kiekvienas projektas gaunamas su online registracijos sistema, Google Maps integracija ir pilna technine priežiūra.</p>
             <div class="about-values">
-                <div class="about-value">
-                    <div class="about-value-icon"><i class="fas fa-bolt"></i></div>
-                    <h3>Greitis</h3>
-                    <p>Svetainę paruošiame per 3–7 dienas. Jokio ilgo laukimo ar biurokratijos.</p>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-front about-value">
+                            <div class="about-value-icon"><i class="fas fa-bolt"></i></div>
+                            <h3>Greitis</h3>
+                            <p>Svetainę paruošiame per 3–7 dienas.</p>
+                        </div>
+                        <div class="flip-back about-value">
+                            <p>Jokio ilgo laukimo ar biurokratijos. Užpildote formą, pateikiate informaciją — ir mes iškart pradedame dirbti. Paprastą svetainę pristatome per 3 darbo dienas.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="about-value">
-                    <div class="about-value-icon"><i class="fas fa-gem"></i></div>
-                    <h3>Kokybė</h3>
-                    <p>Kiekviena svetainė kuriama individualiai — ne šablonai, o tikras dizainas.</p>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-front about-value">
+                            <div class="about-value-icon"><i class="fas fa-gem"></i></div>
+                            <h3>Kokybė</h3>
+                            <p>Individualus dizainas, ne šablonai.</p>
+                        </div>
+                        <div class="flip-back about-value">
+                            <p>Kiekviena svetainė kuriama nuo nulio pagal jūsų salono stilių ir prekės ženklą. Naudojame modernias technologijas ir dizaino principus.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="about-value">
-                    <div class="about-value-icon"><i class="fas fa-headset"></i></div>
-                    <h3>Palaikymas</h3>
-                    <p>Techninė priežiūra ir pagalba įtraukta į kainą. Jūs nesirūpinate technologijomis.</p>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-front about-value">
+                            <div class="about-value-icon"><i class="fas fa-headset"></i></div>
+                            <h3>Palaikymas</h3>
+                            <p>Techninė priežiūra įtraukta į kainą.</p>
+                        </div>
+                        <div class="flip-back about-value">
+                            <p>Jūs nesirūpinate serveriais, atnaujinimais ar saugumu. Mes viską tvarkome, kad jūs galėtumėte susikoncentruoti į savo verslą.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="about-value">
-                    <div class="about-value-icon"><i class="fas fa-hand-holding-usd"></i></div>
-                    <h3>0% komisijų</h3>
-                    <p>Mokate tik fiksuotą mėnesinį mokestį. Jokių paslėptų mokesčių.</p>
+                <div class="flip-card">
+                    <div class="flip-card-inner">
+                        <div class="flip-front about-value">
+                            <div class="about-value-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                            <h3>0% komisijų</h3>
+                            <p>Tik fiksuotas mėnesinis mokestis.</p>
+                        </div>
+                        <div class="flip-back about-value">
+                            <p>Jokių paslėptų mokesčių ar procentų nuo užsakymų. Mokate vieną fiksuotą kainą — nesvarbu kiek klientų užsiregistruoja.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="about-mission">
@@ -118,6 +149,33 @@
             <div class="floor-glow"></div>
         </div>
     </section>
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container fade-in">
+            <div class="section-header">
+                <h2>Kaip tai veikia?</h2>
+                <div class="divider"></div>
+            </div>
+            <div class="steps-grid">
+                <div class="step fade-in" data-step="1">
+                    <div class="step-icon"><i class="fas fa-hand-pointer"></i></div>
+                    <h3>Pasirinkite planą</h3>
+                    <p>Išsirinkite tinkamą planą ir apmokėkite online — tai užtrunka vos 2 minutes.</p>
+                </div>
+                <div class="step fade-in" data-step="2">
+                    <div class="step-icon"><i class="fas fa-edit"></i></div>
+                    <h3>Užpildykite formą</h3>
+                    <p>Pateikite salono informaciją, nuotraukas ir pageidavimus — mes pasirūpinsime visu kitu.</p>
+                </div>
+                <div class="step fade-in" data-step="3">
+                    <div class="step-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Gaukite svetainę</h3>
+                    <p>Per 3 darbo dienas jūsų svetainė bus paruošta ir veikianti su online registracija.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,0 C360,60 1080,0 1440,40 L1440,60 L0,60 Z" fill="#0a0e17"/></svg></div>
     <!-- Services Section -->
     <section id="paslaugos" class="services bg-light">
@@ -194,11 +252,11 @@
             <div class="stats-grid">
                 <div class="stat-item">
                     <span class="stat-number" data-target="15" data-suffix="+">0</span>
-                    <span class="stat-label">Sukurtų svetainių</span>
+                    <span class="stat-label">Sukurtų svetainių Lietuvoje</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" data-target="98" data-suffix="%">0</span>
-                    <span class="stat-label">Klientų pasitenkinimas</span>
+                    <span class="stat-label">Klientų rekomenduotų mus</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" data-target="3" data-suffix=" d.">0</span>
@@ -206,7 +264,7 @@
                 </div>
                 <div class="stat-item">
                     <span class="stat-number" data-target="0" data-suffix="%" data-prefix="">0</span>
-                    <span class="stat-label">Komisijų</span>
+                    <span class="stat-label">Komisijų nuo jūsų pajamų</span>
                 </div>
             </div>
         </div>
@@ -619,6 +677,11 @@
             <p>Nukreipiame į mokėjimą...</p>
         </div>
     </div>
+
+    <!-- Floating Instagram Button -->
+    <a href="https://instagram.com/velorastudio.lt" target="_blank" class="floating-ig" aria-label="Instagram">
+        <i class="fab fa-instagram"></i>
+    </a>
 
     <script src="js/main.js" defer></script>
     <script src="js/particle-bg.js" defer></script>
