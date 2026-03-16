@@ -21,8 +21,10 @@
         .showcase-feature h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #f8fafc; margin-bottom: 4px; font-family: 'Plus Jakarta Sans', sans-serif; }
         .showcase-feature p { font-size: 0.9rem; color: #94a3b8; line-height: 1.6; }
         .showcase-cta { margin-top: 32px; }
+        .showcase-images { display: flex; flex-direction: column; gap: 24px; }
         .showcase-image { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
         .showcase-image img { width: 100%; height: auto; display: block; }
+        .image-label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #22d3ee; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif; }
         .other-services { padding: 60px 0 80px; }
         .other-services h2 { text-align: center; font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 32px; }
         .other-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
@@ -92,8 +94,19 @@
                         <a href="/#kainos" class="btn btn-primary btn-large">PRADĖTI REGISTRACIJĄ</a>
                     </div>
                 </div>
-                <div class="showcase-image">
-                    <img src="../images/online-registracija.png" alt="Online registracijos sistema salonui" loading="lazy">
+                <div class="showcase-images">
+                    <div>
+                        <span class="image-label">Klientų registracijos puslapis</span>
+                        <div class="showcase-image">
+                            <img src="../images/booking-mockup.png" alt="Online registracijos forma salonui" loading="lazy">
+                        </div>
+                    </div>
+                    <div>
+                        <span class="image-label">Administravimo panelė</span>
+                        <div class="showcase-image">
+                            <img src="../images/admin-mockup.png" alt="VeloraStudio admin panelė" loading="lazy">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
