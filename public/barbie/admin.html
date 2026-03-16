@@ -49,6 +49,8 @@
                 <h2>G SPOT <span class="logo-accent">Admin</span></h2>
             </div>
             <div class="admin-header-right">
+                <button class="btn btn-outline btn-sm" id="viewSettingsBtn">⚙ Nustatymai</button>
+                <button class="btn btn-outline btn-sm" id="viewBookingsBtn" style="display:none;">📅 Registracijos</button>
                 <a href="/barbie" class="btn btn-outline btn-sm">← Svetainė</a>
                 <button class="btn btn-outline btn-sm" id="logoutBtn">Atsijungti</button>
             </div>
@@ -111,6 +113,68 @@
                 <div class="admin-empty" id="emptyState" style="display:none;">
                     <span>📋</span>
                     <p>Registracijų nerasta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settingsSection" style="display:none; margin-top:2rem;">
+            <div style="max-width: 500px; background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin-bottom: 1rem;">Darbo Laikas</h3>
+                <form id="settingsForm">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Darbo Dienos</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label><input type="checkbox" name="workDays" value="1"> Pr</label>
+                            <label><input type="checkbox" name="workDays" value="2"> An</label>
+                            <label><input type="checkbox" name="workDays" value="3"> Tr</label>
+                            <label><input type="checkbox" name="workDays" value="4"> Kt</label>
+                            <label><input type="checkbox" name="workDays" value="5"> Pn</label>
+                            <label><input type="checkbox" name="workDays" value="6"> Še</label>
+                            <label><input type="checkbox" name="workDays" value="0"> Se</label>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pradžia</label>
+                            <input type="time" id="startHour" required
+                                style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pabaiga</label>
+                            <input type="time" id="endHour" required
+                                style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pertrauka</label>
+                        <div style="display: flex; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.25rem; font-size: 0.85rem; opacity:0.6;">Nuo</label>
+                                <input type="time" id="breakStart"
+                                    style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.25rem; font-size: 0.85rem; opacity:0.6;">Iki</label>
+                                <input type="time" id="breakEnd"
+                                    style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                            </div>
+                        </div>
+                        <small style="opacity:0.5; display:block; margin-top:0.25rem;">Palikite tuščią jei pertraukos nėra</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Išsaugoti Darbo Laiką</button>
+                </form>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Nedarbo Dienos</label>
+                    <small style="opacity:0.5; display:block; margin-bottom: 0.5rem;">Atostogos, šventės ar kitos laisvos dienos</small>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <input type="date" id="blockedDateInput"
+                            style="flex:1; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        <button type="button" onclick="addBlockedDate()"
+                            class="btn btn-primary" style="padding:0.5rem 1rem;">+</button>
+                    </div>
+                    <div id="blockedDatesList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
                 </div>
             </div>
         </div>

@@ -235,14 +235,16 @@ if (adminDashboard) {
             const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
             const startHour = document.getElementById('startHour').value;
             const endHour = document.getElementById('endHour').value;
+            const breakStart = document.getElementById('breakStart').value;
+            const breakEnd = document.getElementById('breakEnd').value;
 
             try {
                 const res = await fetch('/api/nails/settings', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ workingDays: workDays, startHour, endHour })
+                    body: JSON.stringify({ workingDays: workDays, startHour, endHour, breakStart, breakEnd, blockedDates: currentBlockedDates })
                 });
-                if (res.ok) alert('Darbo laikas išsaugotas');
+                if (res.ok) alert('Nustatymai išsaugoti');
                 else alert('Klaida išsaugant');
             } catch (err) { alert('Tinklo klaida'); }
         });
@@ -275,6 +277,8 @@ if (adminDashboard) {
         });
     }
 
+    let currentBlockedDates = [];
+
     async function loadSettings() {
         try {
             const res = await fetch('/api/nails/settings');
@@ -283,11 +287,62 @@ if (adminDashboard) {
                 if (settings) {
                     document.getElementById('startHour').value = settings.startHour;
                     document.getElementById('endHour').value = settings.endHour;
+                    document.getElementById('breakStart').value = settings.breakStart || '';
+                    document.getElementById('breakEnd').value = settings.breakEnd || '';
                     document.querySelectorAll('input[name="workDays"]').forEach(cb => {
                         cb.checked = settings.workingDays.includes(parseInt(cb.value));
                     });
+                    currentBlockedDates = settings.blockedDates || [];
+                    renderBlockedDates();
                 }
             }
+        } catch (err) { }
+    }
+
+    function renderBlockedDates() {
+        const container = document.getElementById('blockedDatesList');
+        if (!container) return;
+        container.innerHTML = currentBlockedDates.map(d => `
+            <span style="background: rgba(231,76,60,0.15); color: #e74c3c; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+                ${d}
+                <button onclick="removeBlockedDate('${d}')" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:1rem; padding:0; line-height:1;">&times;</button>
+            </span>
+        `).join('');
+    }
+
+    window.addBlockedDate = function() {
+        const input = document.getElementById('blockedDateInput');
+        const date = input.value;
+        if (!date) return;
+        if (currentBlockedDates.includes(date)) { alert('Ši data jau pridėta'); return; }
+        currentBlockedDates.push(date);
+        currentBlockedDates.sort();
+        renderBlockedDates();
+        input.value = '';
+        saveBlockedDates();
+    };
+
+    window.removeBlockedDate = function(date) {
+        currentBlockedDates = currentBlockedDates.filter(d => d !== date);
+        renderBlockedDates();
+        saveBlockedDates();
+    };
+
+    async function saveBlockedDates() {
+        const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
+        try {
+            await fetch('/api/nails/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workingDays: workDays,
+                    startHour: document.getElementById('startHour').value,
+                    endHour: document.getElementById('endHour').value,
+                    breakStart: document.getElementById('breakStart').value,
+                    breakEnd: document.getElementById('breakEnd').value,
+                    blockedDates: currentBlockedDates
+                })
+            });
         } catch (err) { }
     }
 

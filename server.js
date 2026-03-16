@@ -21,7 +21,7 @@ const PRICES = {
 const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
 
 // Barbie SQLite models
-const { initDatabase, Admin, Booking } = require('./backend/barbie/database');
+const { initDatabase, Admin, Booking, db: dbBarbie } = require('./backend/barbie/database');
 // HairBeauty// Database Models
 const GretaBooking = require('./backend/hair/GretaBooking');
 const GretaSettings = require('./backend/hair/GretaSettings');
@@ -257,25 +257,103 @@ app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
     }
 });
 
+// Barbie Settings API
+app.get('/api/barbie/settings', (req, res) => {
+    dbBarbie.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+        if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
+        res.json(row || { workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30', breakStart: '', breakEnd: '', blockedDates: [] });
+    });
+});
+
+app.put('/api/barbie/settings', requireBarbieAdmin, (req, res) => {
+    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
+    dbBarbie.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
+        [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
+            if (err) return res.status(500).json({ error: 'DB klaida' });
+            res.json({ success: true });
+        });
+});
+
+// Barbie Services API
+app.get('/api/barbie/services', (req, res) => {
+    dbBarbie.all("SELECT * FROM services ORDER BY sort_order ASC", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        res.json(rows);
+    });
+});
+
 app.get('/api/barbie/bookings/times/:date', async (req, res) => {
     try {
         const date = req.params.date;
-        const slots = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30"];
+        const requestedServiceName = req.query.service;
 
-        // Simple overlap check if DB is working
-        let bookedTimes = [];
-        try {
-            const bookings = await Booking.find({ date, status: { $ne: 'cancelled' } });
-            bookedTimes = bookings.map(b => b.time);
-        } catch (dbErr) {
-            console.warn('DB check failed for slots, showing all slots as fallback:', dbErr.message);
+        // Fetch settings
+        const settings = await new Promise((resolve, reject) => {
+            dbBarbie.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
+                if (err) return reject(err);
+                resolve(row || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '18:30', breakStart: '', breakEnd: '', blockedDates: '[]' });
+            });
+        });
+
+        const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+        let blockedDates = [];
+        try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates) : settings.blockedDates; } catch(e) {}
+
+        const dayOfWeek = new Date(date).getDay();
+        if (!workingDays.includes(dayOfWeek)) return res.json([]);
+        if (blockedDates.includes(date)) return res.json([]);
+
+        // Fetch services for duration
+        const services = await new Promise((resolve, reject) => {
+            dbBarbie.all("SELECT * FROM services", [], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows || []);
+            });
+        });
+
+        let requestedDuration = 30;
+        if (requestedServiceName) {
+            const s = services.find(sr => sr.name === requestedServiceName);
+            if (s) requestedDuration = s.duration;
         }
 
-        const availableSlots = slots.filter(s => !bookedTimes.includes(s));
+        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+        const minsToTime = (m) => {
+            const hh = Math.floor(m / 60).toString().padStart(2, '0');
+            const mm = (m % 60).toString().padStart(2, '0');
+            return `${hh}:${mm}`;
+        };
+
+        const startOfDayMins = timeToMins(settings.startHour);
+        const endOfDayMins = timeToMins(settings.endHour);
+        const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
+        const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+
+        const bookings = await Booking.find({ date, status: { $ne: 'cancelled' } });
+        const blockedIntervals = bookings.map(b => {
+            const bSrv = services.find(s => s.name === b.service);
+            const bDuration = bSrv ? bSrv.duration : 30;
+            const bStartMins = timeToMins(b.time);
+            return { start: bStartMins, end: bStartMins + bDuration };
+        });
+
+        if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
+            blockedIntervals.push({ start: breakStart, end: breakEnd });
+        }
+
+        const availableSlots = [];
+        for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
+            const reqStart = curr;
+            const reqEnd = curr + requestedDuration;
+            const overlaps = blockedIntervals.some(b => reqStart < b.end && reqEnd > b.start);
+            if (!overlaps) availableSlots.push(minsToTime(curr));
+        }
+
         res.json(availableSlots);
     } catch (err) {
         console.error('Critical Slot Error:', err);
-        // Fallback to all slots so the user can at least try to book
         res.json(["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30"]);
     }
 });
@@ -376,14 +454,15 @@ app.get('/api/nails/settings', (req, res) => {
     dbNails.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
         if (err) return res.status(500).json({ error: 'DB klaida' });
         if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
-        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00' });
+        if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
+        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] });
     });
 });
 
 app.put('/api/nails/settings', requireNailsAdmin, (req, res) => {
-    const { workingDays, startHour, endHour } = req.body;
-    dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ? WHERE id = 1",
-        [JSON.stringify(workingDays), startHour, endHour], function (err) {
+    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
+    dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
+        [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
             if (err) return res.status(500).json({ error: 'DB klaida' });
             res.json({ success: true });
         });
@@ -431,6 +510,8 @@ app.get('/api/nails/available-times', (req, res) => {
         if (err) return res.status(500).json({ error: 'DB error settings' });
         const settings = settingsRow || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '19:00' };
         const workingDays = JSON.parse(settings.workingDays);
+        let blockedDates = [];
+        try { blockedDates = JSON.parse(settings.blockedDates || '[]'); } catch(e) {}
 
         dbNails.all("SELECT * FROM services", [], (err, servicesRows) => {
             if (err) return res.status(500).json({ error: 'DB error services' });
@@ -446,6 +527,11 @@ app.get('/api/nails/available-times', (req, res) => {
                 return res.json({ bookedTimes: [], availableSlots: [] }); // closed
             }
 
+            // Check if date is blocked (day off / vacation)
+            if (blockedDates.includes(dateStr)) {
+                return res.json({ bookedTimes: [], availableSlots: [] });
+            }
+
             const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
             const minsToTime = (m) => {
                 const hh = Math.floor(m / 60).toString().padStart(2, '0');
@@ -456,6 +542,10 @@ app.get('/api/nails/available-times', (req, res) => {
             const startOfDayMins = timeToMins(settings.startHour);
             const endOfDayMins = timeToMins(settings.endHour);
 
+            // Break time interval
+            const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
+            const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+
             dbNails.all(`SELECT service, time FROM reservations WHERE date = ? AND status != 'cancelled'`, [dateStr], (err, bookings) => {
                 if (err) return res.status(500).json({ error: 'DB error bookings' });
 
@@ -465,6 +555,11 @@ app.get('/api/nails/available-times', (req, res) => {
                     const bStartMins = timeToMins(b.time);
                     return { start: bStartMins, end: bStartMins + bDuration };
                 });
+
+                // Add break as a blocked interval
+                if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
+                    blockedIntervals.push({ start: breakStart, end: breakEnd });
+                }
 
                 const availableSlots = [];
                 for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
@@ -579,15 +674,18 @@ app.get('/api/hair/settings', async (req, res) => {
 
 app.put('/api/hair/settings', requireHairAdmin, async (req, res) => {
     try {
-        const { workingDays, startHour, endHour } = req.body;
+        const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
         let settings = await GretaSettings.findOne();
         if (settings) {
             settings.workingDays = workingDays;
             settings.startHour = startHour;
             settings.endHour = endHour;
+            settings.breakStart = breakStart || '';
+            settings.breakEnd = breakEnd || '';
+            settings.blockedDates = blockedDates || [];
             await settings.save();
         } else {
-            await GretaSettings.create({ workingDays, startHour, endHour });
+            await GretaSettings.create({ workingDays, startHour, endHour, breakStart: breakStart || '', breakEnd: breakEnd || '', blockedDates: blockedDates || [] });
         }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: 'Failed' }); }
@@ -629,7 +727,7 @@ app.get('/api/hair/bookings/times/:date', async (req, res) => {
         const { date } = req.params;
         const requestedServiceName = req.query.service;
 
-        let settings = await GretaSettings.findOne() || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00' };
+        let settings = await GretaSettings.findOne() || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] };
         const services = await GretaService.find();
 
         let requestedDuration = 60; // default
@@ -643,6 +741,11 @@ app.get('/api/hair/bookings/times/:date', async (req, res) => {
             return res.json([]); // closed
         }
 
+        // Check if date is blocked (day off / vacation)
+        if (settings.blockedDates && settings.blockedDates.includes(date)) {
+            return res.json([]);
+        }
+
         const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
         const minsToTime = (m) => {
             const hh = Math.floor(m / 60).toString().padStart(2, '0');
@@ -653,6 +756,10 @@ app.get('/api/hair/bookings/times/:date', async (req, res) => {
         const startOfDayMins = timeToMins(settings.startHour);
         const endOfDayMins = timeToMins(settings.endHour);
 
+        // Break time interval
+        const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
+        const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+
         const bookings = await GretaBooking.find({ date, status: { $ne: 'cancelled' } }, { time: 1, service: 1, _id: 0 });
 
         const blockedIntervals = bookings.map(b => {
@@ -661,6 +768,11 @@ app.get('/api/hair/bookings/times/:date', async (req, res) => {
             const bStartMins = timeToMins(b.time);
             return { start: bStartMins, end: bStartMins + bDuration };
         });
+
+        // Add break as a blocked interval
+        if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
+            blockedIntervals.push({ start: breakStart, end: breakEnd });
+        }
 
         const availableSlots = [];
         for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {

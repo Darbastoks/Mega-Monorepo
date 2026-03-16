@@ -26,6 +26,44 @@ const db = new sqlite3.Database(dbPath, (err) => {
         });
 
         db.run(`
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                workingDays TEXT DEFAULT '[1,2,3,4,5,6]',
+                startHour TEXT DEFAULT '09:00',
+                endHour TEXT DEFAULT '18:30',
+                breakStart TEXT DEFAULT '',
+                breakEnd TEXT DEFAULT '',
+                blockedDates TEXT DEFAULT '[]'
+            )
+        `, () => {
+            db.get("SELECT COUNT(*) as cnt FROM settings", [], (err, row) => {
+                if (row && row.cnt === 0) {
+                    db.run("INSERT INTO settings (id, workingDays, startHour, endHour, breakStart, breakEnd, blockedDates) VALUES (1, '[1,2,3,4,5,6]', '09:00', '18:30', '', '', '[]')");
+                }
+            });
+        });
+
+        db.run(`
+            CREATE TABLE IF NOT EXISTS services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                duration INTEGER DEFAULT 30,
+                price REAL DEFAULT 0,
+                sort_order INTEGER DEFAULT 0
+            )
+        `, () => {
+            db.get("SELECT COUNT(*) as cnt FROM services", [], (err, row) => {
+                if (row && row.cnt === 0) {
+                    const stmt = db.prepare("INSERT INTO services (name, duration, price, sort_order) VALUES (?, ?, ?, ?)");
+                    stmt.run('Kirpimas', 30, 15, 1);
+                    stmt.run('Barzdos formavimas', 30, 12, 2);
+                    stmt.run('Kirpimas + Barzda', 60, 25, 3);
+                    stmt.finalize();
+                }
+            });
+        });
+
+        db.run(`
             CREATE TABLE IF NOT EXISTS bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -155,5 +193,6 @@ async function initDatabase() {
 module.exports = {
     initDatabase,
     Admin: AdminModel,
-    Booking: BookingModel
+    Booking: BookingModel,
+    db
 };

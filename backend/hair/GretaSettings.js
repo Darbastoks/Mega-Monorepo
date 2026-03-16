@@ -12,6 +12,18 @@ const gretaSettingsSchema = new mongoose.Schema({
     endHour: {
         type: String,
         default: '19:00'
+    },
+    breakStart: {
+        type: String,
+        default: ''
+    },
+    breakEnd: {
+        type: String,
+        default: ''
+    },
+    blockedDates: {
+        type: [String],
+        default: []
     }
 });
 
