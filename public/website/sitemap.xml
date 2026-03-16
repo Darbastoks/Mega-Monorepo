@@ -21,6 +21,26 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://mega-monorepo.onrender.com/paslaugos/moderni-svetaine.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mega-monorepo.onrender.com/paslaugos/online-registracija.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mega-monorepo.onrender.com/paslaugos/google-maps.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mega-monorepo.onrender.com/paslaugos/svetaines-prieziura.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://mega-monorepo.onrender.com/privatumo-politika</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>

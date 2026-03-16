@@ -1990,6 +1990,12 @@ button.plan-btn.btn-primary:hover:not(:disabled) {
     .guarantee-badge { margin: -4px auto 24px; font-size: 0.78rem; padding: 10px 16px; }
 }
 
+/* Service card as link */
+a.service-card {
+    text-decoration: none;
+    color: inherit;
+}
+
 /* will-change performance hints */
 .aurora-glow-1, .aurora-glow-2, .aurora-glow-3 {
     will-change: transform, opacity;

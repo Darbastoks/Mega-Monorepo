@@ -839,6 +839,8 @@ app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/thank-you', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'thank-you.html')));
 app.get('/privatumo-politika', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'privatumo-politika.html')));
 app.get('/paslaugos-salygos', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'paslaugos-salygos.html')));
+// Service showcase pages
+app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslaugos')));
 // SEO files
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
