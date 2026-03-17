@@ -51,25 +51,23 @@ if (adminDashboard) {
     async function fetchReservations() {
         try {
             const res = await fetch(API_URL);
+            if (res.status === 401) {
+                localStorage.removeItem('adminToken');
+                window.location.href = 'admin-login.html';
+                return;
+            }
             if (!res.ok) throw new Error('Nepavyko užkrauti rezervacijų');
 
             allReservations = await res.json();
-            renderDashboard(allReservations);
+            updateStats(allReservations);
+            renderTable(allReservations);
+            setupFilterTabs();
 
         } catch (error) {
             console.error(error);
             const container = document.querySelector('.admin-table-container');
             container.innerHTML = `<p style="color:red;">Klaida kraunant duomenis iš serverio.</p>`;
         }
-    }
-
-    function renderDashboard(reservations) {
-        updateStats(reservations);
-        renderTable(reservations);
-        setupFilterTabs();
-        initSettingsView();
-        loadSettings();
-        loadServices();
     }
 
     function updateStats(reservations) {
@@ -210,7 +208,10 @@ if (adminDashboard) {
         });
     }
 
-    // Initial Load
+    // Initial Load — settings/services init independently of reservations
+    initSettingsView();
+    loadSettings();
+    loadServices();
     fetchReservations();
 
     // ==================== SETTINGS & SERVICES ====================
