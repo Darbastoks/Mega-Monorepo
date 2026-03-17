@@ -22,17 +22,13 @@ const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p
 
 // Barbie SQLite models
 const { initDatabase, Admin, Booking, db: dbBarbie } = require('./backend/barbie/database');
-// HairBeauty// Database Models
-const GretaBooking = require('./backend/hair/GretaBooking');
-const GretaSettings = require('./backend/hair/GretaSettings');
-const GretaService = require('./backend/hair/GretaService');
+// Hair Beauty SQLite db
+const dbHair = require('./backend/hair/database');
 // Nails SQLite db
 const dbNails = require('./backend/nails/database');
 // Velora Lead & Admin
 const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
 
-const mongoose = require('mongoose');
-// mongoose.set('bufferCommands', false); // Re-enabled buffering to prevent timeouts during slow connections
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -635,178 +631,18 @@ app.patch('/api/nails/reservations/:id/status', requireNailsAdmin, (req, res) =>
 
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
-const hairLimiter = rLimit({
-    windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 3,
-    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
-});
-
-app.post('/api/hair/book', hairLimiter, async (req, res) => {
-    try {
-        const { name, phone, service, date, time, message, website_url_fake } = req.body;
-
-        // Anti-Spam Honeypot
-        if (website_url_fake) {
-            console.log(`Spam blocked for Hair Beauty: ${phone}`);
-            return res.status(200).json({ success: true, bookingId: 'spam-blocked' });
-        }
-
-        if (!name || !phone || !service || !date || !time) {
-            return res.status(400).json({ error: 'Name, phone, service, date, and time are required.' });
-        }
-
-        // Check if slot is already booked
-        const existing = await GretaBooking.findOne({ date, time, status: { $ne: 'cancelled' } });
-        if (existing) {
-            return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
-        }
-
-        const newB = new GretaBooking({ name, phone, service, date, time, message });
-        const saved = await newB.save();
-        res.status(201).json({ success: true, bookingId: saved._id });
-    } catch (err) {
-        console.error('Hair Book Error:', err);
-        res.status(500).json({ error: 'Failed', details: err.message });
-    }
-});
-
-// Settings API
-app.get('/api/hair/settings', async (req, res) => {
-    try {
-        let settings = await GretaSettings.findOne();
-        if (!settings) {
-            settings = await GretaSettings.create({ workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00' });
-        }
-        res.json(settings);
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.put('/api/hair/settings', requireHairAdmin, async (req, res) => {
-    try {
-        const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
-        let settings = await GretaSettings.findOne();
-        if (settings) {
-            settings.workingDays = workingDays;
-            settings.startHour = startHour;
-            settings.endHour = endHour;
-            settings.breakStart = breakStart || '';
-            settings.breakEnd = breakEnd || '';
-            settings.blockedDates = blockedDates || [];
-            await settings.save();
-        } else {
-            await GretaSettings.create({ workingDays, startHour, endHour, breakStart: breakStart || '', breakEnd: breakEnd || '', blockedDates: blockedDates || [] });
-        }
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-// Services API
-app.get('/api/hair/services', async (req, res) => {
-    try {
-        const services = await GretaService.find().sort({ _id: 1 });
-        res.json(services);
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.post('/api/hair/services', requireHairAdmin, async (req, res) => {
-    try {
-        const { name, duration, price, description } = req.body;
-        const s = new GretaService({ name, duration, price, description });
-        await s.save();
-        res.json({ success: true, service: s });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.patch('/api/hair/services/:id', requireHairAdmin, async (req, res) => {
-    try {
-        await GretaService.findByIdAndUpdate(req.params.id, req.body);
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.delete('/api/hair/services/:id', requireHairAdmin, async (req, res) => {
-    try {
-        await GretaService.findByIdAndDelete(req.params.id);
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
-app.get('/api/hair/bookings/times/:date', async (req, res) => {
-    try {
-        const { date } = req.params;
-        const requestedServiceName = req.query.service;
-
-        let settings = await GretaSettings.findOne() || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] };
-        const services = await GretaService.find();
-
-        let requestedDuration = 60; // default
-        if (requestedServiceName) {
-            const s = services.find(srv => srv.name === requestedServiceName);
-            if (s) requestedDuration = s.duration;
-        }
-
-        const dayOfWeek = new Date(date).getDay();
-        if (!settings.workingDays.includes(dayOfWeek)) {
-            return res.json([]); // closed
-        }
-
-        // Check if date is blocked (day off / vacation)
-        if (settings.blockedDates && settings.blockedDates.includes(date)) {
-            return res.json([]);
-        }
-
-        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-        const minsToTime = (m) => {
-            const hh = Math.floor(m / 60).toString().padStart(2, '0');
-            const mm = (m % 60).toString().padStart(2, '0');
-            return `${hh}:${mm}`;
-        };
-
-        const startOfDayMins = timeToMins(settings.startHour);
-        const endOfDayMins = timeToMins(settings.endHour);
-
-        // Break time interval
-        const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
-        const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
-
-        const bookings = await GretaBooking.find({ date, status: { $ne: 'cancelled' } }, { time: 1, service: 1, _id: 0 });
-
-        const blockedIntervals = bookings.map(b => {
-            const bSrv = services.find(srv => srv.name === b.service);
-            const bDuration = bSrv ? bSrv.duration : 60;
-            const bStartMins = timeToMins(b.time);
-            return { start: bStartMins, end: bStartMins + bDuration };
-        });
-
-        // Add break as a blocked interval
-        if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
-            blockedIntervals.push({ start: breakStart, end: breakEnd });
-        }
-
-        const availableSlots = [];
-        for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
-            const reqStart = curr;
-            const reqEnd = curr + requestedDuration;
-            const overlaps = blockedIntervals.some(b => reqStart < b.end && reqEnd > b.start);
-            if (!overlaps) availableSlots.push(minsToTime(curr));
-        }
-
-        res.json(availableSlots);
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
-});
-
 const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || 'changeme';
 
-// Explicit route for hair admin to ensure latest file is served
-app.get('/hair/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/hair/admin.html'));
-});
-
-// --- Admin Auth for Hair ---
 function requireHairAdmin(req, res, next) {
     if (req.session && req.session.isHairAdmin) return next();
     res.status(401).json({ error: 'Reikia prisijungti' });
 }
+
+const hairLimiter = rLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 3,
+    message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+});
 
 app.post('/api/hair/admin/login', (req, res) => {
     const { password } = req.body;
@@ -822,28 +658,186 @@ app.post('/api/hair/admin/logout', (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/hair/bookings', requireHairAdmin, async (req, res) => {
-    try {
-        const bookings = await GretaBooking.find().sort({ createdAt: -1 });
-        res.json(bookings);
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+// Explicit route for hair admin to ensure latest file is served
+app.get('/hair/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/hair/admin.html'));
 });
 
-// Hair Beauty by Greta Booking Routes
+// --- Hair Settings API (SQLite) ---
+app.get('/api/hair/settings', (req, res) => {
+    dbHair.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+        if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
+        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] });
+    });
+});
 
-app.delete('/api/hair/bookings/:id', requireHairAdmin, async (req, res) => {
-    try {
-        await GretaBooking.findByIdAndDelete(req.params.id);
+app.put('/api/hair/settings', requireHairAdmin, (req, res) => {
+    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
+    dbHair.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", () => {
+        dbHair.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
+            [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
+                if (err) { console.error('Hair settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+                res.json({ success: true });
+            });
+    });
+});
+
+// --- Hair Services API (SQLite) ---
+app.get('/api/hair/services', (req, res) => {
+    dbHair.all("SELECT * FROM services ORDER BY sort_order ASC, id ASC", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        // Map id -> _id for frontend compatibility
+        res.json(rows.map(r => ({ ...r, _id: r.id })));
+    });
+});
+
+app.post('/api/hair/services', requireHairAdmin, (req, res) => {
+    const { name, duration, price, description } = req.body;
+    dbHair.run("INSERT INTO services (name, duration, price, description) VALUES (?, ?, ?, ?)",
+        [name, duration || 60, price || 0, description || ''], function (err) {
+            if (err) return res.status(500).json({ error: 'DB klaida' });
+            res.json({ success: true, service: { _id: this.lastID, name, duration, price, description } });
+        });
+});
+
+app.patch('/api/hair/services/:id', requireHairAdmin, (req, res) => {
+    const { name, duration, price, description } = req.body;
+    dbHair.run("UPDATE services SET name = ?, duration = ?, price = ?, description = ? WHERE id = ?",
+        [name, duration, price, description || '', req.params.id], function (err) {
+            if (err) return res.status(500).json({ error: 'DB klaida' });
+            res.json({ success: true });
+        });
+});
+
+app.delete('/api/hair/services/:id', requireHairAdmin, (req, res) => {
+    dbHair.run("DELETE FROM services WHERE id = ?", [req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+    });
 });
 
-app.put('/api/hair/bookings/:id/status', requireHairAdmin, async (req, res) => {
+// --- Hair Available Times (SQLite) ---
+app.get('/api/hair/bookings/times/:date', (req, res) => {
+    const dateStr = req.params.date;
+    const requestedServiceName = req.query.service;
+
+    dbHair.get("SELECT * FROM settings WHERE id = 1", [], (err, settingsRow) => {
+        if (err) return res.status(500).json({ error: 'DB error settings' });
+        const settings = settingsRow || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: '[]' };
+        const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+        let blockedDates = [];
+        try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates || '[]') : (settings.blockedDates || []); } catch(e) {}
+
+        dbHair.all("SELECT * FROM services", [], (err, servicesRows) => {
+            if (err) return res.status(500).json({ error: 'DB error services' });
+
+            let requestedDuration = 60;
+            if (requestedServiceName) {
+                const s = (servicesRows || []).find(sr => sr.name === requestedServiceName);
+                if (s) requestedDuration = s.duration;
+            }
+
+            const dayOfWeek = new Date(dateStr).getDay();
+            if (!workingDays.includes(dayOfWeek)) {
+                return res.json([]);
+            }
+
+            if (blockedDates.includes(dateStr)) {
+                return res.json([]);
+            }
+
+            const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+            const minsToTime = (m) => {
+                const hh = Math.floor(m / 60).toString().padStart(2, '0');
+                const mm = (m % 60).toString().padStart(2, '0');
+                return `${hh}:${mm}`;
+            };
+
+            const startOfDayMins = timeToMins(settings.startHour);
+            const endOfDayMins = timeToMins(settings.endHour);
+
+            const breakStartMins = settings.breakStart ? timeToMins(settings.breakStart) : null;
+            const breakEndMins = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+
+            dbHair.all(`SELECT service, time FROM bookings WHERE date = ? AND status != 'cancelled'`, [dateStr], (err, bookings) => {
+                if (err) return res.status(500).json({ error: 'DB error bookings' });
+
+                const blockedIntervals = (bookings || []).map(b => {
+                    const bSrv = (servicesRows || []).find(s => s.name === b.service);
+                    const bDuration = bSrv ? bSrv.duration : 60;
+                    const bStartMins = timeToMins(b.time);
+                    return { start: bStartMins, end: bStartMins + bDuration };
+                });
+
+                if (breakStartMins !== null && breakEndMins !== null && breakEndMins > breakStartMins) {
+                    blockedIntervals.push({ start: breakStartMins, end: breakEndMins });
+                }
+
+                const availableSlots = [];
+                for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
+                    const reqStart = curr;
+                    const reqEnd = curr + requestedDuration;
+                    const overlaps = blockedIntervals.some(b => reqStart < b.end && reqEnd > b.start);
+                    if (!overlaps) availableSlots.push(minsToTime(curr));
+                }
+
+                res.json(availableSlots);
+            });
+        });
+    });
+});
+
+// --- Hair Booking (SQLite) ---
+app.post('/api/hair/book', hairLimiter, (req, res) => {
+    const { name, phone, service, date, time, message, website_url_fake } = req.body;
+
+    if (website_url_fake) {
+        console.log(`Spam blocked for Hair Beauty: ${phone}`);
+        return res.status(200).json({ success: true, bookingId: 'spam-blocked' });
+    }
+
+    if (!name || !phone || !service || !date || !time) {
+        return res.status(400).json({ error: 'Name, phone, service, date, and time are required.' });
+    }
+
+    dbHair.get(`SELECT id FROM bookings WHERE date = ? AND time = ? AND status != 'cancelled'`, [date, time], (err, row) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (row) return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
+
+        dbHair.run(
+            `INSERT INTO bookings (name, phone, service, date, time, message) VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, phone, service, date, time, message || ''],
+            function (err) {
+                if (err) return res.status(500).json({ error: 'Klaida išsaugant' });
+                res.status(201).json({ success: true, bookingId: this.lastID });
+            }
+        );
+    });
+});
+
+app.get('/api/hair/bookings', requireHairAdmin, (req, res) => {
+    dbHair.all(`SELECT * FROM bookings ORDER BY created_at DESC`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        // Map id -> _id for frontend compatibility
+        res.json((rows || []).map(r => ({ ...r, _id: String(r.id) })));
+    });
+});
+
+app.delete('/api/hair/bookings/:id', requireHairAdmin, (req, res) => {
+    dbHair.run("DELETE FROM bookings WHERE id = ?", [req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        res.json({ success: true });
+    });
+});
+
+app.put('/api/hair/bookings/:id/status', requireHairAdmin, (req, res) => {
     if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Bad status' });
-    try {
-        const b = await GretaBooking.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-        res.json({ success: true, booking: b });
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+    dbHair.run("UPDATE bookings SET status = ? WHERE id = ?", [req.body.status, req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        res.json({ success: true });
+    });
 });
 
 
