@@ -307,8 +307,12 @@ function initSettings() {
                 body: JSON.stringify({ workingDays: workDays, startHour, endHour, breakStart, breakEnd, blockedDates: currentBlockedDates })
             });
             if (res.ok) showToast('✅', 'Nustatymai išsaugoti');
-            else showToast('❌', 'Klaida išsaugant');
-        } catch (err) { showToast('❌', 'Tinklo klaida'); }
+            else {
+                const errData = await res.json().catch(() => ({}));
+                console.error('Settings save failed:', res.status, errData);
+                showToast('❌', 'Klaida: ' + (errData.error || res.status));
+            }
+        } catch (err) { console.error('Settings save error:', err); showToast('❌', 'Tinklo klaida: ' + err.message); }
     });
 
     loadSettings();

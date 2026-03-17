@@ -179,33 +179,6 @@ app.use(express.static(path.join(__dirname, 'public/website')));
 
 
 // ==================== BARBIE BARBER API ====================
-app.get('/api/barbie/settings', async (req, res) => {
-    try {
-        let settings = await Settings.findOne();
-        if (!settings) {
-            settings = await Settings.create({});
-        }
-        res.json(settings);
-    } catch (err) { res.status(500).json({ error: 'Klaida', details: err.message }); }
-});
-
-app.put('/api/barbie/settings', requireBarbieAdmin, async (req, res) => {
-    try {
-        const { workingDays, startHour, endHour } = req.body;
-        let settings = await Settings.findOne();
-        if (!settings) {
-            settings = new Settings();
-        }
-        settings.workingDays = workingDays;
-        settings.startHour = startHour;
-        settings.endHour = endHour;
-        await settings.save();
-        res.json({ success: true });
-    } catch (err) {
-        console.error('Barbie Settings Update Error:', err);
-        res.status(500).json({ error: 'Klaida', details: err.message });
-    }
-});
 
 app.get('/api/barbie/services', async (req, res) => {
     try {
@@ -272,14 +245,26 @@ app.get('/api/barbie/settings', (req, res) => {
     });
 });
 
-app.put('/api/barbie/settings', requireBarbieAdmin, (req, res) => {
+app.put('/api/barbie/settings', (req, res) => {
+    // Skip auth check for settings — admin is already on the admin page
+    if (!req.session || !req.session.isBarbieAdmin) {
+        console.error('Barbie settings PUT: not authenticated, session:', JSON.stringify(req.session));
+        return res.status(401).json({ error: 'Reikia prisijungti' });
+    }
     const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
-    // Ensure settings table and row exist before update
-    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]')`, () => {
-        dbBarbie.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", () => {
+    if (!dbBarbie) {
+        console.error('Barbie settings PUT: dbBarbie is undefined!');
+        return res.status(500).json({ error: 'DB neprijungta' });
+    }
+    console.log('Barbie settings PUT: saving...', JSON.stringify(req.body).substring(0, 200));
+    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]')`, (tableErr) => {
+        if (tableErr) console.error('Create table error:', tableErr);
+        dbBarbie.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", (insertErr) => {
+            if (insertErr) console.error('Insert seed error:', insertErr);
             dbBarbie.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
                 [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
-                    if (err) { console.error('Barbie settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+                    if (err) { console.error('Barbie settings UPDATE error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+                    console.log('Barbie settings saved OK, changes:', this.changes);
                     res.json({ success: true });
                 });
         });
@@ -461,28 +446,35 @@ app.post('/api/nails/admin/logout', (req, res) => {
 });
 
 app.get('/api/nails/settings', (req, res) => {
-    // Ensure new columns exist (migration for existing DBs)
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {});
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {});
-    dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {});
+    // Ensure new columns exist (migration for existing DBs), chained to avoid race
+    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {
+    dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {
+    dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {
     dbNails.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
         if (err) return res.status(500).json({ error: 'DB klaida' });
         if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
         if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
         res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] });
     });
+    });
+    });
+    });
 });
 
 app.put('/api/nails/settings', requireNailsAdmin, (req, res) => {
     const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {});
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {});
-    dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {});
-    dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
-        [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
-            if (err) { console.error('Nails settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
-            res.json({ success: true });
+    // Chain ALTER TABLEs then UPDATE to avoid race condition
+    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {
+        dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {
+            dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {
+                dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
+                    [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
+                        if (err) { console.error('Nails settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+                        res.json({ success: true });
+                    });
+            });
         });
+    });
 });
 
 app.get('/api/nails/services', (req, res) => {
