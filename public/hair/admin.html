@@ -698,6 +698,9 @@
                     loginError.style.display = 'none';
                     showDashboard();
                     loadBookings();
+                    initSettingsView();
+                    loadSettings();
+                    loadServices();
                 } else {
                     const data = await response.json();
                     loginError.style.display = 'block';
@@ -933,7 +936,7 @@
                     body: JSON.stringify(getHairSettingsPayload())
                 });
                 if (res.ok) alert('Nustatymai išsaugoti');
-                else alert('Klaida išsaugant');
+                else { const d = await res.json(); alert('Klaida: ' + (d.error || 'Nepavyko išsaugoti')); }
             } catch (err) { alert('Tinklo klaida'); }
         }
 
