@@ -103,6 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
             disableMobile: true,
             onDayCreate: function(dObj, dStr, fp, dayElem) {
                 const dt = dayElem.dateObj;
+                const today = new Date(); today.setHours(0,0,0,0);
+                if (dt < today) { dayElem.classList.add('day-red'); return; }
                 const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
                 const status = monthAvailability[dateStr];
                 if (status === 'red' || status === 'closed') dayElem.classList.add('day-red');
