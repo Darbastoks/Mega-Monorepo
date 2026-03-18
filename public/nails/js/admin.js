@@ -233,21 +233,7 @@ if (adminDashboard) {
         // Settings form submit
         document.getElementById('settingsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
-            const startHour = document.getElementById('startHour').value;
-            const endHour = document.getElementById('endHour').value;
-            const breakStart = document.getElementById('breakStart').value;
-            const breakEnd = document.getElementById('breakEnd').value;
-
-            try {
-                const res = await fetch('/api/nails/settings', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ workingDays: workDays, startHour, endHour, breakStart, breakEnd, blockedDates: currentBlockedDates })
-                });
-                if (res.ok) alert('Nustatymai išsaugoti');
-                else alert('Klaida išsaugant');
-            } catch (err) { alert('Tinklo klaida'); }
+            await saveAllNailsSettings();
         });
 
         // Service form submit
@@ -279,6 +265,29 @@ if (adminDashboard) {
     }
 
     let currentBlockedDates = [];
+    let currentBreaks = [];
+
+    function getNailsSettingsPayload() {
+        return {
+            workingDays: Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value)),
+            startHour: document.getElementById('startHour').value,
+            endHour: document.getElementById('endHour').value,
+            blockedDates: currentBlockedDates,
+            breaks: currentBreaks
+        };
+    }
+
+    async function saveAllNailsSettings() {
+        try {
+            const res = await fetch('/api/nails/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(getNailsSettingsPayload())
+            });
+            if (res.ok) alert('Nustatymai išsaugoti');
+            else alert('Klaida išsaugant');
+        } catch (err) { alert('Tinklo klaida'); }
+    }
 
     async function loadSettings() {
         try {
@@ -288,18 +297,51 @@ if (adminDashboard) {
                 if (settings) {
                     document.getElementById('startHour').value = settings.startHour;
                     document.getElementById('endHour').value = settings.endHour;
-                    document.getElementById('breakStart').value = settings.breakStart || '';
-                    document.getElementById('breakEnd').value = settings.breakEnd || '';
                     document.querySelectorAll('input[name="workDays"]').forEach(cb => {
                         cb.checked = settings.workingDays.includes(parseInt(cb.value));
                     });
                     currentBlockedDates = settings.blockedDates || [];
+                    currentBreaks = settings.breaks || [];
                     renderBlockedDates();
+                    renderBreaks();
                 }
             }
         } catch (err) { }
     }
 
+    // --- Breaks (multiple) ---
+    function renderBreaks() {
+        const container = document.getElementById('breaksList');
+        if (!container) return;
+        container.innerHTML = currentBreaks.map((br, i) => `
+            <span style="background: rgba(52,152,219,0.15); color: #3498db; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                ${br.start} - ${br.end}
+                <button onclick="removeBreak(${i})" style="background:none; border:none; color:#3498db; cursor:pointer; font-size:1rem; padding:0; line-height:1;">&times;</button>
+            </span>
+        `).join('');
+    }
+
+    window.addBreak = function() {
+        if (currentBreaks.length >= 4) { alert('Maksimaliai 4 pertraukos'); return; }
+        const start = document.getElementById('breakStartInput').value;
+        const end = document.getElementById('breakEndInput').value;
+        if (!start || !end) { alert('Nurodykite pertraukos pradžią ir pabaigą'); return; }
+        if (end <= start) { alert('Pabaiga turi būti vėliau nei pradžia'); return; }
+        currentBreaks.push({ start, end });
+        currentBreaks.sort((a, b) => a.start.localeCompare(b.start));
+        renderBreaks();
+        document.getElementById('breakStartInput').value = '';
+        document.getElementById('breakEndInput').value = '';
+        saveAllNailsSettings();
+    };
+
+    window.removeBreak = function(index) {
+        currentBreaks.splice(index, 1);
+        renderBreaks();
+        saveAllNailsSettings();
+    };
+
+    // --- Blocked Dates ---
     function renderBlockedDates() {
         const container = document.getElementById('blockedDatesList');
         if (!container) return;
@@ -320,32 +362,14 @@ if (adminDashboard) {
         currentBlockedDates.sort();
         renderBlockedDates();
         input.value = '';
-        saveBlockedDates();
+        saveAllNailsSettings();
     };
 
     window.removeBlockedDate = function(date) {
         currentBlockedDates = currentBlockedDates.filter(d => d !== date);
         renderBlockedDates();
-        saveBlockedDates();
+        saveAllNailsSettings();
     };
-
-    async function saveBlockedDates() {
-        const workDays = Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value));
-        try {
-            await fetch('/api/nails/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    workingDays: workDays,
-                    startHour: document.getElementById('startHour').value,
-                    endHour: document.getElementById('endHour').value,
-                    breakStart: document.getElementById('breakStart').value,
-                    breakEnd: document.getElementById('breakEnd').value,
-                    blockedDates: currentBlockedDates
-                })
-            });
-        } catch (err) { }
-    }
 
     async function loadServices() {
         try {

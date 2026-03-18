@@ -228,14 +228,21 @@ app.post('/api/barbie/bookings', barbieLimiter, async (req, res) => {
 
 // Barbie Settings API
 app.get('/api/barbie/settings', (req, res) => {
-    // Ensure table exists before querying
-    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]')`, () => {
+    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]', breaks TEXT DEFAULT '[]')`, () => {
+        dbBarbie.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {});
         dbBarbie.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", () => {
             dbBarbie.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
                 if (err) return res.status(500).json({ error: 'DB klaida' });
-                if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
-                if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
-                res.json(row || { workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30', breakStart: '', breakEnd: '', blockedDates: [] });
+                if (row) {
+                    if (row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+                    try { row.blockedDates = JSON.parse(row.blockedDates || '[]'); } catch(e) { row.blockedDates = []; }
+                    try { row.breaks = JSON.parse(row.breaks || '[]'); } catch(e) { row.breaks = []; }
+                    // Migrate old single break into breaks array
+                    if (row.breaks.length === 0 && row.breakStart && row.breakEnd) {
+                        row.breaks = [{ start: row.breakStart, end: row.breakEnd }];
+                    }
+                }
+                res.json(row || { workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30', blockedDates: [], breaks: [] });
             });
         });
     });
@@ -247,20 +254,14 @@ app.put('/api/barbie/settings', (req, res) => {
         console.error('Barbie settings PUT: not authenticated, session:', JSON.stringify(req.session));
         return res.status(401).json({ error: 'Reikia prisijungti' });
     }
-    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
-    if (!dbBarbie) {
-        console.error('Barbie settings PUT: dbBarbie is undefined!');
-        return res.status(500).json({ error: 'DB neprijungta' });
-    }
-    console.log('Barbie settings PUT: saving...', JSON.stringify(req.body).substring(0, 200));
-    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]')`, (tableErr) => {
-        if (tableErr) console.error('Create table error:', tableErr);
-        dbBarbie.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", (insertErr) => {
-            if (insertErr) console.error('Insert seed error:', insertErr);
-            dbBarbie.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
-                [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
-                    if (err) { console.error('Barbie settings UPDATE error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
-                    console.log('Barbie settings saved OK, changes:', this.changes);
+    const { workingDays, startHour, endHour, blockedDates, breaks } = req.body;
+    if (!dbBarbie) return res.status(500).json({ error: 'DB neprijungta' });
+    dbBarbie.run(`CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY DEFAULT 1, workingDays TEXT DEFAULT '[1,2,3,4,5,6]', startHour TEXT DEFAULT '09:00', endHour TEXT DEFAULT '18:30', breakStart TEXT DEFAULT '', breakEnd TEXT DEFAULT '', blockedDates TEXT DEFAULT '[]', breaks TEXT DEFAULT '[]')`, () => {
+        dbBarbie.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {});
+        dbBarbie.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", () => {
+            dbBarbie.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, blockedDates = ?, breaks = ? WHERE id = 1",
+                [JSON.stringify(workingDays), startHour, endHour, JSON.stringify(blockedDates || []), JSON.stringify(breaks || [])], function (err) {
+                    if (err) return res.status(500).json({ error: 'DB klaida: ' + err.message });
                     res.json({ success: true });
                 });
         });
@@ -319,8 +320,13 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
 
         const startOfDayMins = timeToMins(settings.startHour);
         const endOfDayMins = timeToMins(settings.endHour);
-        const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
-        const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+        // Parse breaks array (multiple breaks support)
+        let breaksArr = [];
+        try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+        // Backward compat: if no breaks array but old breakStart/breakEnd exist
+        if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) {
+            breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+        }
 
         const bookings = await Booking.find({ date, status: { $ne: 'cancelled' } });
         const blockedIntervals = bookings.map(b => {
@@ -330,9 +336,14 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
             return { start: bStartMins, end: bStartMins + bDuration };
         });
 
-        if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
-            blockedIntervals.push({ start: breakStart, end: breakEnd });
-        }
+        // Add all breaks as blocked intervals
+        breaksArr.forEach(br => {
+            if (br.start && br.end) {
+                const bStart = timeToMins(br.start);
+                const bEnd = timeToMins(br.end);
+                if (bEnd > bStart) blockedIntervals.push({ start: bStart, end: bEnd });
+            }
+        });
 
         const availableSlots = [];
         for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
@@ -442,34 +453,31 @@ app.post('/api/nails/admin/logout', (req, res) => {
 });
 
 app.get('/api/nails/settings', (req, res) => {
-    // Ensure new columns exist (migration for existing DBs), chained to avoid race
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {
-    dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {
+    dbNails.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {
     dbNails.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
         if (err) return res.status(500).json({ error: 'DB klaida' });
-        if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
-        if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
-        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] });
-    });
-    });
+        if (row) {
+            if (row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+            try { row.blockedDates = JSON.parse(row.blockedDates || '[]'); } catch(e) { row.blockedDates = []; }
+            try { row.breaks = JSON.parse(row.breaks || '[]'); } catch(e) { row.breaks = []; }
+            // Migrate old single break into breaks array
+            if (row.breaks.length === 0 && row.breakStart && row.breakEnd) {
+                row.breaks = [{ start: row.breakStart, end: row.breakEnd }];
+            }
+        }
+        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', blockedDates: [], breaks: [] });
     });
     });
 });
 
 app.put('/api/nails/settings', requireNailsAdmin, (req, res) => {
-    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
-    // Chain ALTER TABLEs then UPDATE to avoid race condition
-    dbNails.run("ALTER TABLE settings ADD COLUMN breakStart TEXT DEFAULT ''", () => {
-        dbNails.run("ALTER TABLE settings ADD COLUMN breakEnd TEXT DEFAULT ''", () => {
-            dbNails.run("ALTER TABLE settings ADD COLUMN blockedDates TEXT DEFAULT '[]'", () => {
-                dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
-                    [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
-                        if (err) { console.error('Nails settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
-                        res.json({ success: true });
-                    });
+    const { workingDays, startHour, endHour, blockedDates, breaks } = req.body;
+    dbNails.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {
+        dbNails.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, blockedDates = ?, breaks = ? WHERE id = 1",
+            [JSON.stringify(workingDays), startHour, endHour, JSON.stringify(blockedDates || []), JSON.stringify(breaks || [])], function (err) {
+                if (err) return res.status(500).json({ error: 'DB klaida: ' + err.message });
+                res.json({ success: true });
             });
-        });
     });
 });
 
@@ -547,9 +555,12 @@ app.get('/api/nails/available-times', (req, res) => {
             const startOfDayMins = timeToMins(settings.startHour);
             const endOfDayMins = timeToMins(settings.endHour);
 
-            // Break time interval
-            const breakStart = settings.breakStart ? timeToMins(settings.breakStart) : null;
-            const breakEnd = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+            // Parse breaks array (multiple breaks support)
+            let breaksArr = [];
+            try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+            if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) {
+                breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+            }
 
             dbNails.all(`SELECT service, time FROM reservations WHERE date = ? AND status != 'cancelled'`, [dateStr], (err, bookings) => {
                 if (err) return res.status(500).json({ error: 'DB error bookings' });
@@ -561,10 +572,14 @@ app.get('/api/nails/available-times', (req, res) => {
                     return { start: bStartMins, end: bStartMins + bDuration };
                 });
 
-                // Add break as a blocked interval
-                if (breakStart !== null && breakEnd !== null && breakEnd > breakStart) {
-                    blockedIntervals.push({ start: breakStart, end: breakEnd });
-                }
+                // Add all breaks as blocked intervals
+                breaksArr.forEach(br => {
+                    if (br.start && br.end) {
+                        const bStart = timeToMins(br.start);
+                        const bEnd = timeToMins(br.end);
+                        if (bEnd > bStart) blockedIntervals.push({ start: bStart, end: bEnd });
+                    }
+                });
 
                 const availableSlots = [];
                 for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
@@ -665,22 +680,32 @@ app.get('/hair/admin', (req, res) => {
 
 // --- Hair Settings API (SQLite) ---
 app.get('/api/hair/settings', (req, res) => {
+    dbHair.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {
     dbHair.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
         if (err) return res.status(500).json({ error: 'DB klaida' });
-        if (row && row.workingDays) row.workingDays = JSON.parse(row.workingDays);
-        if (row && row.blockedDates) try { row.blockedDates = JSON.parse(row.blockedDates); } catch(e) { row.blockedDates = []; }
-        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', breakStart: '', breakEnd: '', blockedDates: [] });
+        if (row) {
+            if (row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+            try { row.blockedDates = JSON.parse(row.blockedDates || '[]'); } catch(e) { row.blockedDates = []; }
+            try { row.breaks = JSON.parse(row.breaks || '[]'); } catch(e) { row.breaks = []; }
+            if (row.breaks.length === 0 && row.breakStart && row.breakEnd) {
+                row.breaks = [{ start: row.breakStart, end: row.breakEnd }];
+            }
+        }
+        res.json(row || { workingDays: [1, 2, 3, 4, 5, 6], startHour: '09:00', endHour: '19:00', blockedDates: [], breaks: [] });
+    });
     });
 });
 
 app.put('/api/hair/settings', requireHairAdmin, (req, res) => {
-    const { workingDays, startHour, endHour, breakStart, breakEnd, blockedDates } = req.body;
+    const { workingDays, startHour, endHour, blockedDates, breaks } = req.body;
+    dbHair.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {
     dbHair.run("INSERT OR IGNORE INTO settings (id) VALUES (1)", () => {
-        dbHair.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, breakStart = ?, breakEnd = ?, blockedDates = ? WHERE id = 1",
-            [JSON.stringify(workingDays), startHour, endHour, breakStart || '', breakEnd || '', JSON.stringify(blockedDates || [])], function (err) {
-                if (err) { console.error('Hair settings save error:', err); return res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+        dbHair.run("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, blockedDates = ?, breaks = ? WHERE id = 1",
+            [JSON.stringify(workingDays), startHour, endHour, JSON.stringify(blockedDates || []), JSON.stringify(breaks || [])], function (err) {
+                if (err) return res.status(500).json({ error: 'DB klaida: ' + err.message });
                 res.json({ success: true });
             });
+    });
     });
 });
 
@@ -758,8 +783,12 @@ app.get('/api/hair/bookings/times/:date', (req, res) => {
             const startOfDayMins = timeToMins(settings.startHour);
             const endOfDayMins = timeToMins(settings.endHour);
 
-            const breakStartMins = settings.breakStart ? timeToMins(settings.breakStart) : null;
-            const breakEndMins = settings.breakEnd ? timeToMins(settings.breakEnd) : null;
+            // Parse breaks array (multiple breaks support)
+            let breaksArr = [];
+            try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+            if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) {
+                breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+            }
 
             dbHair.all(`SELECT service, time FROM bookings WHERE date = ? AND status != 'cancelled'`, [dateStr], (err, bookings) => {
                 if (err) return res.status(500).json({ error: 'DB error bookings' });
@@ -771,9 +800,14 @@ app.get('/api/hair/bookings/times/:date', (req, res) => {
                     return { start: bStartMins, end: bStartMins + bDuration };
                 });
 
-                if (breakStartMins !== null && breakEndMins !== null && breakEndMins > breakStartMins) {
-                    blockedIntervals.push({ start: breakStartMins, end: breakEndMins });
-                }
+                // Add all breaks as blocked intervals
+                breaksArr.forEach(br => {
+                    if (br.start && br.end) {
+                        const bStart = timeToMins(br.start);
+                        const bEnd = timeToMins(br.end);
+                        if (bEnd > bStart) blockedIntervals.push({ start: bStart, end: bEnd });
+                    }
+                });
 
                 const availableSlots = [];
                 for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {

@@ -33,14 +33,17 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 endHour TEXT DEFAULT '18:30',
                 breakStart TEXT DEFAULT '',
                 breakEnd TEXT DEFAULT '',
-                blockedDates TEXT DEFAULT '[]'
+                blockedDates TEXT DEFAULT '[]',
+                breaks TEXT DEFAULT '[]'
             )
         `, () => {
             db.get("SELECT COUNT(*) as cnt FROM settings", [], (err, row) => {
                 if (row && row.cnt === 0) {
-                    db.run("INSERT INTO settings (id, workingDays, startHour, endHour, breakStart, breakEnd, blockedDates) VALUES (1, '[1,2,3,4,5,6]', '09:00', '18:30', '', '', '[]')");
+                    db.run("INSERT INTO settings (id, workingDays, startHour, endHour, blockedDates, breaks) VALUES (1, '[1,2,3,4,5,6]', '09:00', '18:30', '[]', '[]')");
                 }
             });
+            // Migrate: add breaks column if missing
+            db.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {});
         });
 
         db.run(`
