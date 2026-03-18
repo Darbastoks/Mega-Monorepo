@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Hair Beauty by Greta</title>
-    <link rel="stylesheet" href="/hair/styles.css?v=5">
+    <link rel="stylesheet" href="/hair/styles.css?v=6">
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
         rel="stylesheet">
@@ -473,6 +473,16 @@
     <div class="admin-container" id="dashboardScreen">
 
         <div id="bookingsSection">
+            <!-- Settings Summary Card -->
+            <div id="settingsSummaryCard" style="background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: none;">
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; font-size: 0.9rem; font-family: var(--font-body);">
+                    <div><strong>Darbo dienos:</strong> <span id="summaryWorkDays" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Laikas:</strong> <span id="summaryHours" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Pertraukos:</strong> <span id="summaryBreaks" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Nedarbo dienos:</strong> <span id="summaryBlocked" style="color: var(--text-muted);">—</span></div>
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="stat-card">
@@ -988,9 +998,24 @@
                         currentBreaks = settings.breaks || [];
                         renderBlockedDates();
                         renderBreaks();
+                        renderSettingsSummary(settings);
                     }
                 }
             } catch (err) { }
+        }
+
+        function renderSettingsSummary(settings) {
+            const card = document.getElementById('settingsSummaryCard');
+            if (!card) return;
+            const dayNames = ['Se', 'Pr', 'An', 'Tr', 'Kt', 'Pn', 'Še'];
+            const days = (settings.workingDays || []).sort().map(d => dayNames[d]).join(', ');
+            document.getElementById('summaryWorkDays').textContent = days || 'Nenustatyta';
+            document.getElementById('summaryHours').textContent = `${settings.startHour || '—'} – ${settings.endHour || '—'}`;
+            const breaks = (settings.breaks || []).map(b => `${b.start}–${b.end}`).join(', ');
+            document.getElementById('summaryBreaks').textContent = breaks || 'Nėra';
+            const blocked = settings.blockedDates || [];
+            document.getElementById('summaryBlocked').textContent = blocked.length > 0 ? `${blocked.length} d. (${blocked.slice(0, 3).join(', ')}${blocked.length > 3 ? '…' : ''})` : 'Nėra';
+            card.style.display = 'block';
         }
 
         // --- Breaks (multiple) ---

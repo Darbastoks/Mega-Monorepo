@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="/nails/css/style.css">
-    <link rel="stylesheet" href="/nails/css/admin.css">
+    <link rel="stylesheet" href="/nails/css/style.css?v=3">
+    <link rel="stylesheet" href="/nails/css/admin.css?v=3">
 </head>
 
 <body class="admin-body">
@@ -63,6 +63,16 @@
         </div>
 
         <div id="bookingsSection">
+            <!-- Settings Summary Card -->
+            <div id="settingsSummaryCard" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: none;">
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; font-size: 0.9rem;">
+                    <div><strong>Darbo dienos:</strong> <span id="summaryWorkDays" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Laikas:</strong> <span id="summaryHours" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Pertraukos:</strong> <span id="summaryBreaks" style="color: var(--text-muted);">—</span></div>
+                    <div><strong>Nedarbo dienos:</strong> <span id="summaryBlocked" style="color: var(--text-muted);">—</span></div>
+                </div>
+            </div>
+
             <!-- Filters and Search -->
             <div class="admin-filters">
                 <div class="filter-tabs">
@@ -218,7 +228,7 @@
         </div>
 
         <!-- Scripts -->
-        <script src="/nails/js/admin.js?v=2"></script>
+        <script src="/nails/js/admin.js?v=3"></script>
 </body>
 
 </html>

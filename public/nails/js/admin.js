@@ -304,9 +304,24 @@ if (adminDashboard) {
                     currentBreaks = settings.breaks || [];
                     renderBlockedDates();
                     renderBreaks();
+                    renderSettingsSummary(settings);
                 }
             }
         } catch (err) { }
+    }
+
+    function renderSettingsSummary(settings) {
+        const card = document.getElementById('settingsSummaryCard');
+        if (!card) return;
+        const dayNames = ['Se', 'Pr', 'An', 'Tr', 'Kt', 'Pn', 'Še'];
+        const days = (settings.workingDays || []).sort().map(d => dayNames[d]).join(', ');
+        document.getElementById('summaryWorkDays').textContent = days || 'Nenustatyta';
+        document.getElementById('summaryHours').textContent = `${settings.startHour || '—'} – ${settings.endHour || '—'}`;
+        const breaks = (settings.breaks || []).map(b => `${b.start}–${b.end}`).join(', ');
+        document.getElementById('summaryBreaks').textContent = breaks || 'Nėra';
+        const blocked = settings.blockedDates || [];
+        document.getElementById('summaryBlocked').textContent = blocked.length > 0 ? `${blocked.length} d. (${blocked.slice(0, 3).join(', ')}${blocked.length > 3 ? '…' : ''})` : 'Nėra';
+        card.style.display = 'block';
     }
 
     // --- Breaks (multiple) ---

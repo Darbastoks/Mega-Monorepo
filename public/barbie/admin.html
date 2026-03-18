@@ -10,8 +10,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/barbie/css/styles.css">
-    <link rel="stylesheet" href="/barbie/css/admin.css">
+    <link rel="stylesheet" href="/barbie/css/styles.css?v=3">
+    <link rel="stylesheet" href="/barbie/css/admin.css?v=3">
 </head>
 
 <body class="admin-body">
@@ -92,6 +92,16 @@
 
         <!-- Bookings Section -->
         <div id="bookingsSection">
+            <!-- Settings Summary Card -->
+            <div id="settingsSummaryCard" style="background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: none;">
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; font-size: 0.9rem;">
+                    <div><strong>Darbo dienos:</strong> <span id="summaryWorkDays" style="color: #6b7280;">—</span></div>
+                    <div><strong>Laikas:</strong> <span id="summaryHours" style="color: #6b7280;">—</span></div>
+                    <div><strong>Pertraukos:</strong> <span id="summaryBreaks" style="color: #6b7280;">—</span></div>
+                    <div><strong>Nedarbo dienos:</strong> <span id="summaryBlocked" style="color: #6b7280;">—</span></div>
+                </div>
+            </div>
+
             <div class="admin-table-wrap">
                 <table class="admin-table" id="bookingsTable">
                     <thead>
@@ -212,7 +222,7 @@
         </div>
     </div>
 
-    <script src="/barbie/js/admin.js"></script>
+    <script src="/barbie/js/admin.js?v=3"></script>
 </body>
 
 </html>
