@@ -19,28 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const spinner = document.getElementById('btnSpinner');
     const formMessage = document.getElementById('formMessage');
 
-    // --- NEW: Time Slot Logic for Hair ---
+    // --- Time Slot Logic for Hair (flatpickr) ---
     const dateInput = document.getElementById('date');
     const timeSelect = document.getElementById('time');
-    const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    let monthAvailability = {};
 
     const fetchTimes = async () => {
         const date = dateInput.value;
-        if (!date) {
-            timeSelect.disabled = true;
-            return;
-        }
-
+        if (!date) { timeSelect.disabled = true; return; }
         timeSelect.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
         timeSelect.disabled = true;
-
         const serviceInput = document.getElementById('service');
         const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
-
         try {
             const response = await fetch(`/api/hair/bookings/times/${date}?service=${serviceName}`);
             const availableSlots = await response.json();
-
             if (availableSlots.length === 0) {
                 timeSelect.innerHTML = '<option value="" disabled selected>Visi laikai užimti šią dieną</option>';
             } else {
@@ -59,7 +52,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    dateInput.addEventListener('change', fetchTimes);
+    async function loadMonthAvailability(year, month, instance) {
+        try {
+            const res = await fetch(`/api/hair/availability-month?year=${year}&month=${month}`);
+            monthAvailability = await res.json();
+            instance.redraw();
+        } catch (err) { console.error('Month availability error:', err); }
+    }
+
+    const fp = flatpickr(dateInput, {
+        locale: 'lt',
+        dateFormat: 'Y-m-d',
+        minDate: 'today',
+        disableMobile: true,
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            const dt = dayElem.dateObj;
+            const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+            const status = monthAvailability[dateStr];
+            if (status === 'red' || status === 'closed') dayElem.classList.add('day-red');
+            else if (status === 'yellow') dayElem.classList.add('day-yellow');
+            else if (status === 'green') dayElem.classList.add('day-green');
+        },
+        onChange: function() { fetchTimes(); },
+        onMonthChange: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); },
+        onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
+    });
+
     const serviceInput = document.getElementById('service');
     if (serviceInput) {
         serviceInput.addEventListener('change', fetchTimes);

@@ -13,6 +13,10 @@
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/barbie/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/lt.js"></script>
 </head>
 
 <body>
@@ -280,7 +284,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="bookingDate">Data *</label>
-                            <input type="date" id="bookingDate" name="date" required>
+                            <input type="text" id="bookingDate" name="date" placeholder="Pasirinkite datą..." required readonly>
+                            <div class="calendar-legend">
+                                <span><span class="legend-dot green"></span> Daug laisvų</span>
+                                <span><span class="legend-dot yellow"></span> Mažai laisvų</span>
+                                <span><span class="legend-dot red"></span> Nėra laisvų</span>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="bookingTime">Pasirinkite laiką *</label>

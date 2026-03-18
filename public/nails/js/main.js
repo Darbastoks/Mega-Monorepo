@@ -53,9 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bTime = document.getElementById('bTime');
 
     if (bDate && bTime) {
-        // Prevent picking past dates
-        const today = new Date().toISOString().split('T')[0];
-        bDate.setAttribute('min', today);
+        let monthAvailability = {};
 
         const fetchTimes = async () => {
             const selectedDate = bDate.value;
@@ -64,19 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 bTime.disabled = true;
                 return;
             }
-
             bTime.innerHTML = '<option value="" disabled selected>Kraunama...</option>';
             bTime.disabled = true;
-
             const serviceInput = document.getElementById('bService');
             const serviceName = serviceInput ? encodeURIComponent(serviceInput.value) : '';
-
             try {
                 const response = await fetch(`/api/nails/available-times?date=${selectedDate}&service=${serviceName}`);
                 const data = await response.json();
-
                 const availableTimes = data.availableSlots || [];
-
                 if (availableTimes.length === 0) {
                     bTime.innerHTML = '<option value="" disabled selected>Visi laikai užimti šią dieną</option>';
                 } else {
@@ -89,14 +82,38 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     bTime.disabled = false;
                 }
-
             } catch (err) {
                 console.error(err);
                 bTime.innerHTML = '<option value="" disabled selected>Klaida kraunant laikus</option>';
             }
         };
 
-        bDate.addEventListener('change', fetchTimes);
+        async function loadMonthAvailability(year, month, instance) {
+            try {
+                const res = await fetch(`/api/nails/availability-month?year=${year}&month=${month}`);
+                monthAvailability = await res.json();
+                instance.redraw();
+            } catch (err) { console.error('Month availability error:', err); }
+        }
+
+        const fp = flatpickr(bDate, {
+            locale: 'lt',
+            dateFormat: 'Y-m-d',
+            minDate: 'today',
+            disableMobile: true,
+            onDayCreate: function(dObj, dStr, fp, dayElem) {
+                const dt = dayElem.dateObj;
+                const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+                const status = monthAvailability[dateStr];
+                if (status === 'red' || status === 'closed') dayElem.classList.add('day-red');
+                else if (status === 'yellow') dayElem.classList.add('day-yellow');
+                else if (status === 'green') dayElem.classList.add('day-green');
+            },
+            onChange: function() { fetchTimes(); },
+            onMonthChange: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); },
+            onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
+        });
+
         const bService = document.getElementById('bService');
         if (bService) {
             bService.addEventListener('change', fetchTimes);

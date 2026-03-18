@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/nails/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/lt.js"></script>
 </head>
 
 <body>
@@ -178,7 +181,12 @@
 
                         <div class="form-group">
                             <label>Pageidaujama data *</label>
-                            <input type="date" id="bDate" required>
+                            <input type="text" id="bDate" placeholder="Pasirinkite datą..." required readonly>
+                            <div class="calendar-legend">
+                                <span><span class="legend-dot green"></span> Daug laisvų</span>
+                                <span><span class="legend-dot yellow"></span> Mažai laisvų</span>
+                                <span><span class="legend-dot red"></span> Nėra laisvų</span>
+                            </div>
                         </div>
 
                         <div class="form-group">

@@ -114,20 +114,16 @@ function initBookingForm() {
 
     if (!dateInput || !timeSelect) return;
 
-    // Set min date to today
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('min', today);
+    // --- flatpickr color-coded calendar ---
+    let monthAvailability = {};
 
     const fetchTimes = async () => {
         const date = dateInput.value;
         if (!date) return;
-
         timeSelect.innerHTML = '<option value="">Kraunama...</option>';
-
         try {
             const res = await fetch(`/api/barbie/bookings/times/${date}`);
             const slots = await res.json();
-
             if (!slots || slots.length === 0) {
                 timeSelect.innerHTML = '<option value="">Šią dieną laisvų laikų nėra</option>';
             } else {
@@ -145,7 +141,31 @@ function initBookingForm() {
         }
     };
 
-    dateInput.addEventListener('change', fetchTimes);
+    async function loadMonthAvailability(year, month, instance) {
+        try {
+            const res = await fetch(`/api/barbie/availability-month?year=${year}&month=${month}`);
+            monthAvailability = await res.json();
+            instance.redraw();
+        } catch (err) { console.error('Month availability error:', err); }
+    }
+
+    const fp = flatpickr(dateInput, {
+        locale: 'lt',
+        dateFormat: 'Y-m-d',
+        minDate: 'today',
+        disableMobile: true,
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            const dt = dayElem.dateObj;
+            const dateStr = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+            const status = monthAvailability[dateStr];
+            if (status === 'red' || status === 'closed') dayElem.classList.add('day-red');
+            else if (status === 'yellow') dayElem.classList.add('day-yellow');
+            else if (status === 'green') dayElem.classList.add('day-green');
+        },
+        onChange: function() { fetchTimes(); },
+        onMonthChange: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); },
+        onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
+    });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();

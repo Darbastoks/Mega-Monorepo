@@ -360,6 +360,70 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
     }
 });
 
+// --- Barbie Monthly Availability ---
+app.get('/api/barbie/availability-month', (req, res) => {
+    const year = parseInt(req.query.year);
+    const month = parseInt(req.query.month);
+    if (!year || !month) return res.status(400).json({ error: 'year and month required' });
+
+    const monthStr = String(month).padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    dbBarbie.get("SELECT * FROM settings WHERE id = 1", [], (err, settingsRow) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        const settings = settingsRow || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '18:30', breaks: '[]', blockedDates: '[]' };
+        const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+        let blockedDates = []; try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates) : settings.blockedDates; } catch(e) {}
+        let breaksArr = []; try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+        if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+
+        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+        const startMins = timeToMins(settings.startHour);
+        const endMins = timeToMins(settings.endHour);
+        const dur = 30;
+
+        // Compute total possible slots (minus breaks)
+        const breakIntervals = breaksArr.filter(b => b.start && b.end).map(b => ({ start: timeToMins(b.start), end: timeToMins(b.end) })).filter(b => b.end > b.start);
+        let totalSlots = 0;
+        for (let c = startMins; c + dur <= endMins; c += 30) {
+            if (!breakIntervals.some(b => c < b.end && c + dur > b.start)) totalSlots++;
+        }
+
+        const dateFrom = `${year}-${monthStr}-01`;
+        const dateTo = `${year}-${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
+        dbBarbie.all("SELECT date, service, time FROM bookings WHERE date >= ? AND date <= ? AND status != 'cancelled'", [dateFrom, dateTo], (err, bookings) => {
+            if (err) return res.status(500).json({ error: 'DB error' });
+            dbBarbie.all("SELECT * FROM services", [], (err, services) => {
+                if (err) return res.status(500).json({ error: 'DB error' });
+                const result = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
+                    const dow = new Date(dateStr).getDay();
+                    if (!workingDays.includes(dow) || blockedDates.includes(dateStr)) {
+                        result[dateStr] = 'closed'; continue;
+                    }
+                    const dayBookings = (bookings || []).filter(b => b.date === dateStr);
+                    const bookedIntervals = dayBookings.map(b => {
+                        const srv = (services || []).find(s => s.name === b.service);
+                        const bDur = srv ? srv.duration : 30;
+                        const st = timeToMins(b.time);
+                        return { start: st, end: st + bDur };
+                    });
+                    const allBlocked = [...breakIntervals, ...bookedIntervals];
+                    let available = 0;
+                    for (let c = startMins; c + dur <= endMins; c += 30) {
+                        if (!allBlocked.some(b => c < b.end && c + dur > b.start)) available++;
+                    }
+                    if (available === 0) result[dateStr] = 'red';
+                    else if (available > totalSlots / 2) result[dateStr] = 'green';
+                    else result[dateStr] = 'yellow';
+                }
+                res.json(result);
+            });
+        });
+    });
+});
+
 // --- Admin Auth ---
 function requireBarbieAdmin(req, res, next) {
     if (req.session && req.session.isBarbieAdmin) return next();
@@ -595,6 +659,68 @@ app.get('/api/nails/available-times', (req, res) => {
     });
 });
 
+// --- Nails Monthly Availability ---
+app.get('/api/nails/availability-month', (req, res) => {
+    const year = parseInt(req.query.year);
+    const month = parseInt(req.query.month);
+    if (!year || !month) return res.status(400).json({ error: 'year and month required' });
+
+    const monthStr = String(month).padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    dbNails.get("SELECT * FROM settings WHERE id = 1", [], (err, settingsRow) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        const settings = settingsRow || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '19:00', breaks: '[]', blockedDates: '[]' };
+        const workingDays = JSON.parse(settings.workingDays);
+        let blockedDates = []; try { blockedDates = JSON.parse(settings.blockedDates || '[]'); } catch(e) {}
+        let breaksArr = []; try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+        if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+
+        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+        const startMins = timeToMins(settings.startHour);
+        const endMins = timeToMins(settings.endHour);
+        const dur = 60;
+        const breakIntervals = breaksArr.filter(b => b.start && b.end).map(b => ({ start: timeToMins(b.start), end: timeToMins(b.end) })).filter(b => b.end > b.start);
+        let totalSlots = 0;
+        for (let c = startMins; c + dur <= endMins; c += 30) {
+            if (!breakIntervals.some(b => c < b.end && c + dur > b.start)) totalSlots++;
+        }
+
+        const dateFrom = `${year}-${monthStr}-01`;
+        const dateTo = `${year}-${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
+        dbNails.all("SELECT date, service, time FROM reservations WHERE date >= ? AND date <= ? AND status != 'cancelled'", [dateFrom, dateTo], (err, bookings) => {
+            if (err) return res.status(500).json({ error: 'DB error' });
+            dbNails.all("SELECT * FROM services", [], (err, services) => {
+                if (err) return res.status(500).json({ error: 'DB error' });
+                const result = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
+                    const dow = new Date(dateStr).getDay();
+                    if (!workingDays.includes(dow) || blockedDates.includes(dateStr)) {
+                        result[dateStr] = 'closed'; continue;
+                    }
+                    const dayBookings = (bookings || []).filter(b => b.date === dateStr);
+                    const bookedIntervals = dayBookings.map(b => {
+                        const srv = (services || []).find(s => s.name === b.service);
+                        const bDur = srv ? srv.duration : 60;
+                        const st = timeToMins(b.time);
+                        return { start: st, end: st + bDur };
+                    });
+                    const allBlocked = [...breakIntervals, ...bookedIntervals];
+                    let available = 0;
+                    for (let c = startMins; c + dur <= endMins; c += 30) {
+                        if (!allBlocked.some(b => c < b.end && c + dur > b.start)) available++;
+                    }
+                    if (available === 0) result[dateStr] = 'red';
+                    else if (available > totalSlots / 2) result[dateStr] = 'green';
+                    else result[dateStr] = 'yellow';
+                }
+                res.json(result);
+            });
+        });
+    });
+});
+
 const nailsLimiter = rLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
     max: 3,
@@ -818,6 +944,68 @@ app.get('/api/hair/bookings/times/:date', (req, res) => {
                 }
 
                 res.json(availableSlots);
+            });
+        });
+    });
+});
+
+// --- Hair Monthly Availability ---
+app.get('/api/hair/availability-month', (req, res) => {
+    const year = parseInt(req.query.year);
+    const month = parseInt(req.query.month);
+    if (!year || !month) return res.status(400).json({ error: 'year and month required' });
+
+    const monthStr = String(month).padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    dbHair.get("SELECT * FROM settings WHERE id = 1", [], (err, settingsRow) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        const settings = settingsRow || { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '19:00', breaks: '[]', blockedDates: '[]' };
+        const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+        let blockedDates = []; try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates || '[]') : (settings.blockedDates || []); } catch(e) {}
+        let breaksArr = []; try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+        if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+
+        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+        const startMins = timeToMins(settings.startHour);
+        const endMins = timeToMins(settings.endHour);
+        const dur = 60;
+        const breakIntervals = breaksArr.filter(b => b.start && b.end).map(b => ({ start: timeToMins(b.start), end: timeToMins(b.end) })).filter(b => b.end > b.start);
+        let totalSlots = 0;
+        for (let c = startMins; c + dur <= endMins; c += 30) {
+            if (!breakIntervals.some(b => c < b.end && c + dur > b.start)) totalSlots++;
+        }
+
+        const dateFrom = `${year}-${monthStr}-01`;
+        const dateTo = `${year}-${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
+        dbHair.all("SELECT date, service, time FROM bookings WHERE date >= ? AND date <= ? AND status != 'cancelled'", [dateFrom, dateTo], (err, bookings) => {
+            if (err) return res.status(500).json({ error: 'DB error' });
+            dbHair.all("SELECT * FROM services", [], (err, services) => {
+                if (err) return res.status(500).json({ error: 'DB error' });
+                const result = {};
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
+                    const dow = new Date(dateStr).getDay();
+                    if (!workingDays.includes(dow) || blockedDates.includes(dateStr)) {
+                        result[dateStr] = 'closed'; continue;
+                    }
+                    const dayBookings = (bookings || []).filter(b => b.date === dateStr);
+                    const bookedIntervals = dayBookings.map(b => {
+                        const srv = (services || []).find(s => s.name === b.service);
+                        const bDur = srv ? srv.duration : 60;
+                        const st = timeToMins(b.time);
+                        return { start: st, end: st + bDur };
+                    });
+                    const allBlocked = [...breakIntervals, ...bookedIntervals];
+                    let available = 0;
+                    for (let c = startMins; c + dur <= endMins; c += 30) {
+                        if (!allBlocked.some(b => c < b.end && c + dur > b.start)) available++;
+                    }
+                    if (available === 0) result[dateStr] = 'red';
+                    else if (available > totalSlots / 2) result[dateStr] = 'green';
+                    else result[dateStr] = 'yellow';
+                }
+                res.json(result);
             });
         });
     });
