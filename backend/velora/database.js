@@ -20,7 +20,13 @@ const VeloraAdmin = mongoose.model('VeloraAdmin', veloraAdminSchema);
 const VeloraLead = mongoose.model('VeloraLead', veloraLeadSchema);
 
 async function initVeloraDatabase() {
+    if (!process.env.MONGODB_URI) {
+        console.log('⚠️  MONGODB_URI not set — skipping Velora database init (Velora admin panel disabled)');
+        return;
+    }
     try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('✅ Connected to MongoDB for Velora');
         // Seed default Velora Admin if not exists
         const adminCount = await VeloraAdmin.countDocuments();
         if (adminCount === 0) {

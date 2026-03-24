@@ -558,7 +558,8 @@ app.post('/api/barbie/admin/emergency-cancel', requireBarbieAdmin, (req, res) =>
         }
 
         const ids = bookings.map(b => b.id);
-        dbBarbie.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+        const placeholders = ids.map(() => '?').join(',');
+        dbBarbie.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${placeholders})`, ids, function(err) {
             if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
 
             // Block the date
@@ -897,7 +898,8 @@ app.post('/api/nails/admin/emergency-cancel', requireNailsAdmin, (req, res) => {
         }
 
         const ids = bookings.map(b => b.id);
-        dbNails.run(`UPDATE reservations SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+        const placeholders = ids.map(() => '?').join(',');
+        dbNails.run(`UPDATE reservations SET status = 'cancelled' WHERE id IN (${placeholders})`, ids, function(err) {
             if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
 
             dbNails.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
@@ -1252,7 +1254,8 @@ app.post('/api/hair/admin/emergency-cancel', requireHairAdmin, (req, res) => {
         }
 
         const ids = bookings.map(b => b.id);
-        dbHair.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+        const placeholders = ids.map(() => '?').join(',');
+        dbHair.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${placeholders})`, ids, function(err) {
             if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
 
             dbHair.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
