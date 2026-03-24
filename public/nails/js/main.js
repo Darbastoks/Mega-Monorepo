@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 name: document.getElementById('bName').value,
                 phone: document.getElementById('bPhone').value,
+                email: document.getElementById('bEmail').value,
                 service: document.getElementById('bService').value,
                 date: document.getElementById('bDate').value,
                 time: document.getElementById('bTime').value,

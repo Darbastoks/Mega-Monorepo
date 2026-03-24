@@ -43,6 +43,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             db.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {});
         });
 
+        // Migrate: add email column to bookings if missing
+        db.run("ALTER TABLE bookings ADD COLUMN email TEXT DEFAULT ''", () => {});
+
         db.run(`
             CREATE TABLE IF NOT EXISTS services (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

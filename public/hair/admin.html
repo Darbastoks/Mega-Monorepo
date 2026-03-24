@@ -438,6 +438,10 @@
             <div>Hair Beauty <span>by Greta</span> | <strong>Admin</strong></div>
         </div>
         <div class="admin-nav-actions" id="navActions" style="display: none;">
+            <button class="admin-btn" id="emergencyCancelBtn"
+                style="background:#ef4444; color:#fff; border:none; cursor:pointer; font-weight:600;">
+                Skubi atšaukimas
+            </button>
             <button class="admin-btn" id="viewSettingsBtn"
                 style="border-color: var(--accent-primary); color: var(--accent-primary); background: transparent; cursor: pointer;">
                 <i class="fa-solid fa-gear"></i> Nustatymai
@@ -1136,6 +1140,134 @@
                 } else alert('Klaida trinant');
             } catch (err) { alert('Tinklo klaida'); }
         };
+
+        // ==================== EMERGENCY CANCELLATION ====================
+        (function() {
+            // Create modal dynamically
+            const modalHtml = `
+                <div id="emergencyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+                    <div style="max-width:500px; width:90%; background:var(--bg-secondary, #1a1a2e); padding:1.5rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1); max-height:80vh; overflow-y:auto;">
+                        <h3 style="color:#ef4444; margin-bottom:1rem;">Skubi atšaukimas</h3>
+                        <p style="opacity:0.7; margin-bottom:1rem; font-size:0.9rem;">Pasirinkite datą ir atšaukite visas registracijas. Klientai bus informuoti el. paštu.</p>
+                        <div style="margin-bottom:1rem;"><label style="display:block; margin-bottom:0.5rem; font-weight:500;">Data *</label><input type="date" id="emergencyDate" required style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;"></div>
+                        <div style="margin-bottom:1rem;"><label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" id="emergencyFullDay" checked><span>Visa diena</span></label></div>
+                        <div id="emergencyTimeRange" style="display:none; margin-bottom:1rem;"><div style="display:flex; gap:1rem;"><div style="flex:1;"><label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Nuo</label><input type="time" id="emergencyStartTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;"></div><div style="flex:1;"><label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Iki</label><input type="time" id="emergencyEndTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;"></div></div></div>
+                        <div style="margin-bottom:1rem;"><label style="display:block; margin-bottom:0.5rem; font-weight:500;">Priežastis (neprivaloma)</label><textarea id="emergencyReason" rows="2" placeholder="Pvz.: Sergama, šeimos reikalai..." style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; resize:vertical;"></textarea></div>
+                        <div id="emergencyPreview" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);"></div>
+                        <div id="emergencyResult" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);"></div>
+                        <div style="display:flex; gap:0.5rem; justify-content:flex-end;"><button type="button" class="admin-btn" id="emergencyCloseBtn" style="cursor:pointer;">Uždaryti</button><button type="button" id="emergencyConfirmBtn" disabled style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600; cursor:pointer;">Atšaukti registracijas</button></div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            const emergencyBtn = document.getElementById('emergencyCancelBtn');
+            const emergencyModal = document.getElementById('emergencyModal');
+            const emergencyDate = document.getElementById('emergencyDate');
+            const emergencyFullDay = document.getElementById('emergencyFullDay');
+            const emergencyTimeRange = document.getElementById('emergencyTimeRange');
+            const emergencyPreview = document.getElementById('emergencyPreview');
+            const emergencyResult = document.getElementById('emergencyResult');
+            const emergencyConfirmBtn = document.getElementById('emergencyConfirmBtn');
+
+            emergencyBtn.addEventListener('click', () => {
+                emergencyModal.style.display = 'flex';
+                emergencyDate.value = '';
+                emergencyFullDay.checked = true;
+                emergencyTimeRange.style.display = 'none';
+                document.getElementById('emergencyReason').value = '';
+                emergencyPreview.style.display = 'none';
+                emergencyResult.style.display = 'none';
+                emergencyConfirmBtn.disabled = true;
+                emergencyConfirmBtn.style.display = '';
+            });
+
+            document.getElementById('emergencyCloseBtn').addEventListener('click', () => { emergencyModal.style.display = 'none'; });
+            emergencyModal.addEventListener('click', (e) => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
+
+            emergencyFullDay.addEventListener('change', () => {
+                emergencyTimeRange.style.display = emergencyFullDay.checked ? 'none' : 'block';
+                loadEmergencyPreview();
+            });
+            emergencyDate.addEventListener('change', loadEmergencyPreview);
+            document.getElementById('emergencyStartTime')?.addEventListener('change', loadEmergencyPreview);
+            document.getElementById('emergencyEndTime')?.addEventListener('change', loadEmergencyPreview);
+
+            async function loadEmergencyPreview() {
+                const date = emergencyDate.value;
+                if (!date) { emergencyPreview.style.display = 'none'; emergencyConfirmBtn.disabled = true; return; }
+                try {
+                    const res = await fetch(`${API_URL}/bookings`);
+                    const all = await res.json();
+                    let filtered = all.filter(b => b.date === date && b.status !== 'cancelled');
+                    if (!emergencyFullDay.checked) {
+                        const start = document.getElementById('emergencyStartTime').value;
+                        const end = document.getElementById('emergencyEndTime').value;
+                        if (start && end) filtered = filtered.filter(b => b.time >= start && b.time <= end);
+                    }
+                    if (filtered.length === 0) {
+                        emergencyPreview.innerHTML = '<p style="opacity:0.5; font-size:0.9rem;">Šią dieną registracijų nėra. Data bus užblokuota.</p>';
+                    } else {
+                        const withEmail = filtered.filter(b => b.email);
+                        const noEmail = filtered.filter(b => !b.email);
+                        let html = '<p style="font-weight:500; margin-bottom:0.5rem;">Paveiktos registracijos:</p>';
+                        if (withEmail.length > 0) {
+                            html += `<p style="font-size:0.8rem; color:#22c55e; margin-bottom:0.3rem;">Bus informuoti el. paštu (${withEmail.length}):</p>`;
+                            withEmail.forEach(b => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9rem;"><span>${b.name} — ${b.time} — ${b.service}</span><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 8px;border-radius:4px;font-size:0.75rem;">El. paštas</span></div>`; });
+                        }
+                        if (noEmail.length > 0) {
+                            html += `<p style="font-size:0.8rem; color:#fbbf24; margin-top:0.5rem; margin-bottom:0.3rem;">Reikia informuoti telefonu (${noEmail.length}):</p>`;
+                            noEmail.forEach(b => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9rem;"><span>${b.name} — ${b.time} — ${b.phone}</span><span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-size:0.75rem;">Skambinti</span></div>`; });
+                        }
+                        emergencyPreview.innerHTML = html;
+                    }
+                    emergencyPreview.style.display = 'block';
+                    emergencyConfirmBtn.disabled = false;
+                } catch (err) {
+                    emergencyPreview.innerHTML = '<p style="color:#ef4444;">Klaida kraunant duomenis</p>';
+                    emergencyPreview.style.display = 'block';
+                }
+            }
+
+            emergencyConfirmBtn.addEventListener('click', async () => {
+                const date = emergencyDate.value;
+                if (!date) return;
+                emergencyConfirmBtn.disabled = true;
+                emergencyConfirmBtn.textContent = 'Atšaukiama...';
+                try {
+                    const res = await fetch(`${API_URL}/admin/emergency-cancel`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            date,
+                            fullDay: emergencyFullDay.checked,
+                            startTime: document.getElementById('emergencyStartTime').value,
+                            endTime: document.getElementById('emergencyEndTime').value,
+                            reason: document.getElementById('emergencyReason').value
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+
+                    let html = `<p style="font-weight:600; color:#10b981;">Atšaukta sėkmingai!</p>`;
+                    html += `<p style="font-size:0.9rem;">Atšaukta registracijų: <strong>${data.cancelledCount}</strong></p>`;
+                    html += `<p style="font-size:0.9rem;">Informuota el. paštu: <strong>${data.emailedCount}</strong></p>`;
+                    if (data.needsPhoneCall && data.needsPhoneCall.length > 0) {
+                        html += `<p style="font-size:0.9rem; color:#fbbf24; margin-top:0.5rem; font-weight:500;">Paskambinkite šiems klientams:</p>`;
+                        data.needsPhoneCall.forEach(c => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;"><span>${c.name}</span><a href="tel:${c.phone}" style="color:#fbbf24;">${c.phone}</a></div>`; });
+                    }
+                    emergencyResult.innerHTML = html;
+                    emergencyResult.style.display = 'block';
+                    emergencyPreview.style.display = 'none';
+                    emergencyConfirmBtn.style.display = 'none';
+                    loadBookings();
+                } catch (err) {
+                    emergencyResult.innerHTML = `<p style="color:#ef4444;">Klaida: ${err.message}</p>`;
+                    emergencyResult.style.display = 'block';
+                    emergencyConfirmBtn.disabled = false;
+                    emergencyConfirmBtn.textContent = 'Atšaukti registracijas';
+                }
+            });
+        })();
     </script>
 </body>
 

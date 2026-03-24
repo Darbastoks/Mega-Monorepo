@@ -49,6 +49,7 @@
                 <h2>G SPOT <span class="logo-accent">Admin</span></h2>
             </div>
             <div class="admin-header-right">
+                <button class="btn btn-emergency btn-sm" id="emergencyCancelBtn">Skubi atšaukimas</button>
                 <button class="btn btn-outline btn-sm" id="viewSettingsBtn">⚙ Nustatymai</button>
                 <button class="btn btn-outline btn-sm" id="viewBookingsBtn" style="display:none;">📅 Registracijos</button>
                 <a href="/barbie" class="btn btn-outline btn-sm">← Svetainė</a>
@@ -210,6 +211,57 @@
                         <button type="submit" class="btn btn-primary">Pakeisti</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Cancel Modal -->
+    <div class="modal" id="emergencyModal" style="display:none;">
+        <div class="modal-content emergency-modal">
+            <h3 style="color:#ef4444; margin-bottom:1rem;">Skubi atšaukimas</h3>
+            <p style="opacity:0.7; margin-bottom:1rem; font-size:0.9rem;">Pasirinkite datą ir atšaukite visas registracijas. Klientai bus informuoti el. paštu.</p>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Data *</label>
+                <input type="date" id="emergencyDate" required style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+            </div>
+
+            <div style="margin-bottom:1rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                    <input type="checkbox" id="emergencyFullDay" checked>
+                    <span>Visa diena</span>
+                </label>
+            </div>
+
+            <div id="emergencyTimeRange" style="display:none; margin-bottom:1rem;">
+                <div style="display:flex; gap:1rem;">
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Nuo</label>
+                        <input type="time" id="emergencyStartTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Iki</label>
+                        <input type="time" id="emergencyEndTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Priežastis (neprivaloma)</label>
+                <textarea id="emergencyReason" rows="2" placeholder="Pvz.: Sergama, šeimos reikalai..." style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; resize:vertical;"></textarea>
+            </div>
+
+            <div id="emergencyPreview" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                <p style="font-weight:500; margin-bottom:0.5rem;">Paveiktos registracijos:</p>
+                <div id="emergencyPreviewList"></div>
+            </div>
+
+            <div id="emergencyResult" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);">
+            </div>
+
+            <div class="form-actions" style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" id="emergencyCloseBtn">Uždaryti</button>
+                <button type="button" class="btn btn-emergency" id="emergencyConfirmBtn" disabled>Atšaukti registracijas</button>
             </div>
         </div>
     </div>

@@ -19,6 +19,7 @@
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.19.0",
     "mongoose": "^9.2.4",
+    "nodemailer": "^6.9.0",
     "sqlite3": "^5.1.7",
     "stripe": "^17.7.0"
   }

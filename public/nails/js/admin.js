@@ -440,3 +440,122 @@ if (adminDashboard) {
         } catch (err) { alert('Tinklo klaida'); }
     };
 }
+
+// ==================== EMERGENCY CANCELLATION ====================
+(function() {
+    const emergencyBtn = document.getElementById('emergencyCancelBtn');
+    const emergencyModal = document.getElementById('emergencyModal');
+    if (!emergencyBtn || !emergencyModal) return;
+
+    const emergencyDate = document.getElementById('emergencyDate');
+    const emergencyFullDay = document.getElementById('emergencyFullDay');
+    const emergencyTimeRange = document.getElementById('emergencyTimeRange');
+    const emergencyReason = document.getElementById('emergencyReason');
+    const emergencyPreview = document.getElementById('emergencyPreview');
+    const emergencyResult = document.getElementById('emergencyResult');
+    const emergencyConfirmBtn = document.getElementById('emergencyConfirmBtn');
+    const emergencyCloseBtn = document.getElementById('emergencyCloseBtn');
+
+    emergencyBtn.addEventListener('click', () => {
+        emergencyModal.style.display = 'flex';
+        emergencyDate.value = '';
+        emergencyFullDay.checked = true;
+        emergencyTimeRange.style.display = 'none';
+        emergencyReason.value = '';
+        emergencyPreview.style.display = 'none';
+        emergencyResult.style.display = 'none';
+        emergencyConfirmBtn.disabled = true;
+        emergencyConfirmBtn.style.display = '';
+    });
+
+    emergencyCloseBtn.addEventListener('click', () => { emergencyModal.style.display = 'none'; });
+    emergencyModal.addEventListener('click', (e) => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
+
+    emergencyFullDay.addEventListener('change', () => {
+        emergencyTimeRange.style.display = emergencyFullDay.checked ? 'none' : 'block';
+        loadPreview();
+    });
+    emergencyDate.addEventListener('change', loadPreview);
+    document.getElementById('emergencyStartTime')?.addEventListener('change', loadPreview);
+    document.getElementById('emergencyEndTime')?.addEventListener('change', loadPreview);
+
+    async function loadPreview() {
+        const date = emergencyDate.value;
+        if (!date) { emergencyPreview.style.display = 'none'; emergencyConfirmBtn.disabled = true; return; }
+
+        try {
+            const res = await fetch('/api/nails/reservations');
+            const all = await res.json();
+            let filtered = all.filter(b => b.date === date && b.status !== 'cancelled');
+
+            if (!emergencyFullDay.checked) {
+                const start = document.getElementById('emergencyStartTime').value;
+                const end = document.getElementById('emergencyEndTime').value;
+                if (start && end) filtered = filtered.filter(b => b.time >= start && b.time <= end);
+            }
+
+            if (filtered.length === 0) {
+                emergencyPreview.innerHTML = '<p style="opacity:0.5; font-size:0.9rem;">Šią dieną registracijų nėra. Data bus užblokuota.</p>';
+            } else {
+                const withEmail = filtered.filter(b => b.email);
+                const noEmail = filtered.filter(b => !b.email);
+                let html = '<p style="font-weight:500; margin-bottom:0.5rem;">Paveiktos registracijos:</p>';
+                if (withEmail.length > 0) {
+                    html += `<p style="font-size:0.8rem; color:#22c55e; margin-bottom:0.3rem;">Bus informuoti el. paštu (${withEmail.length}):</p>`;
+                    withEmail.forEach(b => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9rem;"><span>${b.name} — ${b.time} — ${b.service}</span><span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 8px;border-radius:4px;font-size:0.75rem;">El. paštas</span></div>`; });
+                }
+                if (noEmail.length > 0) {
+                    html += `<p style="font-size:0.8rem; color:#fbbf24; margin-top:0.5rem; margin-bottom:0.3rem;">Reikia informuoti telefonu (${noEmail.length}):</p>`;
+                    noEmail.forEach(b => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.9rem;"><span>${b.name} — ${b.time} — ${b.phone}</span><span style="background:rgba(251,191,36,0.15);color:#fbbf24;padding:2px 8px;border-radius:4px;font-size:0.75rem;">Skambinti</span></div>`; });
+                }
+                emergencyPreview.innerHTML = html;
+            }
+            emergencyPreview.style.display = 'block';
+            emergencyConfirmBtn.disabled = false;
+        } catch (err) {
+            emergencyPreview.innerHTML = '<p style="color:#ef4444;">Klaida kraunant duomenis</p>';
+            emergencyPreview.style.display = 'block';
+        }
+    }
+
+    emergencyConfirmBtn.addEventListener('click', async () => {
+        const date = emergencyDate.value;
+        if (!date) return;
+        emergencyConfirmBtn.disabled = true;
+        emergencyConfirmBtn.textContent = 'Atšaukiama...';
+
+        try {
+            const res = await fetch('/api/nails/admin/emergency-cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date,
+                    fullDay: emergencyFullDay.checked,
+                    startTime: document.getElementById('emergencyStartTime').value,
+                    endTime: document.getElementById('emergencyEndTime').value,
+                    reason: emergencyReason.value
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            let html = `<p style="font-weight:600; color:#10b981;">Atšaukta sėkmingai!</p>`;
+            html += `<p style="font-size:0.9rem;">Atšaukta registracijų: <strong>${data.cancelledCount}</strong></p>`;
+            html += `<p style="font-size:0.9rem;">Informuota el. paštu: <strong>${data.emailedCount}</strong></p>`;
+            if (data.needsPhoneCall && data.needsPhoneCall.length > 0) {
+                html += `<p style="font-size:0.9rem; color:#fbbf24; margin-top:0.5rem; font-weight:500;">Paskambinkite šiems klientams:</p>`;
+                data.needsPhoneCall.forEach(c => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;"><span>${c.name}</span><a href="tel:${c.phone}" style="color:#fbbf24;">${c.phone}</a></div>`; });
+            }
+            emergencyResult.innerHTML = html;
+            emergencyResult.style.display = 'block';
+            emergencyPreview.style.display = 'none';
+            emergencyConfirmBtn.style.display = 'none';
+            if (typeof loadReservations === 'function') loadReservations();
+        } catch (err) {
+            emergencyResult.innerHTML = `<p style="color:#ef4444;">Klaida: ${err.message}</p>`;
+            emergencyResult.style.display = 'block';
+            emergencyConfirmBtn.disabled = false;
+            emergencyConfirmBtn.textContent = 'Atšaukti registracijas';
+        }
+    });
+})();

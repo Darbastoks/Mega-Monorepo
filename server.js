@@ -8,6 +8,42 @@ const rLimit = require('express-rate-limit');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
+
+// ==================== EMAIL SETUP ====================
+const emailTransporter = (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) ? nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+}) : null;
+
+async function sendCancellationEmail(to, clientName, service, date, time, reason, salonName) {
+    if (!emailTransporter || !to) return false;
+    try {
+        await emailTransporter.sendMail({
+            from: `"${salonName}" <${process.env.GMAIL_USER}>`,
+            to,
+            subject: `Jūsų vizitas atšauktas — ${salonName}`,
+            html: `
+                <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
+                    <h2 style="color:#333;">Sveiki, ${clientName}!</h2>
+                    <p>Deja, dėl nenumatytų aplinkybių turėjome atšaukti Jūsų vizitą:</p>
+                    <div style="background:#f5f5f5;padding:15px;border-radius:8px;margin:15px 0;">
+                        <p style="margin:5px 0;"><strong>Paslauga:</strong> ${service}</p>
+                        <p style="margin:5px 0;"><strong>Data:</strong> ${date}</p>
+                        <p style="margin:5px 0;"><strong>Laikas:</strong> ${time}</p>
+                    </div>
+                    ${reason ? `<p><strong>Priežastis:</strong> ${reason}</p>` : ''}
+                    <p>Atsiprašome už nepatogumus. Prašome susisiekti su mumis nauju vizitu suderinti.</p>
+                    <p style="color:#888;margin-top:20px;">Pagarbiai,<br><strong>${salonName}</strong></p>
+                </div>
+            `
+        });
+        return true;
+    } catch (err) {
+        console.error('Email send failed:', err.message);
+        return false;
+    }
+}
 
 // ==================== STRIPE SETUP ====================
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
@@ -495,6 +531,64 @@ app.post('/api/barbie/admin/change-password', requireBarbieAdmin, async (req, re
     } catch (err) { res.status(500).json({ error: 'Klaida' }); }
 });
 
+// Barbie: Emergency Cancellation
+app.post('/api/barbie/admin/emergency-cancel', requireBarbieAdmin, (req, res) => {
+    const { date, fullDay, startTime, endTime, reason } = req.body;
+    if (!date) return res.status(400).json({ error: 'Data privaloma' });
+
+    const whereClause = fullDay
+        ? `date = ? AND status != 'cancelled'`
+        : `date = ? AND time >= ? AND time <= ? AND status != 'cancelled'`;
+    const params = fullDay ? [date] : [date, startTime, endTime];
+
+    dbBarbie.all(`SELECT * FROM bookings WHERE ${whereClause}`, params, (err, bookings) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (!bookings || bookings.length === 0) {
+            // Still block the date even with no bookings
+            dbBarbie.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbBarbie.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+        }
+
+        const ids = bookings.map(b => b.id);
+        dbBarbie.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+            if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
+
+            // Block the date
+            dbBarbie.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbBarbie.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+
+            let emailedCount = 0;
+            const needsPhoneCall = [];
+            const salonName = 'Barbie Beauty';
+
+            bookings.forEach(b => {
+                if (b.email) {
+                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
+                    emailedCount++;
+                } else {
+                    needsPhoneCall.push({ name: b.name, phone: b.phone });
+                }
+            });
+
+            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+        });
+    });
+});
 
 // ==================== NAILS BY LUKRA API (/api/nails/*) ====================
 function requireNailsAdmin(req, res, next) {
@@ -728,7 +822,7 @@ const nailsLimiter = rLimit({
 });
 
 app.post('/api/nails/reservations', nailsLimiter, (req, res) => {
-    const { name, phone, service, date, time, notes, website_url_fake } = req.body;
+    const { name, phone, email, service, date, time, notes, website_url_fake } = req.body;
 
     // Anti-Spam Honeypot
     if (website_url_fake) {
@@ -746,8 +840,8 @@ app.post('/api/nails/reservations', nailsLimiter, (req, res) => {
         if (row) return res.status(409).json({ error: 'Šis laikas jau užimtas' });
 
         dbNails.run(
-            `INSERT INTO reservations (name, phone, service, date, time, notes) VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, phone, service, date, time, notes],
+            `INSERT INTO reservations (name, phone, email, service, date, time, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, phone, email || '', service, date, time, notes],
             function (err) {
                 if (err) return res.status(500).json({ error: 'Klaida išsaugant' });
                 res.status(201).json({ success: true, id: this.lastID });
@@ -770,6 +864,62 @@ app.patch('/api/nails/reservations/:id/status', requireNailsAdmin, (req, res) =>
     });
 });
 
+// Nails: Emergency Cancellation
+app.post('/api/nails/admin/emergency-cancel', requireNailsAdmin, (req, res) => {
+    const { date, fullDay, startTime, endTime, reason } = req.body;
+    if (!date) return res.status(400).json({ error: 'Data privaloma' });
+
+    const whereClause = fullDay
+        ? `date = ? AND status != 'cancelled'`
+        : `date = ? AND time >= ? AND time <= ? AND status != 'cancelled'`;
+    const params = fullDay ? [date] : [date, startTime, endTime];
+
+    dbNails.all(`SELECT * FROM reservations WHERE ${whereClause}`, params, (err, bookings) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (!bookings || bookings.length === 0) {
+            dbNails.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbNails.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+        }
+
+        const ids = bookings.map(b => b.id);
+        dbNails.run(`UPDATE reservations SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+            if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
+
+            dbNails.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbNails.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+
+            let emailedCount = 0;
+            const needsPhoneCall = [];
+            const salonName = 'Nails by Lukra';
+
+            bookings.forEach(b => {
+                if (b.email) {
+                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
+                    emailedCount++;
+                } else {
+                    needsPhoneCall.push({ name: b.name, phone: b.phone });
+                }
+            });
+
+            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+        });
+    });
+});
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
 const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || 'changeme';
@@ -1013,7 +1163,7 @@ app.get('/api/hair/availability-month', (req, res) => {
 
 // --- Hair Booking (SQLite) ---
 app.post('/api/hair/book', hairLimiter, (req, res) => {
-    const { name, phone, service, date, time, message, website_url_fake } = req.body;
+    const { name, phone, email, service, date, time, message, website_url_fake } = req.body;
 
     if (website_url_fake) {
         console.log(`Spam blocked for Hair Beauty: ${phone}`);
@@ -1029,8 +1179,8 @@ app.post('/api/hair/book', hairLimiter, (req, res) => {
         if (row) return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
 
         dbHair.run(
-            `INSERT INTO bookings (name, phone, service, date, time, message) VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, phone, service, date, time, message || ''],
+            `INSERT INTO bookings (name, phone, email, service, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [name, phone, email || '', service, date, time, message || ''],
             function (err) {
                 if (err) return res.status(500).json({ error: 'Klaida išsaugant' });
                 res.status(201).json({ success: true, bookingId: this.lastID });
@@ -1062,6 +1212,62 @@ app.put('/api/hair/bookings/:id/status', requireHairAdmin, (req, res) => {
     });
 });
 
+// Hair: Emergency Cancellation
+app.post('/api/hair/admin/emergency-cancel', requireHairAdmin, (req, res) => {
+    const { date, fullDay, startTime, endTime, reason } = req.body;
+    if (!date) return res.status(400).json({ error: 'Data privaloma' });
+
+    const whereClause = fullDay
+        ? `date = ? AND status != 'cancelled'`
+        : `date = ? AND time >= ? AND time <= ? AND status != 'cancelled'`;
+    const params = fullDay ? [date] : [date, startTime, endTime];
+
+    dbHair.all(`SELECT * FROM bookings WHERE ${whereClause}`, params, (err, bookings) => {
+        if (err) return res.status(500).json({ error: 'DB klaida' });
+        if (!bookings || bookings.length === 0) {
+            dbHair.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbHair.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+        }
+
+        const ids = bookings.map(b => b.id);
+        dbHair.run(`UPDATE bookings SET status = 'cancelled' WHERE id IN (${ids.join(',')})`, [], function(err) {
+            if (err) return res.status(500).json({ error: 'Klaida atšaukiant' });
+
+            dbHair.get("SELECT blockedDates FROM settings WHERE id = 1", [], (err, row) => {
+                if (row) {
+                    let blocked = []; try { blocked = JSON.parse(row.blockedDates || '[]'); } catch(e) {}
+                    if (!blocked.includes(date)) {
+                        blocked.push(date);
+                        dbHair.run("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                    }
+                }
+            });
+
+            let emailedCount = 0;
+            const needsPhoneCall = [];
+            const salonName = 'Hair Beauty';
+
+            bookings.forEach(b => {
+                if (b.email) {
+                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
+                    emailedCount++;
+                } else {
+                    needsPhoneCall.push({ name: b.name, phone: b.phone });
+                }
+            });
+
+            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+        });
+    });
+});
 
 // ==================== VELORA STUDIO API (/api/velora/*) ====================
 const veloraLimiter = rLimit({
