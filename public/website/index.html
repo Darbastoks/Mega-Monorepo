@@ -687,38 +687,50 @@
     <div id="checkout-overlay" class="checkout-overlay" style="display:none">
         <div class="checkout-modal">
             <button class="checkout-close" id="checkout-close">&times;</button>
-            <h2>Jūsų pasirinkimas</h2>
-            <div class="checkout-plan-name" id="checkout-plan-name"></div>
-            <div class="checkout-plan-price" id="checkout-plan-price"></div>
 
+            <!-- Plan badge -->
+            <div class="checkout-plan-badge">
+                <div class="checkout-plan-name" id="checkout-plan-name"></div>
+                <div class="checkout-plan-price" id="checkout-plan-price"></div>
+            </div>
+
+            <!-- 3 steps: Pay → Form → Website -->
             <div class="checkout-steps">
-                <div class="checkout-step done">
-                    <div class="checkout-step-num">1</div>
-                    <div>
-                        <strong>Planas pasirinktas</strong>
-                        <p>Jūs pasirinkote savo planą</p>
-                    </div>
-                </div>
                 <div class="checkout-step active">
-                    <div class="checkout-step-num">2</div>
+                    <div class="checkout-step-num"><i class="fas fa-credit-card"></i></div>
                     <div>
-                        <strong>Mokėjimas</strong>
+                        <strong>Apmokėkite</strong>
                         <p>Saugus mokėjimas per Stripe</p>
                     </div>
                 </div>
+                <div class="checkout-step-arrow"><i class="fas fa-chevron-down"></i></div>
                 <div class="checkout-step">
-                    <div class="checkout-step-num">3</div>
+                    <div class="checkout-step-num"><i class="fas fa-clipboard-list"></i></div>
                     <div>
-                        <strong>Gaukite svetainę</strong>
-                        <p>Per 7 darbo dienas svetainė bus paruošta</p>
+                        <strong>Užpildykite formą</strong>
+                        <p>Papasakokite apie savo saloną — tai padės sukurti jūsų svetainę</p>
                     </div>
                 </div>
+                <div class="checkout-step-arrow"><i class="fas fa-chevron-down"></i></div>
+                <div class="checkout-step">
+                    <div class="checkout-step-num"><i class="fas fa-rocket"></i></div>
+                    <div>
+                        <strong>Gaukite svetainę</strong>
+                        <p>Per 7 darbo dienas — paruošta ir veikianti</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trust signals -->
+            <div class="checkout-trust">
+                <span><i class="fas fa-shield-alt"></i> Saugus mokėjimas</span>
+                <span><i class="fas fa-undo"></i> Galite atšaukti bet kada</span>
+                <span><i class="fas fa-ban"></i> Jokių paslėptų mokesčių</span>
             </div>
 
             <button class="checkout-pay-btn" id="checkout-pay-btn">
                 <i class="fas fa-lock"></i> Apmokėti dabar
             </button>
-            <p class="checkout-secure">Saugus mokėjimas. Galite atšaukti bet kada.</p>
         </div>
     </div>
 
