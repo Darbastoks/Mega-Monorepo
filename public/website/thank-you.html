@@ -167,19 +167,48 @@
             margin-bottom: 32px;
         }
 
-        /* --- Tally form container --- */
-        .form-card {
-            background: #ffffff;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 4px 40px rgba(0,0,0,0.4);
-        }
-        .form-card iframe {
-            width: 100%;
-            border: none;
-            display: block;
-            min-height: 900px;
-        }
+        /* --- Wizard Form --- */
+        .wizard-form { max-width: 100%; }
+        .wizard-progress { position: relative; margin-bottom: 32px; padding: 0 4px; }
+        .progress-bar { position: absolute; top: 50%; left: 0; height: 3px; background: #22d3ee; border-radius: 2px; transition: width 0.4s; transform: translateY(-50%); z-index: 0; width: 0%; }
+        .progress-steps { display: flex; justify-content: space-between; position: relative; z-index: 1; }
+        .progress-step { width: 32px; height: 32px; border-radius: 50%; background: #1a1f2e; border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; color: rgba(248,250,252,0.4); transition: all 0.3s; }
+        .progress-step.active { background: #22d3ee; color: #0a0e17; border-color: #22d3ee; box-shadow: 0 0 12px rgba(34,211,238,0.4); }
+        .progress-step.done { background: rgba(34,211,238,0.2); color: #22d3ee; border-color: #22d3ee; }
+
+        .wizard-step { display: none; animation: fadeIn 0.3s; }
+        .wizard-step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .step-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; margin-bottom: 20px; color: #22d3ee; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.82rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(248,250,252,0.6); margin-bottom: 6px; }
+        .req { color: #22d3ee; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px 14px; background: #0f1729; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f8fafc; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,0.15); }
+        .form-group input.error, .form-group textarea.error { border-color: #f87171; }
+
+        .toggle-choice { display: flex; gap: 10px; }
+        .choice-btn { flex: 1; padding: 10px; background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: rgba(248,250,252,0.6); font-family: inherit; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .choice-btn:hover { border-color: rgba(34,211,238,0.4); }
+        .choice-btn.active { background: rgba(34,211,238,0.15); border-color: #22d3ee; color: #22d3ee; font-weight: 600; }
+
+        .radio-group { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .radio-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; font-size: 0.88rem; color: rgba(248,250,252,0.7); transition: all 0.2s; }
+        .radio-option:hover { border-color: rgba(34,211,238,0.3); }
+        .radio-option input { accent-color: #22d3ee; }
+
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .cb-option { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: rgba(248,250,252,0.7); }
+        .cb-option input { accent-color: #22d3ee; }
+
+        .conditional-fields { animation: fadeIn 0.3s; }
+
+        .wizard-nav { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
+        .wiz-btn { padding: 12px 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(248,250,252,0.7); font-family: inherit; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .wiz-btn.primary { background: linear-gradient(135deg, #22d3ee, #0ea5e9); color: #0a0e17; border: none; font-weight: 600; }
+        .wiz-btn.primary:hover { box-shadow: 0 0 16px rgba(34,211,238,0.4); }
+        .wiz-btn:hover { border-color: rgba(34,211,238,0.4); }
 
         /* --- Footer --- */
         .ty-footer {
@@ -230,12 +259,123 @@
         <h2>Apie jūsų <em>saloną</em></h2>
         <p class="form-sub">Užtruksite apie 3 minutes</p>
 
-        <div class="form-card">
-            <iframe
-                data-tally-src="https://tally.so/embed/Gx0vqO?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
-                loading="lazy"
-                title="Salono informacijos forma">
-            </iframe>
+        <form id="onboarding-form" class="wizard-form">
+            <div class="wizard-progress">
+                <div class="progress-bar" id="progress-bar"></div>
+                <div class="progress-steps">
+                    <span class="progress-step active" data-step="1">1</span>
+                    <span class="progress-step" data-step="2">2</span>
+                    <span class="progress-step" data-step="3">3</span>
+                    <span class="progress-step" data-step="4">4</span>
+                    <span class="progress-step" data-step="5">5</span>
+                    <span class="progress-step" data-step="6">6</span>
+                </div>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="wizard-step active" data-step="1">
+                <h3 class="step-title">Pagrindinė informacija</h3>
+                <div class="form-group"><label>Salono pavadinimas <span class="req">*</span></label><input type="text" id="salon_name" required></div>
+                <div class="form-group"><label>Kontaktinis telefonas <span class="req">*</span></label><input type="tel" id="phone" required></div>
+                <div class="form-group"><label>El. pašto adresas <span class="req">*</span></label><input type="email" id="email" required></div>
+                <div class="form-group"><label>Instagram profilis</label><input type="text" id="instagram" placeholder="@jusu_salonas"></div>
+                <div class="form-group"><label>Salono adresas</label><input type="text" id="address"></div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="wizard-step" data-step="2">
+                <h3 class="step-title">Paslaugos</h3>
+                <div class="form-group"><label>Paslaugos ir kainos <span class="req">*</span></label><textarea id="services_prices" rows="5" required placeholder="Kirpimas – 20€&#10;Dažymas – 40€&#10;Manikiūras – 25€"></textarea></div>
+                <div class="form-group"><label>Darbo valandos <span class="req">*</span></label><textarea id="working_hours" rows="4" required placeholder="Pn–Pt 9:00–19:00&#10;Šeštadienis 10:00–15:00&#10;Sekmadienis – nedarbo diena"></textarea></div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="wizard-step" data-step="3">
+                <h3 class="step-title">Dizainas</h3>
+                <div class="form-group">
+                    <label>Ar turite logotipą?</label>
+                    <div class="toggle-choice" data-field="has_logo">
+                        <button type="button" class="choice-btn" data-value="yes">Taip</button>
+                        <button type="button" class="choice-btn" data-value="no">Ne</button>
+                    </div>
+                    <div class="conditional-fields" data-show-when="has_logo=yes" style="display:none">
+                        <input type="file" id="logo_file" accept="image/*" style="margin-top:12px">
+                    </div>
+                </div>
+                <div class="form-group"><label>Pageidaujamos spalvos</label><input type="text" id="preferred_colors" placeholder="pvz. juoda, auksinė, rožinė"></div>
+                <div class="form-group">
+                    <label>Dizaino stilius</label>
+                    <div class="radio-group">
+                        <label class="radio-option"><input type="radio" name="design_style" value="instagram"> Naudoti mano Instagram stilių</label>
+                        <label class="radio-option"><input type="radio" name="design_style" value="custom"> Individualus dizainas</label>
+                        <label class="radio-option"><input type="radio" name="design_style" value="surprise" checked> Man nesvarbu — nustebinkite mane</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 — Conditional: Online registracija -->
+            <div class="wizard-step" data-step="4">
+                <h3 class="step-title">Online registracija</h3>
+                <div class="form-group">
+                    <label>Ar norite online registracijos sistemos?</label>
+                    <div class="toggle-choice" data-field="wants_booking">
+                        <button type="button" class="choice-btn" data-value="yes">Taip</button>
+                        <button type="button" class="choice-btn" data-value="no">Ne</button>
+                    </div>
+                    <div class="conditional-fields" data-show-when="wants_booking=yes" style="display:none">
+                        <div class="form-group" style="margin-top:16px"><label>Paslaugų trukmė</label><textarea id="service_durations" rows="3" placeholder="Kirpimas – 30 min&#10;Dažymas – 90 min"></textarea></div>
+                        <div class="form-group"><label>Pertraukos</label><input type="text" id="break_times" placeholder="pvz. 12:00–13:00"></div>
+                        <div class="form-group">
+                            <label>Nedarbo dienos</label>
+                            <div class="checkbox-group">
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Pirmadienis"> Pr</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Antradienis"> An</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Trečiadienis"> Tr</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Ketvirtadienis"> Kt</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Penktadienis"> Pn</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Šeštadienis"> Š</label>
+                                <label class="cb-option"><input type="checkbox" name="off_days" value="Sekmadienis" checked> S</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5 — Conditional: SEO -->
+            <div class="wizard-step" data-step="5">
+                <h3 class="step-title">Google paieška (SEO)</h3>
+                <div class="form-group">
+                    <label>Ar norite būti randami Google paieškoje?</label>
+                    <div class="toggle-choice" data-field="wants_seo">
+                        <button type="button" class="choice-btn" data-value="yes">Taip</button>
+                        <button type="button" class="choice-btn" data-value="no">Ne</button>
+                    </div>
+                    <div class="conditional-fields" data-show-when="wants_seo=yes" style="display:none">
+                        <div class="form-group" style="margin-top:16px"><label>Miestas / rajonas <span class="req">*</span></label><input type="text" id="seo_city" placeholder="pvz. Vilnius, Šnipiškės"></div>
+                        <div class="form-group"><label>Prioritetinės paslaugos</label><input type="text" id="seo_services" placeholder="pvz. kirpimas, dažymas"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="wizard-step" data-step="6">
+                <h3 class="step-title">Papildoma</h3>
+                <div class="form-group"><label>Papildomi komentarai / pageidavimai</label><textarea id="notes" rows="4" placeholder="Jei turite papildomų pageidavimų ar pastabų..."></textarea></div>
+            </div>
+
+            <div class="wizard-nav">
+                <button type="button" class="wiz-btn wiz-prev" style="display:none">Atgal</button>
+                <button type="button" class="wiz-btn wiz-next primary">Toliau</button>
+                <button type="submit" class="wiz-btn wiz-submit primary" style="display:none">Pateikti informaciją</button>
+            </div>
+        </form>
+
+        <div id="form-success" style="display:none;text-align:center;padding:60px 20px;">
+            <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a);display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,197,94,0.4);">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:10px;">Ačiū! Informacija gauta.</h3>
+            <p style="color:rgba(248,250,252,0.55);">Mes pradedame kurti jūsų svetainę. Susisieksime su jumis per 1–2 darbo dienas.</p>
         </div>
     </section>
 
@@ -248,8 +388,127 @@
         <p style="margin-top: 10px;">&copy; 2026 Velora Studio</p>
     </footer>
 
-    <!-- Tally auto-resize script (official) — removes scrolling inside iframe -->
-    <script src="https://tally.so/widgets/embed.js"></script>
+    <!-- Wizard Form Logic -->
+    <script>
+    (function() {
+        const form = document.getElementById('onboarding-form');
+        if (!form) return;
+        const steps = form.querySelectorAll('.wizard-step');
+        const progressSteps = form.querySelectorAll('.progress-step');
+        const progressBar = document.getElementById('progress-bar');
+        const prevBtn = form.querySelector('.wiz-prev');
+        const nextBtn = form.querySelector('.wiz-next');
+        const submitBtn = form.querySelector('.wiz-submit');
+        let current = 1;
+        const totalSteps = steps.length;
+        const toggleState = {};
+
+        // Toggle choice buttons
+        form.querySelectorAll('.toggle-choice').forEach(tc => {
+            const field = tc.dataset.field;
+            tc.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tc.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    toggleState[field] = btn.dataset.value;
+                    // Show/hide conditional
+                    const cond = form.querySelector(`[data-show-when="${field}=${btn.dataset.value}"]`);
+                    const condHide = form.querySelector(`[data-show-when="${field}=${btn.dataset.value === 'yes' ? 'no' : 'yes'}"]`);
+                    if (cond) cond.style.display = 'block';
+                    if (condHide) condHide.style.display = 'none';
+                    // For conditional steps (4 & 5), also show the sub-fields
+                    form.querySelectorAll(`[data-show-when^="${field}="]`).forEach(el => {
+                        el.style.display = el.dataset.showWhen === `${field}=${btn.dataset.value}` ? 'block' : 'none';
+                    });
+                });
+            });
+        });
+
+        function shouldSkip(step) {
+            if (step === 4 && toggleState.wants_booking === 'no') return true;
+            if (step === 5 && toggleState.wants_seo === 'no') return true;
+            return false;
+        }
+
+        function goTo(step) {
+            // Skip conditional steps
+            if (step > current && shouldSkip(step)) { goTo(step + 1); return; }
+            if (step < current && shouldSkip(step)) { goTo(step - 1); return; }
+            if (step < 1 || step > totalSteps) return;
+
+            steps.forEach(s => s.classList.remove('active'));
+            form.querySelector(`[data-step="${step}"]`).classList.add('active');
+            progressSteps.forEach(ps => {
+                const s = parseInt(ps.dataset.step);
+                ps.classList.toggle('active', s === step);
+                ps.classList.toggle('done', s < step);
+            });
+            progressBar.style.width = ((step - 1) / (totalSteps - 1) * 100) + '%';
+            prevBtn.style.display = step === 1 ? 'none' : 'inline-block';
+            nextBtn.style.display = step === totalSteps ? 'none' : 'inline-block';
+            submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
+            current = step;
+        }
+
+        function validate() {
+            const activeStep = form.querySelector(`.wizard-step[data-step="${current}"]`);
+            let valid = true;
+            activeStep.querySelectorAll('[required]').forEach(el => {
+                if (!el.value.trim()) { el.classList.add('error'); valid = false; }
+                else el.classList.remove('error');
+                if (el.type === 'email' && el.value && !el.value.includes('@')) { el.classList.add('error'); valid = false; }
+            });
+            return valid;
+        }
+
+        nextBtn.addEventListener('click', () => { if (validate()) goTo(current + 1); });
+        prevBtn.addEventListener('click', () => goTo(current - 1));
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!validate()) return;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Siunčiama...';
+
+            const data = {
+                salon_name: document.getElementById('salon_name')?.value || '',
+                phone: document.getElementById('phone')?.value || '',
+                email: document.getElementById('email')?.value || '',
+                instagram: document.getElementById('instagram')?.value || '',
+                address: document.getElementById('address')?.value || '',
+                services_prices: document.getElementById('services_prices')?.value || '',
+                working_hours: document.getElementById('working_hours')?.value || '',
+                has_logo: toggleState.has_logo === 'yes',
+                preferred_colors: document.getElementById('preferred_colors')?.value || '',
+                design_style: document.querySelector('input[name="design_style"]:checked')?.value || 'surprise',
+                wants_booking: toggleState.wants_booking === 'yes',
+                service_durations: document.getElementById('service_durations')?.value || '',
+                break_times: document.getElementById('break_times')?.value || '',
+                off_days: [...document.querySelectorAll('input[name="off_days"]:checked')].map(c => c.value),
+                wants_seo: toggleState.wants_seo === 'yes',
+                seo_city: document.getElementById('seo_city')?.value || '',
+                seo_services: document.getElementById('seo_services')?.value || '',
+                notes: document.getElementById('notes')?.value || ''
+            };
+
+            try {
+                const res = await fetch('https://velora-ops.onrender.com/webhook/onboarding', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    form.style.display = 'none';
+                    document.getElementById('form-success').style.display = 'block';
+                } else {
+                    alert('Klaida siunčiant formą. Bandykite dar kartą arba parašykite mums el. paštu.');
+                    submitBtn.disabled = false; submitBtn.textContent = 'Pateikti informaciją';
+                }
+            } catch (err) {
+                alert('Ryšio klaida. Patikrinkite internetą ir bandykite dar kartą.');
+                submitBtn.disabled = false; submitBtn.textContent = 'Pateikti informaciją';
+            }
+        });
+    }());
+    </script>
 
     <!-- Blue confetti on page load -->
     <canvas id="confetti-canvas" style="position:fixed;inset:0;z-index:9999;pointer-events:none;"></canvas>

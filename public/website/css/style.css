@@ -2405,3 +2405,46 @@ a.service-card {
     }
 }
 
+/* --- 3-Step Process --- */
+.steps-process {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+.step-card {
+    text-align: center;
+    max-width: 180px;
+}
+.step-card h4 {
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    color: #f8fafc;
+}
+.step-card p {
+    font-size: 0.8rem;
+    color: rgba(248,250,252,0.5);
+}
+.step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid #22d3ee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #22d3ee;
+}
+.step-arrow {
+    color: rgba(34,211,238,0.5);
+    font-size: 1.3rem;
+}
+@media (max-width: 640px) {
+    .steps-process { flex-direction: column; gap: 12px; }
+    .step-arrow { transform: rotate(90deg); }
+}
+
