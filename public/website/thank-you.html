@@ -203,6 +203,7 @@
         .cb-option input { accent-color: #22d3ee; }
 
         .conditional-fields { animation: fadeIn 0.3s; }
+        .field-hint { font-size: 0.78rem; color: rgba(248,250,252,0.35); margin: 2px 0 8px; }
 
         .wizard-nav { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
         .wiz-btn { padding: 12px 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(248,250,252,0.7); font-family: inherit; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
@@ -267,31 +268,42 @@
                     <span class="progress-step" data-step="2">2</span>
                     <span class="progress-step" data-step="3">3</span>
                     <span class="progress-step" data-step="4">4</span>
-                    <span class="progress-step" data-step="5">5</span>
-                    <span class="progress-step" data-step="6">6</span>
                 </div>
             </div>
 
-            <!-- Step 1 -->
+            <!-- Step 1: About your salon -->
             <div class="wizard-step active" data-step="1">
-                <h3 class="step-title">Pagrindinė informacija</h3>
-                <div class="form-group"><label>Salono pavadinimas <span class="req">*</span></label><input type="text" id="salon_name" required></div>
-                <div class="form-group"><label>Kontaktinis telefonas <span class="req">*</span></label><input type="tel" id="phone" required></div>
-                <div class="form-group"><label>El. pašto adresas <span class="req">*</span></label><input type="email" id="email" required></div>
+                <h3 class="step-title">Apie jūsų saloną</h3>
+                <div class="form-group"><label>Salono pavadinimas <span class="req">*</span></label><input type="text" id="salon_name" required placeholder="pvz. Beauty Studio Vilnius"></div>
+                <div class="form-group"><label>Kontaktinis telefonas <span class="req">*</span></label><input type="tel" id="phone" required placeholder="+370 600 00000"></div>
+                <div class="form-group"><label>El. pašto adresas <span class="req">*</span></label><input type="email" id="email" required placeholder="info@jusu-salonas.lt"></div>
                 <div class="form-group"><label>Instagram profilis</label><input type="text" id="instagram" placeholder="@jusu_salonas"></div>
-                <div class="form-group"><label>Salono adresas</label><input type="text" id="address"></div>
+                <div class="form-group"><label>Salono adresas</label><input type="text" id="address" placeholder="pvz. Gedimino pr. 1, Vilnius"></div>
             </div>
 
-            <!-- Step 2 -->
+            <!-- Step 2: Services & schedule -->
             <div class="wizard-step" data-step="2">
-                <h3 class="step-title">Paslaugos</h3>
-                <div class="form-group"><label>Paslaugos ir kainos <span class="req">*</span></label><textarea id="services_prices" rows="5" required placeholder="Kirpimas – 20€&#10;Dažymas – 40€&#10;Manikiūras – 25€"></textarea></div>
-                <div class="form-group"><label>Darbo valandos <span class="req">*</span></label><textarea id="working_hours" rows="4" required placeholder="Pn–Pt 9:00–19:00&#10;Šeštadienis 10:00–15:00&#10;Sekmadienis – nedarbo diena"></textarea></div>
+                <h3 class="step-title">Paslaugos ir darbo laikas</h3>
+                <div class="form-group"><label>Paslaugos, kainos ir trukmė <span class="req">*</span></label><textarea id="services_prices" rows="6" required placeholder="Kirpimas – 20€ – 30 min&#10;Dažymas – 40€ – 90 min&#10;Manikiūras – 25€ – 45 min&#10;&#10;(trukmę rašykite jei norite online registracijos)"></textarea></div>
+                <div class="form-group"><label>Darbo valandos <span class="req">*</span></label><textarea id="working_hours" rows="3" required placeholder="Pn–Pt 9:00–19:00&#10;Šeštadienis 10:00–15:00"></textarea></div>
+                <div class="form-group">
+                    <label>Nedarbo dienos</label>
+                    <div class="checkbox-group">
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Pirmadienis"> Pr</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Antradienis"> An</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Trečiadienis"> Tr</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Ketvirtadienis"> Kt</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Penktadienis"> Pn</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Šeštadienis"> Š</label>
+                        <label class="cb-option"><input type="checkbox" name="off_days" value="Sekmadienis" checked> S</label>
+                    </div>
+                </div>
+                <div class="form-group"><label>Pietų pertrauka</label><input type="text" id="break_times" placeholder="pvz. 13:00–14:00 (palikite tuščią jei nėra)"></div>
             </div>
 
-            <!-- Step 3 -->
+            <!-- Step 3: Design -->
             <div class="wizard-step" data-step="3">
-                <h3 class="step-title">Dizainas</h3>
+                <h3 class="step-title">Svetainės dizainas</h3>
                 <div class="form-group">
                     <label>Ar turite logotipą?</label>
                     <div class="toggle-choice" data-field="has_logo">
@@ -313,54 +325,36 @@
                 </div>
             </div>
 
-            <!-- Step 4 — Conditional: Online registracija -->
+            <!-- Step 4: Extras — booking, SEO, notes -->
             <div class="wizard-step" data-step="4">
-                <h3 class="step-title">Online registracija</h3>
+                <h3 class="step-title">Papildomos funkcijos</h3>
+
                 <div class="form-group">
                     <label>Ar norite online registracijos sistemos?</label>
+                    <p class="field-hint">Klientai galės patys registruotis per svetainę</p>
                     <div class="toggle-choice" data-field="wants_booking">
-                        <button type="button" class="choice-btn" data-value="yes">Taip</button>
-                        <button type="button" class="choice-btn" data-value="no">Ne</button>
-                    </div>
-                    <div class="conditional-fields" data-show-when="wants_booking=yes" style="display:none">
-                        <div class="form-group" style="margin-top:16px"><label>Paslaugų trukmė</label><textarea id="service_durations" rows="3" placeholder="Kirpimas – 30 min&#10;Dažymas – 90 min"></textarea></div>
-                        <div class="form-group"><label>Pertraukos</label><input type="text" id="break_times" placeholder="pvz. 12:00–13:00"></div>
-                        <div class="form-group">
-                            <label>Nedarbo dienos</label>
-                            <div class="checkbox-group">
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Pirmadienis"> Pr</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Antradienis"> An</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Trečiadienis"> Tr</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Ketvirtadienis"> Kt</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Penktadienis"> Pn</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Šeštadienis"> Š</label>
-                                <label class="cb-option"><input type="checkbox" name="off_days" value="Sekmadienis" checked> S</label>
-                            </div>
-                        </div>
+                        <button type="button" class="choice-btn" data-value="yes">Taip, noriu</button>
+                        <button type="button" class="choice-btn" data-value="no">Ne, nereikia</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Step 5 — Conditional: SEO -->
-            <div class="wizard-step" data-step="5">
-                <h3 class="step-title">Google paieška (SEO)</h3>
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 24px;">
                     <label>Ar norite būti randami Google paieškoje?</label>
+                    <p class="field-hint">Optimizuosime svetainę, kad klientai rastų jus ieškodami paslaugų</p>
                     <div class="toggle-choice" data-field="wants_seo">
-                        <button type="button" class="choice-btn" data-value="yes">Taip</button>
-                        <button type="button" class="choice-btn" data-value="no">Ne</button>
+                        <button type="button" class="choice-btn" data-value="yes">Taip, noriu</button>
+                        <button type="button" class="choice-btn" data-value="no">Ne, nereikia</button>
                     </div>
                     <div class="conditional-fields" data-show-when="wants_seo=yes" style="display:none">
-                        <div class="form-group" style="margin-top:16px"><label>Miestas / rajonas <span class="req">*</span></label><input type="text" id="seo_city" placeholder="pvz. Vilnius, Šnipiškės"></div>
-                        <div class="form-group"><label>Prioritetinės paslaugos</label><input type="text" id="seo_services" placeholder="pvz. kirpimas, dažymas"></div>
+                        <div class="form-group" style="margin-top:14px"><label>Miestas / rajonas</label><input type="text" id="seo_city" placeholder="pvz. Vilnius, Šnipiškės"></div>
+                        <div class="form-group"><label>Prioritetinės paslaugos Google'ui</label><input type="text" id="seo_services" placeholder="pvz. kirpėjas Vilniuje, nagų salonas"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Step 6 -->
-            <div class="wizard-step" data-step="6">
-                <h3 class="step-title">Papildoma</h3>
-                <div class="form-group"><label>Papildomi komentarai / pageidavimai</label><textarea id="notes" rows="4" placeholder="Jei turite papildomų pageidavimų ar pastabų..."></textarea></div>
+                <div class="form-group" style="margin-top: 24px;">
+                    <label>Papildomi pageidavimai</label>
+                    <textarea id="notes" rows="3" placeholder="Ar turite kokių nors specialių pageidavimų ar pastabų?"></textarea>
+                </div>
             </div>
 
             <div class="wizard-nav">
@@ -403,7 +397,7 @@
         const totalSteps = steps.length;
         const toggleState = {};
 
-        // Toggle choice buttons
+        // Toggle choice buttons (for has_logo, wants_booking, wants_seo)
         form.querySelectorAll('.toggle-choice').forEach(tc => {
             const field = tc.dataset.field;
             tc.querySelectorAll('.choice-btn').forEach(btn => {
@@ -411,12 +405,7 @@
                     tc.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     toggleState[field] = btn.dataset.value;
-                    // Show/hide conditional
-                    const cond = form.querySelector(`[data-show-when="${field}=${btn.dataset.value}"]`);
-                    const condHide = form.querySelector(`[data-show-when="${field}=${btn.dataset.value === 'yes' ? 'no' : 'yes'}"]`);
-                    if (cond) cond.style.display = 'block';
-                    if (condHide) condHide.style.display = 'none';
-                    // For conditional steps (4 & 5), also show the sub-fields
+                    // Show/hide conditional fields within same step
                     form.querySelectorAll(`[data-show-when^="${field}="]`).forEach(el => {
                         el.style.display = el.dataset.showWhen === `${field}=${btn.dataset.value}` ? 'block' : 'none';
                     });
@@ -424,20 +413,10 @@
             });
         });
 
-        function shouldSkip(step) {
-            if (step === 4 && toggleState.wants_booking === 'no') return true;
-            if (step === 5 && toggleState.wants_seo === 'no') return true;
-            return false;
-        }
-
         function goTo(step) {
-            // Skip conditional steps
-            if (step > current && shouldSkip(step)) { goTo(step + 1); return; }
-            if (step < current && shouldSkip(step)) { goTo(step - 1); return; }
             if (step < 1 || step > totalSteps) return;
-
             steps.forEach(s => s.classList.remove('active'));
-            form.querySelector(`[data-step="${step}"]`).classList.add('active');
+            form.querySelector(`.wizard-step[data-step="${step}"]`).classList.add('active');
             progressSteps.forEach(ps => {
                 const s = parseInt(ps.dataset.step);
                 ps.classList.toggle('active', s === step);
@@ -448,6 +427,7 @@
             nextBtn.style.display = step === totalSteps ? 'none' : 'inline-block';
             submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
             current = step;
+            window.scrollTo({ top: form.offsetTop - 100, behavior: 'smooth' });
         }
 
         function validate() {
@@ -478,13 +458,12 @@
                 address: document.getElementById('address')?.value || '',
                 services_prices: document.getElementById('services_prices')?.value || '',
                 working_hours: document.getElementById('working_hours')?.value || '',
+                off_days: [...document.querySelectorAll('input[name="off_days"]:checked')].map(c => c.value),
+                break_times: document.getElementById('break_times')?.value || '',
                 has_logo: toggleState.has_logo === 'yes',
                 preferred_colors: document.getElementById('preferred_colors')?.value || '',
                 design_style: document.querySelector('input[name="design_style"]:checked')?.value || 'surprise',
                 wants_booking: toggleState.wants_booking === 'yes',
-                service_durations: document.getElementById('service_durations')?.value || '',
-                break_times: document.getElementById('break_times')?.value || '',
-                off_days: [...document.querySelectorAll('input[name="off_days"]:checked')].map(c => c.value),
                 wants_seo: toggleState.wants_seo === 'yes',
                 seo_city: document.getElementById('seo_city')?.value || '',
                 seo_services: document.getElementById('seo_services')?.value || '',
