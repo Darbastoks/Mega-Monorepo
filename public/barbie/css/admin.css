@@ -481,3 +481,69 @@
     background: rgba(251,191,36,0.15);
     color: #fbbf24;
 }
+
+/* Contact cards after emergency cancel */
+.ec-client-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.ec-client-info {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+.ec-client-info strong { color: #e5e7eb; }
+.ec-client-info span { opacity: 0.6; font-size: 0.8rem; }
+.ec-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.ec-action-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s;
+}
+.ec-action-btn:hover { opacity: 0.8; }
+.ec-btn-copy { background: rgba(99,102,241,0.2); color: #818cf8; }
+.ec-btn-call { background: rgba(34,197,94,0.2); color: #22c55e; }
+.ec-btn-sms { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.ec-btn-email { background: rgba(251,191,36,0.2); color: #fbbf24; }
+.ec-btn-send { background: #22c55e; color: #fff; }
+.ec-btn-cancel { background: rgba(255,255,255,0.1); color: #9ca3af; }
+
+.ec-email-form {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.ec-email-form textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.85rem;
+    resize: vertical;
+    margin-bottom: 0.5rem;
+}
+.ec-email-actions {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}

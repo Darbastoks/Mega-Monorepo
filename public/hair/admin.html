@@ -440,7 +440,7 @@
         <div class="admin-nav-actions" id="navActions" style="display: none;">
             <button class="admin-btn" id="emergencyCancelBtn"
                 style="background:#ef4444; color:#fff; border:none; cursor:pointer; font-weight:600;">
-                Skubi atšaukimas
+                SKUBUS atšaukimas
             </button>
             <button class="admin-btn" id="viewSettingsBtn"
                 style="border-color: var(--accent-primary); color: var(--accent-primary); background: transparent; cursor: pointer;">
@@ -1147,7 +1147,7 @@
             const modalHtml = `
                 <div id="emergencyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
                     <div style="max-width:500px; width:90%; background:var(--bg-secondary, #1a1a2e); padding:1.5rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1); max-height:80vh; overflow-y:auto;">
-                        <h3 style="color:#ef4444; margin-bottom:1rem;">Skubi atšaukimas</h3>
+                        <h3 style="color:#ef4444; margin-bottom:1rem;">SKUBUS atšaukimas</h3>
                         <p style="opacity:0.7; margin-bottom:1rem; font-size:0.9rem;">Pasirinkite datą ir atšaukite visas registracijas. Klientai bus informuoti el. paštu.</p>
                         <div style="margin-bottom:1rem;"><label style="display:block; margin-bottom:0.5rem; font-weight:500;">Data *</label><input type="date" id="emergencyDate" required style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;"></div>
                         <div style="margin-bottom:1rem;"><label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;"><input type="checkbox" id="emergencyFullDay" checked><span>Visa diena</span></label></div>
@@ -1248,12 +1248,29 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error);
 
-                    let html = `<p style="font-weight:600; color:#10b981;">Atšaukta sėkmingai!</p>`;
-                    html += `<p style="font-size:0.9rem;">Atšaukta registracijų: <strong>${data.cancelledCount}</strong></p>`;
-                    html += `<p style="font-size:0.9rem;">Informuota el. paštu: <strong>${data.emailedCount}</strong></p>`;
-                    if (data.needsPhoneCall && data.needsPhoneCall.length > 0) {
-                        html += `<p style="font-size:0.9rem; color:#fbbf24; margin-top:0.5rem; font-weight:500;">Paskambinkite šiems klientams:</p>`;
-                        data.needsPhoneCall.forEach(c => { html += `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;font-size:0.9rem;"><span>${c.name}</span><a href="tel:${c.phone}" style="color:#fbbf24;">${c.phone}</a></div>`; });
+                    let html = `<p style="font-weight:600; color:#10b981; margin-bottom:0.5rem;">Atšaukta sėkmingai! (${data.cancelledCount} registr.)</p>`;
+                    if (data.clients && data.clients.length > 0) {
+                        html += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
+                        data.clients.forEach((c, i) => {
+                            const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nHair Beauty`;
+                            const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
+                            html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem;">
+                                <div style="font-size:0.9rem;margin-bottom:0.5rem;"><strong>${c.name}</strong> <span style="opacity:0.6;font-size:0.8rem;">— ${c.time} — ${c.service}</span></div>
+                                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                    <button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(99,102,241,0.2);color:#818cf8;" onclick="navigator.clipboard.writeText('${clipText.replace(/'/g,"\\'")}');this.textContent='Nukopijuota!';">Kopijuoti</button>
+                                    <a href="tel:${c.phone}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(34,197,94,0.2);color:#22c55e;text-decoration:none;">Skambinti</a>
+                                    <a href="sms:${c.phone}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(59,130,246,0.2);color:#60a5fa;text-decoration:none;">Žinutė</a>
+                                    ${c.email ? `<button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(251,191,36,0.2);color:#fbbf24;" onclick="document.getElementById('hairEF${i}').style.display=document.getElementById('hairEF${i}').style.display==='none'?'block':'none'">El. paštas</button>` : ''}
+                                </div>
+                                ${c.email ? `<div id="hairEF${i}" style="display:none;margin-top:0.5rem;padding:0.75rem;background:rgba(0,0,0,0.2);border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
+                                    <textarea id="hairEM${i}" style="width:100%;min-height:120px;padding:0.5rem;border:1px solid rgba(255,255,255,0.12);border-radius:4px;background:rgba(255,255,255,0.05);color:inherit;font-family:inherit;font-size:0.85rem;resize:vertical;margin-bottom:0.5rem;">${defaultMsg}</textarea>
+                                    <div style="display:flex;gap:0.4rem;justify-content:flex-end;">
+                                        <button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;cursor:pointer;background:rgba(255,255,255,0.1);color:#9ca3af;" onclick="document.getElementById('hairEF${i}').style.display='none'">Atšaukti</button>
+                                        <button id="hairSB${i}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;cursor:pointer;background:#22c55e;color:#fff;font-weight:500;" onclick="hairSendEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti</button>
+                                    </div>
+                                </div>` : ''}
+                            </div>`;
+                        });
                     }
                     emergencyResult.innerHTML = html;
                     emergencyResult.style.display = 'block';
@@ -1267,6 +1284,25 @@
                     emergencyConfirmBtn.textContent = 'Atšaukti registracijas';
                 }
             });
+
+            window.hairSendEmail = async function(idx, email, name) {
+                const btn = document.getElementById('hairSB' + idx);
+                const msg = document.getElementById('hairEM' + idx).value;
+                btn.disabled = true; btn.textContent = 'Siunčiama...';
+                try {
+                    const res = await fetch(`${API_URL}/admin/send-cancel-email`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ to: email, clientName: name, message: msg })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    btn.textContent = 'Išsiųsta!'; btn.style.background = '#10b981';
+                } catch (err) {
+                    btn.textContent = 'Klaida!'; btn.style.background = '#ef4444';
+                    alert('Nepavyko: ' + err.message);
+                    setTimeout(() => { btn.disabled = false; btn.textContent = 'Siųsti'; btn.style.background = ''; }, 3000);
+                }
+            };
         })();
     </script>
 </body>

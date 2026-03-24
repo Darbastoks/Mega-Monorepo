@@ -554,7 +554,7 @@ app.post('/api/barbie/admin/emergency-cancel', requireBarbieAdmin, (req, res) =>
                     }
                 }
             });
-            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+            return res.json({ cancelledCount: 0, clients: [] });
         }
 
         const ids = bookings.map(b => b.id);
@@ -572,22 +572,29 @@ app.post('/api/barbie/admin/emergency-cancel', requireBarbieAdmin, (req, res) =>
                 }
             });
 
-            let emailedCount = 0;
-            const needsPhoneCall = [];
-            const salonName = 'Barbie Beauty';
-
-            bookings.forEach(b => {
-                if (b.email) {
-                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
-                    emailedCount++;
-                } else {
-                    needsPhoneCall.push({ name: b.name, phone: b.phone });
-                }
-            });
-
-            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+            const clients = bookings.map(b => ({ name: b.name, phone: b.phone, email: b.email || '', service: b.service, time: b.time, date: b.date }));
+            res.json({ cancelledCount: bookings.length, clients });
         });
     });
+});
+
+// Barbie: Send custom cancellation email
+app.post('/api/barbie/admin/send-cancel-email', requireBarbieAdmin, async (req, res) => {
+    const { to, clientName, message } = req.body;
+    if (!to || !message) return res.status(400).json({ error: 'El. paštas ir žinutė privalomi' });
+    if (!emailTransporter) return res.status(500).json({ error: 'El. pašto siuntimas nesukonfigūruotas (trūksta GMAIL_USER / GMAIL_APP_PASSWORD)' });
+    try {
+        await emailTransporter.sendMail({
+            from: `"Barbie Beauty" <${process.env.GMAIL_USER}>`,
+            to,
+            subject: `Dėl Jūsų vizito — Barbie Beauty`,
+            text: message
+        });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Email send failed:', err.message);
+        res.status(500).json({ error: 'Nepavyko išsiųsti: ' + err.message });
+    }
 });
 
 // ==================== NAILS BY LUKRA API (/api/nails/*) ====================
@@ -886,7 +893,7 @@ app.post('/api/nails/admin/emergency-cancel', requireNailsAdmin, (req, res) => {
                     }
                 }
             });
-            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+            return res.json({ cancelledCount: 0, clients: [] });
         }
 
         const ids = bookings.map(b => b.id);
@@ -903,22 +910,29 @@ app.post('/api/nails/admin/emergency-cancel', requireNailsAdmin, (req, res) => {
                 }
             });
 
-            let emailedCount = 0;
-            const needsPhoneCall = [];
-            const salonName = 'Nails by Lukra';
-
-            bookings.forEach(b => {
-                if (b.email) {
-                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
-                    emailedCount++;
-                } else {
-                    needsPhoneCall.push({ name: b.name, phone: b.phone });
-                }
-            });
-
-            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+            const clients = bookings.map(b => ({ name: b.name, phone: b.phone, email: b.email || '', service: b.service, time: b.time, date: b.date }));
+            res.json({ cancelledCount: bookings.length, clients });
         });
     });
+});
+
+// Nails: Send custom cancellation email
+app.post('/api/nails/admin/send-cancel-email', requireNailsAdmin, async (req, res) => {
+    const { to, clientName, message } = req.body;
+    if (!to || !message) return res.status(400).json({ error: 'El. paštas ir žinutė privalomi' });
+    if (!emailTransporter) return res.status(500).json({ error: 'El. pašto siuntimas nesukonfigūruotas (trūksta GMAIL_USER / GMAIL_APP_PASSWORD)' });
+    try {
+        await emailTransporter.sendMail({
+            from: `"Nails by Lukra" <${process.env.GMAIL_USER}>`,
+            to,
+            subject: `Dėl Jūsų vizito — Nails by Lukra`,
+            text: message
+        });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Email send failed:', err.message);
+        res.status(500).json({ error: 'Nepavyko išsiųsti: ' + err.message });
+    }
 });
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
@@ -1234,7 +1248,7 @@ app.post('/api/hair/admin/emergency-cancel', requireHairAdmin, (req, res) => {
                     }
                 }
             });
-            return res.json({ cancelledCount: 0, emailedCount: 0, needsPhoneCall: [] });
+            return res.json({ cancelledCount: 0, clients: [] });
         }
 
         const ids = bookings.map(b => b.id);
@@ -1251,22 +1265,29 @@ app.post('/api/hair/admin/emergency-cancel', requireHairAdmin, (req, res) => {
                 }
             });
 
-            let emailedCount = 0;
-            const needsPhoneCall = [];
-            const salonName = 'Hair Beauty';
-
-            bookings.forEach(b => {
-                if (b.email) {
-                    sendCancellationEmail(b.email, b.name, b.service, b.date, b.time, reason, salonName);
-                    emailedCount++;
-                } else {
-                    needsPhoneCall.push({ name: b.name, phone: b.phone });
-                }
-            });
-
-            res.json({ cancelledCount: bookings.length, emailedCount, needsPhoneCall });
+            const clients = bookings.map(b => ({ name: b.name, phone: b.phone, email: b.email || '', service: b.service, time: b.time, date: b.date }));
+            res.json({ cancelledCount: bookings.length, clients });
         });
     });
+});
+
+// Hair: Send custom cancellation email
+app.post('/api/hair/admin/send-cancel-email', requireHairAdmin, async (req, res) => {
+    const { to, clientName, message } = req.body;
+    if (!to || !message) return res.status(400).json({ error: 'El. paštas ir žinutė privalomi' });
+    if (!emailTransporter) return res.status(500).json({ error: 'El. pašto siuntimas nesukonfigūruotas (trūksta GMAIL_USER / GMAIL_APP_PASSWORD)' });
+    try {
+        await emailTransporter.sendMail({
+            from: `"Hair Beauty" <${process.env.GMAIL_USER}>`,
+            to,
+            subject: `Dėl Jūsų vizito — Hair Beauty`,
+            text: message
+        });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Email send failed:', err.message);
+        res.status(500).json({ error: 'Nepavyko išsiųsti: ' + err.message });
+    }
 });
 
 // ==================== VELORA STUDIO API (/api/velora/*) ====================

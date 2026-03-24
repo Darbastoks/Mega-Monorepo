@@ -568,14 +568,29 @@ function showToast(icon, message) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            let resultHtml = `<p style="font-weight:600; color:#10b981;">Atšaukta sėkmingai!</p>`;
-            resultHtml += `<p style="font-size:0.9rem;">Atšaukta registracijų: <strong>${data.cancelledCount}</strong></p>`;
-            resultHtml += `<p style="font-size:0.9rem;">Informuota el. paštu: <strong>${data.emailedCount}</strong></p>`;
+            let resultHtml = `<p style="font-weight:600; color:#10b981; margin-bottom:0.5rem;">Atšaukta sėkmingai! (${data.cancelledCount} registr.)</p>`;
 
-            if (data.needsPhoneCall && data.needsPhoneCall.length > 0) {
-                resultHtml += `<p style="font-size:0.9rem; color:#fbbf24; margin-top:0.5rem; font-weight:500;">Paskambinkite šiems klientams:</p>`;
-                data.needsPhoneCall.forEach(c => {
-                    resultHtml += `<div class="emergency-preview-item"><span>${c.name}</span><a href="tel:${c.phone}" style="color:#fbbf24;">${c.phone}</a></div>`;
+            if (data.clients && data.clients.length > 0) {
+                resultHtml += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
+                data.clients.forEach((c, i) => {
+                    const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nBarbie Beauty`;
+                    const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
+                    resultHtml += `<div class="ec-client-card">
+                        <div class="ec-client-info"><strong>${c.name}</strong> <span>— ${c.time} — ${c.service}</span></div>
+                        <div class="ec-actions">
+                            <button class="ec-action-btn ec-btn-copy" onclick="navigator.clipboard.writeText('${clipText.replace(/'/g,"\\'")}');this.textContent='Nukopijuota!';">Kopijuoti</button>
+                            <a href="tel:${c.phone}" class="ec-action-btn ec-btn-call">Skambinti</a>
+                            <a href="sms:${c.phone}" class="ec-action-btn ec-btn-sms">Žinutė</a>
+                            ${c.email ? `<button class="ec-action-btn ec-btn-email" onclick="document.getElementById('ecEmailForm${i}').style.display=document.getElementById('ecEmailForm${i}').style.display==='none'?'block':'none'">El. paštas</button>` : ''}
+                        </div>
+                        ${c.email ? `<div class="ec-email-form" id="ecEmailForm${i}" style="display:none;">
+                            <textarea id="ecEmailMsg${i}">${defaultMsg}</textarea>
+                            <div class="ec-email-actions">
+                                <button class="ec-action-btn ec-btn-cancel" onclick="document.getElementById('ecEmailForm${i}').style.display='none'">Atšaukti</button>
+                                <button class="ec-action-btn ec-btn-send" id="ecSendBtn${i}" onclick="sendEmergencyEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti</button>
+                            </div>
+                        </div>` : ''}
+                    </div>`;
                 });
             }
 
@@ -584,7 +599,6 @@ function showToast(icon, message) {
             emergencyPreview.style.display = 'none';
             emergencyConfirmBtn.style.display = 'none';
 
-            // Refresh bookings list
             if (typeof loadBookings === 'function') loadBookings();
 
         } catch (err) {
@@ -594,6 +608,29 @@ function showToast(icon, message) {
             emergencyConfirmBtn.textContent = 'Atšaukti registracijas';
         }
     });
+
+    window.sendEmergencyEmail = async function(idx, email, name) {
+        const btn = document.getElementById('ecSendBtn' + idx);
+        const msg = document.getElementById('ecEmailMsg' + idx).value;
+        btn.disabled = true;
+        btn.textContent = 'Siunčiama...';
+        try {
+            const res = await fetch('/api/barbie/admin/send-cancel-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: email, clientName: name, message: msg })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            btn.textContent = 'Išsiųsta!';
+            btn.style.background = '#10b981';
+        } catch (err) {
+            btn.textContent = 'Klaida!';
+            btn.style.background = '#ef4444';
+            alert('Nepavyko: ' + err.message);
+            setTimeout(() => { btn.disabled = false; btn.textContent = 'Siųsti'; btn.style.background = ''; }, 3000);
+        }
+    };
 })();
 
 // Make functions globally available
