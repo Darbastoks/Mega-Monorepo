@@ -501,9 +501,66 @@ document.addEventListener('DOMContentLoaded', () => {
         updateToggleUI();
     });
 
-    // Wire checkout buttons
+    // Wire checkout buttons — show overlay first, then proceed to Stripe
+    const checkoutOverlay = document.getElementById('checkout-overlay');
+    const checkoutClose = document.getElementById('checkout-close');
+    const checkoutPayBtn = document.getElementById('checkout-pay-btn');
+    const checkoutPlanName = document.getElementById('checkout-plan-name');
+    const checkoutPlanPrice = document.getElementById('checkout-plan-price');
+    let pendingPriceId = null;
+
+    const planNames = { start: 'START', growth: 'GROWTH', pro: 'PRO' };
+    const planPrices = {
+        start: { monthly: '25€<span>/mėn</span>', annual: '199€<span>/metus</span>' },
+        growth: { monthly: '39€<span>/mėn</span>', annual: '349€<span>/metus</span>' },
+        pro: { monthly: '59€<span>/mėn</span>', annual: '399€<span>/metus</span>' }
+    };
+
+    function showCheckoutOverlay(plan, billingCycle, priceId) {
+        pendingPriceId = priceId;
+        if (checkoutPlanName) checkoutPlanName.textContent = planNames[plan] || plan.toUpperCase();
+        if (checkoutPlanPrice) checkoutPlanPrice.innerHTML = planPrices[plan] ? planPrices[plan][billingCycle] : '';
+        if (checkoutOverlay) { checkoutOverlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+    }
+
+    function hideCheckoutOverlay() {
+        if (checkoutOverlay) { checkoutOverlay.style.display = 'none'; document.body.style.overflow = ''; }
+        pendingPriceId = null;
+    }
+
+    if (checkoutClose) checkoutClose.addEventListener('click', hideCheckoutOverlay);
+    if (checkoutOverlay) checkoutOverlay.addEventListener('click', (e) => { if (e.target === checkoutOverlay) hideCheckoutOverlay(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCheckoutOverlay(); });
+
+    if (checkoutPayBtn) {
+        checkoutPayBtn.addEventListener('click', async () => {
+            if (!pendingPriceId || checkoutPayBtn.disabled) return;
+            checkoutPayBtn.disabled = true;
+            checkoutPayBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kraunama...';
+
+            try {
+                const res = await fetch('/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ priceId: pendingPriceId }),
+                });
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error(data.error || 'Nežinoma klaida');
+                }
+            } catch (e) {
+                console.error('Checkout error:', e);
+                alert('Nepavyko atidaryti mokėjimo. Bandykite dar kartą.');
+                checkoutPayBtn.disabled = false;
+                checkoutPayBtn.innerHTML = '<i class="fas fa-lock"></i> Apmokėti dabar';
+            }
+        });
+    }
+
     planBtns.forEach(btn => {
-        btn.addEventListener('click', async function () {
+        btn.addEventListener('click', function () {
             const plan = this.dataset.plan;
             const billingCycle = isAnnual ? 'annual' : 'monthly';
             const priceId = prices[plan] && prices[plan][billingCycle];
@@ -513,30 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (this.disabled) return;
-            const overlay = document.getElementById('stripeOverlay');
-            if (overlay) overlay.style.display = 'flex';
-            this.disabled = true;
-
-            try {
-                const res = await fetch('/create-checkout-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ priceId }),
-                });
-                const data = await res.json();
-
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    throw new Error(data.error || 'Nežinoma klaida');
-                }
-            } catch (e) {
-                console.error('Checkout error:', e);
-                alert('Nepavyko atidaryti mokėjimo. Bandykite dar kartą arba susisiekite su mumis.');
-                if (overlay) overlay.style.display = 'none';
-                this.disabled = false;
-            }
+            showCheckoutOverlay(plan, billingCycle, priceId);
         });
     });
 }());

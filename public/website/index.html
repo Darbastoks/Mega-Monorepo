@@ -483,27 +483,6 @@
                 <span>Jei svetainė visiškai neveikia per pirmąsias 14 dienų — grąžiname pinigus.</span>
             </div>
 
-            <!-- 3-Step Process -->
-            <div class="steps-process">
-                <div class="step-card">
-                    <div class="step-circle">1</div>
-                    <h4>Pasirinkite planą</h4>
-                    <p>Išsirinkite tinkamiausią planą savo salonui</p>
-                </div>
-                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="step-card">
-                    <div class="step-circle">2</div>
-                    <h4>Apmokėkite</h4>
-                    <p>Saugus mokėjimas per Stripe</p>
-                </div>
-                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="step-card">
-                    <div class="step-circle">3</div>
-                    <h4>Gaukite svetainę</h4>
-                    <p>Per 7 darbo dienas svetainė bus paruošta</p>
-                </div>
-            </div>
-
             <div class="grid pricing-grid">
                 <div class="card pricing-card">
                     <h3>START</h3>
@@ -703,6 +682,45 @@
     <a href="https://instagram.com/velorastudio.lt" target="_blank" class="floating-ig" aria-label="Instagram">
         <i class="fab fa-instagram"></i>
     </a>
+
+    <!-- Checkout Confirmation Overlay -->
+    <div id="checkout-overlay" class="checkout-overlay" style="display:none">
+        <div class="checkout-modal">
+            <button class="checkout-close" id="checkout-close">&times;</button>
+            <h2>Jūsų pasirinkimas</h2>
+            <div class="checkout-plan-name" id="checkout-plan-name"></div>
+            <div class="checkout-plan-price" id="checkout-plan-price"></div>
+
+            <div class="checkout-steps">
+                <div class="checkout-step done">
+                    <div class="checkout-step-num">1</div>
+                    <div>
+                        <strong>Planas pasirinktas</strong>
+                        <p>Jūs pasirinkote savo planą</p>
+                    </div>
+                </div>
+                <div class="checkout-step active">
+                    <div class="checkout-step-num">2</div>
+                    <div>
+                        <strong>Mokėjimas</strong>
+                        <p>Saugus mokėjimas per Stripe</p>
+                    </div>
+                </div>
+                <div class="checkout-step">
+                    <div class="checkout-step-num">3</div>
+                    <div>
+                        <strong>Gaukite svetainę</strong>
+                        <p>Per 7 darbo dienas svetainė bus paruošta</p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="checkout-pay-btn" id="checkout-pay-btn">
+                <i class="fas fa-lock"></i> Apmokėti dabar
+            </button>
+            <p class="checkout-secure">Saugus mokėjimas. Galite atšaukti bet kada.</p>
+        </div>
+    </div>
 
     <script src="js/main.js" defer></script>
     <script src="js/particle-bg.js" defer></script>
