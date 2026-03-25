@@ -543,7 +543,7 @@ if (adminDashboard) {
             if (data.clients && data.clients.length > 0) {
                 html += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
                 data.clients.forEach((c, i) => {
-                    const defaultMsg = `Labas,\n\natsiprašau, bet šiandien dėl nenumatytų aplinkybių negalėsiu priimti. Žinau, kad nepatogu, ir tikrai gailiuosi.\n\nJei norite, galite persirašyti kitam laikui per mano svetainę – ten visada matysite laisvus laikus.\n\nDar kartą atsiprašau!\n\nNails by Lukra`;
+                    const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nNails by Lukra`;
                     const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
                     html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem;">
                         <div style="font-size:0.9rem;margin-bottom:0.5rem;"><strong>${c.name}</strong> <span style="opacity:0.6;font-size:0.8rem;">— ${c.time} — ${c.service}</span></div>

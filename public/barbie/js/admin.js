@@ -573,7 +573,7 @@ function showToast(icon, message) {
             if (data.clients && data.clients.length > 0) {
                 resultHtml += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
                 data.clients.forEach((c, i) => {
-                    const defaultMsg = `Labas,\n\natsiprašau, bet šiandien dėl nenumatytų aplinkybių negalėsiu priimti. Žinau, kad nepatogu, ir tikrai gailiuosi.\n\nJei norite, galite persirašyti kitam laikui per mano svetainę – ten visada matysite laisvus laikus.\n\nDar kartą atsiprašau!\n\nBarbie Beauty`;
+                    const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nBarbie Beauty`;
                     const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
                     resultHtml += `<div class="ec-client-card">
                         <div class="ec-client-info"><strong>${c.name}</strong> <span>— ${c.time} — ${c.service}</span></div>
