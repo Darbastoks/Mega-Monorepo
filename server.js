@@ -13,6 +13,8 @@ const nodemailer = require('nodemailer');
 // ==================== EMAIL SETUP ====================
 const emailTransporter = (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) ? nodemailer.createTransport({
     service: 'gmail',
+    pool: true,
+    maxConnections: 3,
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
 }) : null;
 
