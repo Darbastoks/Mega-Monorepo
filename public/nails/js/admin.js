@@ -543,7 +543,6 @@ if (adminDashboard) {
             if (data.clients && data.clients.length > 0) {
                 html += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
                 data.clients.forEach((c, i) => {
-                    const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nNails by Lukra`;
                     const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
                     html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem;">
                         <div style="font-size:0.9rem;margin-bottom:0.5rem;"><strong>${c.name}</strong> <span style="opacity:0.6;font-size:0.8rem;">— ${c.time} — ${c.service}</span></div>
@@ -551,15 +550,8 @@ if (adminDashboard) {
                             <button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(99,102,241,0.2);color:#818cf8;" onclick="navigator.clipboard.writeText('${clipText.replace(/'/g,"\\'")}');this.textContent='Nukopijuota!';">Kopijuoti</button>
                             <a href="tel:${c.phone}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(34,197,94,0.2);color:#22c55e;text-decoration:none;">Skambinti</a>
                             <a href="sms:${c.phone}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(59,130,246,0.2);color:#60a5fa;text-decoration:none;">Žinutė</a>
-                            ${c.email ? `<button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(251,191,36,0.2);color:#fbbf24;" onclick="document.getElementById('nailsEF${i}').style.display=document.getElementById('nailsEF${i}').style.display==='none'?'block':'none'">El. paštas</button>` : ''}
+                            ${c.email ? `<button id="nailsSB${i}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:500;cursor:pointer;background:rgba(251,191,36,0.2);color:#fbbf24;" onclick="nailsSendEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti el. laišką</button>` : ''}
                         </div>
-                        ${c.email ? `<div id="nailsEF${i}" style="display:none;margin-top:0.5rem;padding:0.75rem;background:rgba(0,0,0,0.2);border-radius:6px;border:1px solid rgba(255,255,255,0.06);">
-                            <textarea id="nailsEM${i}" style="width:100%;min-height:120px;padding:0.5rem;border:1px solid rgba(255,255,255,0.12);border-radius:4px;background:rgba(255,255,255,0.05);color:inherit;font-family:inherit;font-size:0.85rem;resize:vertical;margin-bottom:0.5rem;">${defaultMsg}</textarea>
-                            <div style="display:flex;gap:0.4rem;justify-content:flex-end;">
-                                <button style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;cursor:pointer;background:rgba(255,255,255,0.1);color:#9ca3af;" onclick="document.getElementById('nailsEF${i}').style.display='none'">Atšaukti</button>
-                                <button id="nailsSB${i}" style="padding:4px 10px;border-radius:6px;border:none;font-size:0.78rem;cursor:pointer;background:#22c55e;color:#fff;font-weight:500;" onclick="nailsSendEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti</button>
-                            </div>
-                        </div>` : ''}
                     </div>`;
                 });
             }
@@ -578,7 +570,7 @@ if (adminDashboard) {
 
     window.nailsSendEmail = async function(idx, email, name) {
         const btn = document.getElementById('nailsSB' + idx);
-        const msg = document.getElementById('nailsEM' + idx).value;
+        const msg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nNails by Lukra`;
         btn.disabled = true; btn.textContent = 'Siunčiama...';
         try {
             const res = await fetch('/api/nails/admin/send-cancel-email', {

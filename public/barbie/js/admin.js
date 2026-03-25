@@ -573,7 +573,6 @@ function showToast(icon, message) {
             if (data.clients && data.clients.length > 0) {
                 resultHtml += `<p style="font-size:0.85rem; opacity:0.7; margin-bottom:0.5rem;">Informuokite klientus:</p>`;
                 data.clients.forEach((c, i) => {
-                    const defaultMsg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nBarbie Beauty`;
                     const clipText = `${c.name} | ${c.phone} | ${c.service} | ${c.date} ${c.time}`;
                     resultHtml += `<div class="ec-client-card">
                         <div class="ec-client-info"><strong>${c.name}</strong> <span>— ${c.time} — ${c.service}</span></div>
@@ -581,15 +580,8 @@ function showToast(icon, message) {
                             <button class="ec-action-btn ec-btn-copy" onclick="navigator.clipboard.writeText('${clipText.replace(/'/g,"\\'")}');this.textContent='Nukopijuota!';">Kopijuoti</button>
                             <a href="tel:${c.phone}" class="ec-action-btn ec-btn-call">Skambinti</a>
                             <a href="sms:${c.phone}" class="ec-action-btn ec-btn-sms">Žinutė</a>
-                            ${c.email ? `<button class="ec-action-btn ec-btn-email" onclick="document.getElementById('ecEmailForm${i}').style.display=document.getElementById('ecEmailForm${i}').style.display==='none'?'block':'none'">El. paštas</button>` : ''}
+                            ${c.email ? `<button class="ec-action-btn ec-btn-email" id="ecSendBtn${i}" onclick="sendEmergencyEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti el. laišką</button>` : ''}
                         </div>
-                        ${c.email ? `<div class="ec-email-form" id="ecEmailForm${i}" style="display:none;">
-                            <textarea id="ecEmailMsg${i}">${defaultMsg}</textarea>
-                            <div class="ec-email-actions">
-                                <button class="ec-action-btn ec-btn-cancel" onclick="document.getElementById('ecEmailForm${i}').style.display='none'">Atšaukti</button>
-                                <button class="ec-action-btn ec-btn-send" id="ecSendBtn${i}" onclick="sendEmergencyEmail(${i},'${c.email.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">Siųsti</button>
-                            </div>
-                        </div>` : ''}
                     </div>`;
                 });
             }
@@ -611,7 +603,7 @@ function showToast(icon, message) {
 
     window.sendEmergencyEmail = async function(idx, email, name) {
         const btn = document.getElementById('ecSendBtn' + idx);
-        const msg = document.getElementById('ecEmailMsg' + idx).value;
+        const msg = `Sveiki,\n\nlabai atsiprašau, tačiau dėl netikėtai susiklosčiusios skubios situacijos šiandien negalėsiu dalyvauti / būti darbe. Suprantu, kad tai gali sukelti nepatogumų, ir nuoširdžiai apgailestauju dėl to.\n\nLabai vertinu Jūsų supratingumą. Primenu, kad vizito laiką galite patogiai pakeisti per registracijos sistemą mano svetainėje – taip rasite Jums tinkamiausią laiką.\n\nDar kartą atsiprašau ir dėkoju už kantrybę.\n\nPagarbiai,\nBarbie Beauty`;
         btn.disabled = true;
         btn.textContent = 'Siunčiama...';
         try {
