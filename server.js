@@ -66,6 +66,11 @@ const dbHair = require('./backend/hair/database');
 const dbNails = require('./backend/nails/database');
 // Velora Lead & Admin
 const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
+// Portal (client accounts + change requests)
+const { dbAll: portalAll, dbGet: portalGet, dbRun: portalRun } = require('./backend/portal/database');
+// Google Auth
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -98,6 +103,31 @@ app.post('/webhook/stripe',
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
             console.log('✅ Payment completed:', session.customer_email, session.amount_total);
+
+            // Auto-create portal client account
+            try {
+                const email = session.customer_email;
+                const customerName = session.customer_details?.name || '';
+                const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+                const priceId = lineItems.data[0]?.price?.id || '';
+                const plan = getPlanFromPriceId(priceId);
+                const nextReset = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0];
+
+                const existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                if (existing) {
+                    await portalRun('UPDATE clients SET plan = ?, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?',
+                        [plan, session.customer || '', session.subscription || '', existing.id]);
+                    console.log(`Portal: Updated client ${email} → ${plan}`);
+                } else {
+                    await portalRun(
+                        'INSERT INTO clients (google_email, google_name, plan, stripe_customer_id, stripe_subscription_id, month_reset_date) VALUES (?, ?, ?, ?, ?, ?)',
+                        [email, customerName, plan, session.customer || '', session.subscription || '', nextReset]
+                    );
+                    console.log(`Portal: Created client ${email} → ${plan}`);
+                }
+            } catch (portalErr) {
+                console.error('Portal auto-create error:', portalErr.message);
+            }
 
             const n8nUrl = process.env.N8N_WEBHOOK_URL;
             if (n8nUrl) {
@@ -208,6 +238,7 @@ app.use('/barbie', express.static(path.join(__dirname, 'public/barbie')));
 app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
 app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
 app.use('/velora', express.static(path.join(__dirname, 'public/velora')));
+app.use('/portal', express.static(path.join(__dirname, 'public/portal')));
 // Root serves the Velora Studio BUSINESS website
 app.use(express.static(path.join(__dirname, 'public/website')));
 
@@ -1413,6 +1444,219 @@ app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslau
 // SEO files
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
+// ==================== PORTAL API ====================
+const PLAN_LIMITS = { start: 1, growth: 3, pro: Infinity };
+
+// Price ID → plan name mapping
+function getPlanFromPriceId(priceId) {
+    for (const [plan, prices] of Object.entries(PRICES)) {
+        if (prices.monthly === priceId || prices.annual === priceId) return plan;
+    }
+    return 'start';
+}
+
+// Portal auth middleware
+function requirePortalAuth(req, res, next) {
+    if (!req.session.portalClientId) return res.status(401).json({ error: 'Neprisijungta' });
+    next();
+}
+
+// Monthly reset check
+async function checkMonthlyReset(client) {
+    if (!client.month_reset_date) return client;
+    const now = new Date();
+    const reset = new Date(client.month_reset_date);
+    if (now >= reset) {
+        const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().split('T')[0];
+        await portalRun('UPDATE clients SET changes_used_this_month = 0, month_reset_date = ? WHERE id = ?', [nextReset, client.id]);
+        client.changes_used_this_month = 0;
+        client.month_reset_date = nextReset;
+    }
+    return client;
+}
+
+// Config (sends Google Client ID to frontend)
+app.get('/api/portal/config', (req, res) => {
+    res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' });
+});
+
+// Google Sign-In
+app.post('/api/portal/auth/google', async (req, res) => {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: 'Trūksta Google credential' });
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        const name = payload.name || '';
+        const picture = payload.picture || '';
+
+        let client = await portalGet('SELECT * FROM clients WHERE google_email = ?', [email]);
+        if (!client) {
+            await portalRun(
+                'INSERT INTO clients (google_email, google_name, google_picture, month_reset_date) VALUES (?, ?, ?, ?)',
+                [email, name, picture, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]]
+            );
+            client = await portalGet('SELECT * FROM clients WHERE google_email = ?', [email]);
+        } else {
+            await portalRun('UPDATE clients SET google_name = ?, google_picture = ?, last_login = datetime("now") WHERE id = ?', [name, picture, client.id]);
+        }
+
+        client = await checkMonthlyReset(client);
+        req.session.portalClientId = client.id;
+        res.json({ success: true, profile: client });
+    } catch (err) {
+        console.error('Google auth error:', err.message);
+        res.status(401).json({ error: 'Google prisijungimas nepavyko. Bandykite dar kartą.' });
+    }
+});
+
+// Check session
+app.get('/api/portal/auth/check', async (req, res) => {
+    if (!req.session.portalClientId) return res.json({ loggedIn: false });
+    try {
+        let client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
+        if (!client) { req.session.portalClientId = null; return res.json({ loggedIn: false }); }
+        client = await checkMonthlyReset(client);
+        res.json({ loggedIn: true, profile: client });
+    } catch {
+        res.json({ loggedIn: false });
+    }
+});
+
+// Logout
+app.post('/api/portal/auth/logout', (req, res) => {
+    req.session.portalClientId = null;
+    res.json({ success: true });
+});
+
+// Get profile
+app.get('/api/portal/profile', requirePortalAuth, async (req, res) => {
+    try {
+        let client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
+        client = await checkMonthlyReset(client);
+        res.json(client);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get change requests
+app.get('/api/portal/changes', requirePortalAuth, async (req, res) => {
+    try {
+        const changes = await portalAll('SELECT * FROM change_requests WHERE client_id = ? ORDER BY created_at DESC', [req.session.portalClientId]);
+        res.json(changes);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Submit change request
+app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
+    const { category, description } = req.body;
+    if (!category || !description) return res.status(400).json({ error: 'Kategorija ir aprašymas privalomi' });
+    if (!['text', 'visual', 'service'].includes(category)) return res.status(400).json({ error: 'Neteisinga kategorija' });
+
+    try {
+        let client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
+        client = await checkMonthlyReset(client);
+
+        const limit = PLAN_LIMITS[client.plan] || 1;
+        if (limit !== Infinity && client.changes_used_this_month >= limit) {
+            return res.status(403).json({ error: 'Pakeitimų limitas pasiektas šį mėnesį. Atnaujinkite planą.' });
+        }
+
+        await portalRun('INSERT INTO change_requests (client_id, category, description) VALUES (?, ?, ?)', [client.id, category, description]);
+        await portalRun('UPDATE clients SET changes_used_this_month = changes_used_this_month + 1 WHERE id = ?', [client.id]);
+
+        res.json({ success: true, changes_used: client.changes_used_this_month + 1 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==================== PORTAL ADMIN (Velora admin manages change requests) ====================
+app.get('/api/portal/admin/clients', requireVeloraAdmin, async (req, res) => {
+    try {
+        const clients = await portalAll('SELECT * FROM clients ORDER BY created_at DESC');
+        res.json(clients);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/portal/admin/changes', requireVeloraAdmin, async (req, res) => {
+    try {
+        const changes = await portalAll(`
+            SELECT cr.*, c.google_email, c.google_name, c.salon_name, c.plan
+            FROM change_requests cr
+            JOIN clients c ON cr.client_id = c.id
+            ORDER BY cr.created_at DESC
+        `);
+        res.json(changes);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.patch('/api/portal/admin/changes/:id', requireVeloraAdmin, async (req, res) => {
+    const { status, admin_notes } = req.body;
+    if (!status) return res.status(400).json({ error: 'Status privalomas' });
+
+    try {
+        const completedAt = status === 'completed' ? new Date().toISOString() : '';
+        await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ? WHERE id = ?',
+            [status, admin_notes || '', completedAt, req.params.id]);
+
+        // Send email notification when completed
+        if (status === 'completed' && emailTransporter) {
+            const change = await portalGet(`
+                SELECT cr.*, c.google_email, c.google_name, c.salon_name
+                FROM change_requests cr JOIN clients c ON cr.client_id = c.id
+                WHERE cr.id = ?
+            `, [req.params.id]);
+            if (change && change.google_email) {
+                const catLabels = { text: 'Teksto pakeitimai', visual: 'Vizualiniai pakeitimai', service: 'Paslaugos / kainos' };
+                try {
+                    await emailTransporter.sendMail({
+                        from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
+                        to: change.google_email,
+                        subject: 'Jūsų pakeitimas atliktas — Velora Studio',
+                        text: `Sveiki, ${change.google_name || ''}!\n\nJūsų užklausa „${catLabels[change.category] || change.category}" buvo sėkmingai įgyvendinta.\n\nPeržiūrėkite savo svetainę ir įsitikinkite, kad viskas atrodo puikiai.\n\nPagarbiai,\nVelora Studio`
+                    });
+                } catch (emailErr) {
+                    console.error('Portal notification email failed:', emailErr.message);
+                }
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: update client plan manually
+app.patch('/api/portal/admin/clients/:id', requireVeloraAdmin, async (req, res) => {
+    const { plan, salon_name, salon_slug } = req.body;
+    try {
+        const sets = [];
+        const params = [];
+        if (plan) { sets.push('plan = ?'); params.push(plan); }
+        if (salon_name) { sets.push('salon_name = ?'); params.push(salon_name); }
+        if (salon_slug) { sets.push('salon_slug = ?'); params.push(salon_slug); }
+        if (!sets.length) return res.status(400).json({ error: 'Nėra ką keisti' });
+        params.push(req.params.id);
+        await portalRun(`UPDATE clients SET ${sets.join(', ')} WHERE id = ?`, params);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 404 fallback
 app.use((req, res) => {
     if (req.accepts('html')) {

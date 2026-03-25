@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velora Studio — Klientų portalas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="logo-text">Velora Studio</span>
+                <p>Klientų portalas</p>
+            </div>
+            <div class="login-body">
+                <p class="login-desc">Prisijunkite su Google paskyra, kuri buvo naudota registracijai.</p>
+                <div id="googleBtnWrap" class="google-btn-wrap"></div>
+                <p id="loginError" class="login-error"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard" style="display:none;">
+        <!-- Header -->
+        <header class="portal-header">
+            <div class="header-left">
+                <span class="logo-text">Velora Studio</span>
+                <span class="header-sep">|</span>
+                <span class="header-label">Klientų portalas</span>
+            </div>
+            <div class="header-right">
+                <img id="userPicture" class="user-avatar" src="" alt="">
+                <span id="userName" class="user-name"></span>
+                <button id="logoutBtn" class="btn btn-ghost">Atsijungti</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="portal-main">
+            <!-- Plan Card -->
+            <div class="plan-card" id="planCard">
+                <div class="plan-info">
+                    <span class="plan-badge" id="planBadge">START</span>
+                    <h2 id="salonName">Jūsų salonas</h2>
+                </div>
+                <div class="plan-changes">
+                    <div class="changes-circle" id="changesCircle">
+                        <span class="changes-number" id="changesLeft">1</span>
+                        <span class="changes-label">liko</span>
+                    </div>
+                    <p class="changes-text" id="changesText">Pakeitimų: 0/1 šį mėnesį</p>
+                </div>
+            </div>
+
+            <!-- Upgrade Prompt (hidden by default) -->
+            <div class="upgrade-card" id="upgradeCard" style="display:none;">
+                <div class="upgrade-icon">&#9889;</div>
+                <h3>Pakeitimų nebeliko šį mėnesį</h3>
+                <p>Atnaujinkite planą ir gaukite daugiau pakeitimų kiekvieną mėnesį.</p>
+                <a href="/#kainos" class="btn btn-primary" target="_blank">Peržiūrėti planus</a>
+            </div>
+
+            <!-- New Change Request -->
+            <div class="section-card" id="newRequestSection">
+                <h3 class="section-title">Naujas pakeitimas</h3>
+                <form id="changeForm" class="change-form">
+                    <div class="form-group">
+                        <label for="changeCategory">Kategorija</label>
+                        <select id="changeCategory" required>
+                            <option value="" disabled selected>Pasirinkite...</option>
+                            <option value="text">Teksto pakeitimai</option>
+                            <option value="visual">Vizualiniai pakeitimai</option>
+                            <option value="service">Paslaugos / kainos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="changeDesc">Aprašymas</label>
+                        <textarea id="changeDesc" rows="4" placeholder="Aprašykite, ką norėtumėte pakeisti..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Pateikti užklausą</button>
+                </form>
+            </div>
+
+            <!-- Change History -->
+            <div class="section-card">
+                <h3 class="section-title">Pakeitimų istorija</h3>
+                <div id="changesList" class="changes-list">
+                    <p class="empty-state">Kraunama...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
