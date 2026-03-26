@@ -16,6 +16,7 @@
     };
 
     const PLAN_NAMES = {
+        free: 'Nemokamas',
         start: 'START planas',
         growth: 'GROWTH planas',
         pro: 'PRO planas'
@@ -113,9 +114,9 @@
         label.className = 'credits-label';
         fill.className = 'credits-bar-fill';
 
-        if (limit === 0) {
-            // START — no changes included
-            label.textContent = 'Pakeitimai neįtraukti';
+        if (p.plan === 'free') {
+            // FREE — no plan yet
+            label.textContent = 'Neturite plano';
             label.classList.add('danger');
             fill.style.width = '100%';
             fill.classList.add('low');
@@ -156,7 +157,8 @@
     }
 
     function getLimit(plan) {
-        if (plan === 'start') return 0;
+        if (plan === 'free') return 0;
+        if (plan === 'start') return 1;
         if (plan === 'growth') return 3;
         return Infinity;
     }

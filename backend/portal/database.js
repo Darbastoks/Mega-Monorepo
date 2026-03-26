@@ -16,7 +16,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 google_picture TEXT DEFAULT '',
                 salon_slug TEXT DEFAULT '',
                 salon_name TEXT DEFAULT '',
-                plan TEXT DEFAULT 'start' CHECK(plan IN ('start', 'growth', 'pro')),
+                plan TEXT DEFAULT 'free',
                 stripe_customer_id TEXT DEFAULT '',
                 stripe_subscription_id TEXT DEFAULT '',
                 changes_used_this_month INTEGER DEFAULT 0,
@@ -25,6 +25,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 last_login TEXT DEFAULT ''
             )
         `);
+
+        // Migrate: users with plan='start' but no Stripe subscription → 'free'
+        db.run(`UPDATE clients SET plan = 'free' WHERE plan = 'start' AND (stripe_customer_id = '' OR stripe_customer_id IS NULL)`);
 
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (
