@@ -2064,7 +2064,7 @@ async function autoApplyChange(changeId, clientId) {
 
     // Store pending changes
     await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, status = ? WHERE id = ?',
-        [result.html, result.css || cssFile.content, 'pending_review', changeId]);
+        [result.html, result.css || cssFile.content, 'in_progress', changeId]);
 
     // Send Telegram notification with approve/reject buttons
     const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
