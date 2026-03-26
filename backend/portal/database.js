@@ -36,8 +36,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_html TEXT DEFAULT ''`, () => {});
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_css TEXT DEFAULT ''`, () => {});
 
-        // Assign salon_slug and pro plan to first client for testing (one-time)
-        db.run(`UPDATE clients SET salon_slug = 'barbie', plan = 'pro' WHERE id = 1`, () => {});
+        // Set all existing clients to pro + barbie for testing
+        db.run(`UPDATE clients SET salon_slug = 'barbie', plan = 'pro' WHERE salon_slug = '' OR plan != 'pro'`, () => {});
 
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (
