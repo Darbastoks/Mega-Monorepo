@@ -31,6 +31,19 @@ body {
     min-height: 100vh;
 }
 
+/* ============ Particle Stars Background ============ */
+.particle-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.8;
+    overflow: hidden;
+}
+
+.particle-canvas canvas {
+    pointer-events: none;
+}
+
 /* ============ Login Screen ============ */
 .login-screen {
     min-height: 100vh;
@@ -39,6 +52,8 @@ body {
     justify-content: center;
     padding: 24px;
     background: radial-gradient(ellipse at 50% 0%, rgba(34, 211, 238, 0.06) 0%, transparent 60%), var(--bg-main);
+    position: relative;
+    overflow: hidden;
 }
 
 .login-card {
@@ -49,6 +64,8 @@ body {
     border-radius: var(--radius);
     padding: 48px 36px;
     text-align: center;
+    position: relative;
+    z-index: 1;
 }
 
 .logo-text {
@@ -75,6 +92,12 @@ body {
     font-size: 0.85rem;
     min-height: 20px;
     margin-top: 12px;
+}
+
+/* ============ Dashboard ============ */
+.dashboard {
+    position: relative;
+    min-height: 100vh;
 }
 
 /* ============ Header ============ */
@@ -133,6 +156,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    position: relative;
+    z-index: 1;
 }
 
 /* ============ Profile Card ============ */
