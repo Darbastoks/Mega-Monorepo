@@ -11,6 +11,7 @@
     --success: #22c55e;
     --warning: #fbbf24;
     --error: #ef4444;
+    --pink: #ec4899;
     --info: #60a5fa;
     --radius: 12px;
     --radius-sm: 8px;
@@ -129,6 +130,15 @@ body {
 }
 .btn-ghost:hover { color: var(--text-main); border-color: rgba(255,255,255,0.15); }
 
+.btn-upgrade {
+    background: linear-gradient(135deg, var(--primary), #a855f7);
+    color: #fff;
+    font-weight: 600;
+    padding: 10px 24px;
+    margin-top: 12px;
+}
+.btn-upgrade:hover { opacity: 0.9; transform: translateY(-1px); }
+
 /* Main Content */
 .portal-main {
     max-width: 700px;
@@ -139,20 +149,38 @@ body {
     gap: 24px;
 }
 
-/* Plan Card */
+/* ============ Plan Card ============ */
 .plan-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 28px 32px;
 }
 
+.plan-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.plan-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.plan-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
 .plan-badge {
     display: inline-block;
-    padding: 4px 14px;
+    padding: 5px 16px;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 700;
@@ -160,51 +188,165 @@ body {
     letter-spacing: 1.5px;
     background: var(--primary-light);
     color: var(--primary);
-    margin-bottom: 8px;
 }
-
 .plan-badge.growth { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
 .plan-badge.pro { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
 
-.plan-info h2 {
+.salon-info { text-align: right; }
+.salon-name {
     font-family: 'Playfair Display', serif;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
 }
 
-.plan-changes { text-align: center; }
+/* ============ Progress Bar ============ */
+.plan-progress { }
 
-.changes-circle {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    border: 3px solid var(--primary);
+.progress-header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+}
+
+.progress-title {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.progress-count {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.progress-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: var(--primary);
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.4s ease;
+    min-width: 0;
+}
+
+.progress-fill.warning { background: var(--warning); }
+.progress-fill.danger { background: var(--pink); }
+.progress-fill.empty { background: var(--error); }
+
+.progress-footer {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#progressStatus {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+#progressStatus.danger {
+    color: var(--pink);
+    font-weight: 600;
+}
+
+/* ============ PRO Unlimited ============ */
+.plan-unlimited {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0 0;
+}
+
+.unlimited-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 8px;
+    flex-shrink: 0;
 }
 
-.changes-circle.warning { border-color: var(--warning); }
-.changes-circle.empty { border-color: var(--error); }
+.unlimited-info { display: flex; flex-direction: column; gap: 2px; }
+.unlimited-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+.unlimited-count { font-size: 0.82rem; color: var(--text-muted); }
 
-.changes-number { font-size: 1.5rem; font-weight: 700; line-height: 1; }
-.changes-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-.changes-text { font-size: 0.8rem; color: var(--text-muted); }
+/* ============ START — No Changes ============ */
+.plan-no-changes {
+    text-align: center;
+    padding: 8px 0 4px;
+}
 
-/* Upgrade Card */
+.no-changes-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.no-changes-sub {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+/* ============ Upgrade Card (out of changes) ============ */
 .upgrade-card {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(168, 85, 247, 0.1));
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(168, 85, 247, 0.08));
+    border: 1px solid rgba(236, 72, 153, 0.2);
     border-radius: var(--radius);
     padding: 28px 32px;
-    text-align: center;
 }
 
-.upgrade-icon { font-size: 2rem; margin-bottom: 12px; }
-.upgrade-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
-.upgrade-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
+.upgrade-content { text-align: center; }
+
+.upgrade-bar-visual {
+    max-width: 200px;
+    margin: 0 auto 16px;
+}
+
+.upgrade-bar-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.upgrade-bar-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    background: var(--pink);
+}
+
+.upgrade-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.upgrade-card p {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
 
 /* Section Card */
 .section-card {
@@ -318,7 +460,9 @@ body {
 @media (max-width: 600px) {
     .portal-header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
     .portal-main { padding: 16px; }
-    .plan-card { flex-direction: column; gap: 20px; text-align: center; padding: 24px 20px; }
+    .plan-card { padding: 24px 20px; }
+    .plan-card-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .salon-info { text-align: left; }
     .section-card { padding: 20px; }
     .login-card { padding: 36px 24px; }
     .user-name { display: none; }

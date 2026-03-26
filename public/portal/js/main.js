@@ -92,34 +92,67 @@
         badge.className = 'plan-badge ' + p.plan;
 
         const limit = getLimit(p.plan);
-        const left = limit === Infinity ? '∞' : Math.max(0, limit - p.changes_used_this_month);
         const used = p.changes_used_this_month;
 
-        const circle = document.getElementById('changesCircle');
-        document.getElementById('changesLeft').textContent = left;
-
-        if (limit === Infinity) {
-            circle.className = 'changes-circle';
-            document.getElementById('changesText').textContent = `Pakeitimų: ${used} šį mėnesį (neribota)`;
-        } else {
-            const remaining = limit - used;
-            circle.className = 'changes-circle' + (remaining <= 0 ? ' empty' : remaining === 1 ? ' warning' : '');
-            document.getElementById('changesText').textContent = `Pakeitimų: ${used}/${limit} šį mėnesį`;
-        }
-
+        const progressSection = document.getElementById('planProgress');
+        const unlimitedSection = document.getElementById('planUnlimited');
+        const noChangesSection = document.getElementById('planNoChanges');
         const upgradeCard = document.getElementById('upgradeCard');
         const requestSection = document.getElementById('newRequestSection');
-        if (limit !== Infinity && used >= limit) {
-            upgradeCard.style.display = 'block';
-            requestSection.style.display = 'none';
-        } else {
-            upgradeCard.style.display = 'none';
+
+        // Hide all sections first
+        progressSection.style.display = 'none';
+        unlimitedSection.style.display = 'none';
+        noChangesSection.style.display = 'none';
+        upgradeCard.style.display = 'none';
+        requestSection.style.display = 'none';
+
+        if (limit === 0) {
+            // START plan — no changes allowed
+            noChangesSection.style.display = 'block';
+        } else if (limit === Infinity) {
+            // PRO plan — unlimited
+            unlimitedSection.style.display = 'flex';
+            document.getElementById('unlimitedCount').textContent = `Pateikta: ${used} šį mėnesį`;
             requestSection.style.display = 'block';
+        } else {
+            // GROWTH plan — show progress bar
+            progressSection.style.display = 'block';
+            const remaining = Math.max(0, limit - used);
+            const pct = Math.min((used / limit) * 100, 100);
+
+            document.getElementById('progressCount').textContent = `${used} / ${limit}`;
+
+            const fill = document.getElementById('progressFill');
+            fill.style.width = pct + '%';
+            fill.className = 'progress-fill';
+
+            const statusEl = document.getElementById('progressStatus');
+            statusEl.className = '';
+
+            if (remaining <= 0) {
+                // Out of changes
+                fill.classList.add('danger');
+                statusEl.id = 'progressStatus';
+                statusEl.className = 'danger';
+                statusEl.textContent = 'Pakeitimai išnaudoti';
+                upgradeCard.style.display = 'block';
+            } else if (remaining === 1) {
+                fill.classList.add('warning');
+                statusEl.id = 'progressStatus';
+                statusEl.textContent = `Liko: ${remaining} pakeitimas`;
+                requestSection.style.display = 'block';
+            } else {
+                // Normal
+                statusEl.id = 'progressStatus';
+                statusEl.textContent = `Liko: ${remaining} pakeitimai`;
+                requestSection.style.display = 'block';
+            }
         }
     }
 
     function getLimit(plan) {
-        if (plan === 'start') return 1;
+        if (plan === 'start') return 0;
         if (plan === 'growth') return 3;
         return Infinity;
     }

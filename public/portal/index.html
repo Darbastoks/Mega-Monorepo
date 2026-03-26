@@ -45,25 +45,59 @@
         <main class="portal-main">
             <!-- Plan Card -->
             <div class="plan-card" id="planCard">
-                <div class="plan-info">
-                    <span class="plan-badge" id="planBadge">START</span>
-                    <h2 id="salonName">Jūsų salonas</h2>
-                </div>
-                <div class="plan-changes">
-                    <div class="changes-circle" id="changesCircle">
-                        <span class="changes-number" id="changesLeft">1</span>
-                        <span class="changes-label">liko</span>
+                <div class="plan-card-top">
+                    <div class="plan-header">
+                        <span class="plan-label">Jūsų planas</span>
+                        <span class="plan-badge" id="planBadge">START</span>
                     </div>
-                    <p class="changes-text" id="changesText">Pakeitimų: 0/1 šį mėnesį</p>
+                    <div class="salon-info">
+                        <span id="salonName" class="salon-name">Jūsų salonas</span>
+                    </div>
+                </div>
+
+                <!-- Progress section (GROWTH/PRO with limits) -->
+                <div class="plan-progress" id="planProgress">
+                    <div class="progress-header">
+                        <span class="progress-title">Pakeitimai šį mėnesį</span>
+                        <span class="progress-count" id="progressCount">0 / 3</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-footer" id="progressFooter">
+                        <span id="progressStatus">Liko: 3 pakeitimai</span>
+                    </div>
+                </div>
+
+                <!-- PRO unlimited section -->
+                <div class="plan-unlimited" id="planUnlimited" style="display:none;">
+                    <div class="unlimited-badge">∞</div>
+                    <div class="unlimited-info">
+                        <span class="unlimited-title">Neriboti pakeitimai</span>
+                        <span class="unlimited-count" id="unlimitedCount">Pateikta: 0 šį mėnesį</span>
+                    </div>
+                </div>
+
+                <!-- START no-changes section -->
+                <div class="plan-no-changes" id="planNoChanges" style="display:none;">
+                    <p class="no-changes-text">Jūsų planas neapima pakeitimų užklausų.</p>
+                    <p class="no-changes-sub">Atnaujinkite planą ir gaukite galimybę teikti pakeitimų užklausas kiekvieną mėnesį.</p>
+                    <a href="/#kainos" class="btn btn-upgrade" target="_blank">Peržiūrėti planus →</a>
                 </div>
             </div>
 
-            <!-- Upgrade Prompt (hidden by default) -->
+            <!-- Out of changes card (hidden by default) -->
             <div class="upgrade-card" id="upgradeCard" style="display:none;">
-                <div class="upgrade-icon">&#9889;</div>
-                <h3>Pakeitimų nebeliko šį mėnesį</h3>
-                <p>Atnaujinkite planą ir gaukite daugiau pakeitimų kiekvieną mėnesį.</p>
-                <a href="/#kainos" class="btn btn-primary" target="_blank">Peržiūrėti planus</a>
+                <div class="upgrade-content">
+                    <div class="upgrade-bar-visual">
+                        <div class="upgrade-bar-track">
+                            <div class="upgrade-bar-fill"></div>
+                        </div>
+                    </div>
+                    <h3>Pakeitimai išnaudoti</h3>
+                    <p>Šį mėnesį panaudojote visus pakeitimus. Atnaujinkite planą arba palaukite kito mėnesio.</p>
+                    <a href="/#kainos" class="btn btn-primary" target="_blank">Atnaujinti planą →</a>
+                </div>
             </div>
 
             <!-- New Change Request -->

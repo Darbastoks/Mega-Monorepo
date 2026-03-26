@@ -1445,7 +1445,7 @@ app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslau
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
 // ==================== PORTAL API ====================
-const PLAN_LIMITS = { start: 1, growth: 3, pro: Infinity };
+const PLAN_LIMITS = { start: 0, growth: 3, pro: Infinity };
 
 // Price ID → plan name mapping
 function getPlanFromPriceId(priceId) {
@@ -1564,7 +1564,7 @@ app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
         let client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
         client = await checkMonthlyReset(client);
 
-        const limit = PLAN_LIMITS[client.plan] || 1;
+        const limit = PLAN_LIMITS[client.plan] ?? 0;
         if (limit !== Infinity && client.changes_used_this_month >= limit) {
             return res.status(403).json({ error: 'Pakeitimų limitas pasiektas šį mėnesį. Atnaujinkite planą.' });
         }
