@@ -1,33 +1,22 @@
 (function() {
     const API = '/api/portal';
     let profile = null;
+    let selectedCategory = '';
 
-    const CATEGORY_LABELS = {
-        text: 'Teksto pakeitimai',
-        visual: 'Vizualiniai pakeitimai',
-        service: 'Paslaugos / kainos'
-    };
+    const CAT_NAMES = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
 
-    const STATUS_LABELS = {
-        new: 'Nauja',
-        in_progress: 'Vykdoma',
-        completed: 'Atlikta',
-        rejected: 'Atmesta'
-    };
-
-    const PLAN_NAMES = {
-        free: 'Nemokamas',
-        start: 'START planas',
-        growth: 'GROWTH planas',
-        pro: 'PRO planas'
+    const STATUS_CONFIG = {
+        new:         { icon: '🕐', label: 'Pateikta',  sub: 'Peržiūrime jūsų užklausą' },
+        in_progress: { icon: '⏳', label: 'Vykdoma',   sub: 'Dirbame prie pakeitimo' },
+        completed:   { icon: '✓',  label: 'Atlikta',   sub: 'Pakeitimas įgyvendintas!' },
+        rejected:    { icon: '✗',  label: 'Atmesta',   sub: '' }
     };
 
     const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
 
-    // Google Sign-In callback
+    // ===================== AUTH =====================
     window.handleGoogleSignIn = async function(response) {
-        const loginError = document.getElementById('loginError');
-        loginError.textContent = '';
+        document.getElementById('loginError').textContent = '';
         try {
             const res = await fetch(`${API}/auth/google`, {
                 method: 'POST',
@@ -38,7 +27,7 @@
             if (!res.ok) throw new Error(data.error || 'Prisijungimas nepavyko');
             showDashboard(data.profile);
         } catch (err) {
-            loginError.textContent = err.message;
+            document.getElementById('loginError').textContent = err.message;
         }
     };
 
@@ -46,184 +35,140 @@
         try {
             const res = await fetch(`${API}/auth/check`);
             const data = await res.json();
-            if (data.loggedIn) {
-                showDashboard(data.profile);
-            } else {
-                showLogin();
-            }
-        } catch {
-            showLogin();
-        }
+            data.loggedIn ? showDashboard(data.profile) : showLogin();
+        } catch { showLogin(); }
     }
 
     function showLogin() {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('dashboard').style.display = 'none';
-        initGoogleButton();
+        initGoogle();
     }
 
-    function initGoogleButton() {
-        if (!window.google || !window.google.accounts) {
-            setTimeout(initGoogleButton, 200);
-            return;
-        }
-        google.accounts.id.initialize({
-            client_id: window.GOOGLE_CLIENT_ID,
-            callback: handleGoogleSignIn
-        });
+    function initGoogle() {
+        if (!window.google?.accounts) { setTimeout(initGoogle, 200); return; }
+        google.accounts.id.initialize({ client_id: window.GOOGLE_CLIENT_ID, callback: handleGoogleSignIn });
         google.accounts.id.renderButton(
             document.getElementById('googleBtnWrap'),
             { theme: 'filled_black', size: 'large', width: 300, text: 'signin_with', locale: 'lt' }
         );
     }
 
+    // ===================== DASHBOARD =====================
     function showDashboard(p) {
         profile = p;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
 
-        // Header
-        document.getElementById('userName').textContent = p.google_name || p.google_email;
         const pic = document.getElementById('userPicture');
         if (p.google_picture) { pic.src = p.google_picture; pic.style.display = 'block'; }
-        else { pic.style.display = 'none'; }
+        else pic.style.display = 'none';
 
-        // Profile card
         const profilePic = document.getElementById('profilePicture');
         if (p.google_picture) { profilePic.src = p.google_picture; profilePic.style.display = 'block'; }
-        else { profilePic.style.display = 'none'; }
+        else profilePic.style.display = 'none';
 
+        const firstName = (p.google_name || '').split(' ')[0] || '';
         document.getElementById('profileName').textContent = p.google_name || p.google_email;
-        document.getElementById('profilePlan').textContent = PLAN_NAMES[p.plan] || p.plan;
 
-        updatePortalUI(p);
+        // Welcome
+        document.getElementById('welcomeTitle').textContent = firstName ? `Sveiki, ${firstName}!` : 'Sveiki!';
+
+        updateUI(p);
         if (p.plan !== 'free') loadChanges();
     }
 
-    function updatePortalUI(p) {
+    function updateUI(p) {
         const plan = p.plan;
         const limit = PLAN_LIMITS[plan] ?? 0;
         const used = p.changes_used_this_month || 0;
         const purchased = p.purchased_changes || 0;
+        const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
 
-        // Hide everything first
-        hide('creditsSection');
-        hide('buyChangeRow');
-        hide('purchasedRow');
-        hide('upgradeRow');
-        hide('planComparison');
-        hide('newRequestSection');
-        hide('changesHistory');
+        // Hide all
+        hide('planComparison'); hide('buyCard'); hide('purchasedInfo');
+        hide('requestCard'); hide('historySection');
+
+        // Plan badge
+        const badge = document.getElementById('planBadge');
+        const statusRight = document.getElementById('statusRight');
 
         if (plan === 'free') {
-            // FREE: show plan comparison only
+            badge.textContent = 'Nemokamas';
+            badge.className = 'status-plan-badge free';
+            statusRight.innerHTML = '';
+            document.getElementById('welcomeSub').textContent = 'Pasirinkite planą ir mes sukursime jūsų svetainę.';
             show('planComparison');
-            show('upgradeRow');
-            document.getElementById('upgradeText').textContent = 'Pasirinkite planą';
             return;
         }
 
-        // All paid plans see change history
-        show('changesHistory');
+        const planLabel = { start: 'START', growth: 'GROWTH', pro: 'PRO' }[plan] || plan.toUpperCase();
+        badge.textContent = planLabel;
+        badge.className = 'status-plan-badge ' + plan;
+
+        show('historySection');
 
         if (plan === 'start') {
-            // START: 0 included, can buy one-off
-            show('creditsSection');
-            const label = document.getElementById('creditsLabel');
-            const fill = document.getElementById('creditsFill');
-            label.textContent = 'Pakeitimai neįtraukti į planą';
-            label.className = 'credits-label danger';
-            fill.style.width = '100%';
-            fill.className = 'credits-bar-fill low';
-
-            show('buyChangeRow');
-            show('upgradeRow');
-            document.getElementById('upgradeText').textContent = 'Atnaujinkite į GROWTH — 3 pakeit./mėn';
+            document.getElementById('welcomeSub').textContent = 'Jūsų svetainė aktyvi. Užsakykite pakeitimą, jei norite ką nors pakeisti.';
+            statusRight.innerHTML = '<span class="status-msg muted">Pakeitimai neįtraukti</span>';
+            show('buyCard');
 
             if (purchased > 0) {
-                show('purchasedRow');
-                document.getElementById('purchasedCount').textContent = purchased;
-                show('newRequestSection');
+                show('purchasedInfo');
+                document.getElementById('purchasedText').textContent =
+                    purchased === 1 ? 'Turite 1 užsakytą pakeitimą' : `Turite ${purchased} užsakytus pakeitimus`;
+                show('requestCard');
             }
 
         } else if (plan === 'growth') {
-            // GROWTH: 3/month progress bar
-            show('creditsSection');
-            const remaining = Math.max(0, limit - used);
-            const pct = Math.min((used / limit) * 100, 100);
-
-            const label = document.getElementById('creditsLabel');
-            const fill = document.getElementById('creditsFill');
-
-            label.className = 'credits-label';
-            fill.className = 'credits-bar-fill';
-            fill.style.width = pct + '%';
-
-            if (remaining <= 0) {
-                label.textContent = 'Pakeitimai išnaudoti';
-                label.classList.add('danger');
-                fill.classList.add('low');
-                show('buyChangeRow');
-                show('upgradeRow');
-                document.getElementById('upgradeText').textContent = 'Atnaujinkite į PRO — neriboti pakeitimai';
+            if (remaining > 0) {
+                document.getElementById('welcomeSub').textContent = 'Pateikite užklausą ir mes pakeitimu pasirūpinsime.';
+                statusRight.innerHTML = `<span class="status-msg">${remaining} iš ${limit} pakeitimų liko</span>`;
+                show('requestCard');
+            } else {
+                document.getElementById('welcomeSub').textContent = 'Šį mėnesį panaudojote visus pakeitimus.';
+                statusRight.innerHTML = '<span class="status-msg danger">Pakeitimai išnaudoti</span>';
+                show('buyCard');
 
                 if (purchased > 0) {
-                    show('purchasedRow');
-                    document.getElementById('purchasedCount').textContent = purchased;
-                    show('newRequestSection');
+                    show('purchasedInfo');
+                    document.getElementById('purchasedText').textContent =
+                        purchased === 1 ? 'Turite 1 užsakytą pakeitimą' : `Turite ${purchased} užsakytus pakeitimus`;
+                    show('requestCard');
                 }
-            } else if (remaining === 1) {
-                label.textContent = `Liko: ${remaining}/${limit} pakeitimas`;
-                label.classList.add('warning');
-                fill.classList.add('warning');
-                show('newRequestSection');
-            } else {
-                label.textContent = `Liko: ${remaining}/${limit} pakeitimai`;
-                show('newRequestSection');
             }
 
         } else if (plan === 'pro') {
-            // PRO: unlimited
-            show('creditsSection');
-            const label = document.getElementById('creditsLabel');
-            const fill = document.getElementById('creditsFill');
-            label.textContent = `Pateikta: ${used} šį mėnesį · Neribota`;
-            label.className = 'credits-label';
-            fill.style.width = '0%';
-            fill.className = 'credits-bar-fill';
-            show('newRequestSection');
+            document.getElementById('welcomeSub').textContent = 'Pateikite užklausą ir mes pakeitimu pasirūpinsime.';
+            statusRight.innerHTML = '<span class="status-msg pro">Neriboti pakeitimai</span>';
+            show('requestCard');
         }
     }
 
-    function show(id) { document.getElementById(id).style.display = ''; }
-    function hide(id) { document.getElementById(id).style.display = 'none'; }
+    // ===================== CATEGORY CARDS =====================
+    document.getElementById('categoryCards').addEventListener('click', (e) => {
+        const card = e.target.closest('.cat-card');
+        if (!card) return;
+        selectedCategory = card.dataset.cat;
+        document.getElementById('changeCategory').value = selectedCategory;
 
-    async function loadChanges() {
-        const list = document.getElementById('changesList');
-        try {
-            const res = await fetch(`${API}/changes`);
-            const data = await res.json();
-            if (!data.length) {
-                list.innerHTML = '<p class="empty-state">Dar nėra pakeitimų užklausų.</p>';
-                return;
-            }
-            list.innerHTML = data.map(c => `
-                <div class="change-item">
-                    <div class="change-item-left">
-                        <div class="change-category">${CATEGORY_LABELS[c.category] || c.category}</div>
-                        <div class="change-desc">${escHtml(c.description)}</div>
-                        ${c.admin_notes ? `<div class="change-admin-notes">${escHtml(c.admin_notes)}</div>` : ''}
-                        <div class="change-date">${formatDate(c.created_at)}</div>
-                    </div>
-                    <span class="change-status status-${c.status}">${STATUS_LABELS[c.status] || c.status}</span>
-                </div>
-            `).join('');
-        } catch {
-            list.innerHTML = '<p class="empty-state">Nepavyko užkrauti.</p>';
-        }
-    }
+        // Highlight selected
+        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
 
-    // Submit change request
+        // Show form
+        document.getElementById('changeForm').style.display = 'block';
+        document.getElementById('changeDesc').focus();
+    });
+
+    document.getElementById('cancelCat').addEventListener('click', () => {
+        selectedCategory = '';
+        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById('changeForm').style.display = 'none';
+        document.getElementById('changeDesc').value = '';
+    });
+
+    // ===================== SUBMIT =====================
     document.getElementById('changeForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submitBtn');
@@ -242,48 +187,86 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            document.getElementById('changeCategory').value = '';
+            // Reset form
             document.getElementById('changeDesc').value = '';
+            document.getElementById('changeForm').style.display = 'none';
+            document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+            selectedCategory = '';
 
             profile.changes_used_this_month = data.changes_used;
             profile.purchased_changes = data.purchased_changes;
-            updatePortalUI(profile);
+            updateUI(profile);
             loadChanges();
         } catch (err) {
-            alert('Klaida: ' + err.message);
+            alert(err.message);
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Pateikti užklausą';
+            btn.textContent = 'Pateikti';
         }
     });
 
-    // Buy a change
+    // ===================== BUY CHANGE =====================
     document.getElementById('buyChangeBtn').addEventListener('click', async () => {
         const btn = document.getElementById('buyChangeBtn');
         btn.disabled = true;
+        btn.textContent = 'Kraunama...';
         try {
             const res = await fetch(`${API}/buy-change`, { method: 'POST' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             window.location.href = data.url;
         } catch (err) {
-            alert('Klaida: ' + err.message);
+            alert(err.message);
             btn.disabled = false;
+            btn.textContent = 'Užsakyti pakeitimą · €15';
         }
     });
 
-    // Logout
+    // ===================== CHANGE HISTORY =====================
+    async function loadChanges() {
+        const list = document.getElementById('changesList');
+        try {
+            const res = await fetch(`${API}/changes`);
+            const data = await res.json();
+            if (!data.length) {
+                list.innerHTML = '<p class="history-empty">Dar neturite užklausų.</p>';
+                return;
+            }
+            list.innerHTML = data.map(c => {
+                const s = STATUS_CONFIG[c.status] || STATUS_CONFIG.new;
+                const catName = CAT_NAMES[c.category] || c.category;
+                const date = formatDate(c.created_at);
+                const notes = c.admin_notes ? `<div class="history-notes">${esc(c.admin_notes)}</div>` : '';
+                return `
+                    <div class="history-item status-${c.status}">
+                        <div class="history-icon">${s.icon}</div>
+                        <div class="history-content">
+                            <div class="history-top">
+                                <span class="history-label">${s.label}</span>
+                                <span class="history-meta">${catName} · ${date}</span>
+                            </div>
+                            <div class="history-desc">${esc(c.description)}</div>
+                            ${s.sub ? `<div class="history-sub">${s.sub}</div>` : ''}
+                            ${notes}
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch {
+            list.innerHTML = '<p class="history-empty">Nepavyko užkrauti.</p>';
+        }
+    }
+
+    // ===================== LOGOUT =====================
     function logout() {
-        fetch(`${API}/auth/logout`, { method: 'POST' }).then(() => {
-            profile = null;
-            showLogin();
-        });
+        fetch(`${API}/auth/logout`, { method: 'POST' }).then(() => { profile = null; showLogin(); });
     }
     document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('logoutBtn2').addEventListener('click', logout);
 
-    // Helpers
-    function escHtml(s) {
+    // ===================== HELPERS =====================
+    function show(id) { document.getElementById(id).style.display = ''; }
+    function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+    function esc(s) {
         const d = document.createElement('div');
         d.textContent = s;
         return d.innerHTML;
@@ -291,11 +274,10 @@
 
     function formatDate(iso) {
         if (!iso) return '';
-        const d = new Date(iso);
-        return d.toLocaleDateString('lt-LT', { year: 'numeric', month: 'long', day: 'numeric' });
+        return new Date(iso).toLocaleDateString('lt-LT', { month: 'long', day: 'numeric' });
     }
 
-    // Init
+    // ===================== INIT =====================
     async function init() {
         try {
             const res = await fetch(`${API}/config`);

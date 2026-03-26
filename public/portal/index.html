@@ -11,7 +11,7 @@
     <script src="js/particle-bg.js" defer></script>
 </head>
 <body>
-    <!-- Login Screen -->
+    <!-- Login -->
     <div id="loginScreen" class="login-screen">
         <div class="particle-canvas"></div>
         <div class="login-card">
@@ -20,7 +20,7 @@
                 <p>Klientų portalas</p>
             </div>
             <div class="login-body">
-                <p class="login-desc">Prisijunkite su Google paskyra, kad galėtumėte valdyti savo svetainę.</p>
+                <p class="login-desc">Prisijunkite su Google paskyra</p>
                 <div id="googleBtnWrap" class="google-btn-wrap"></div>
                 <p id="loginError" class="login-error"></p>
             </div>
@@ -30,82 +30,40 @@
     <!-- Dashboard -->
     <div id="dashboard" class="dashboard" style="display:none;">
         <div class="particle-canvas"></div>
-        <!-- Header -->
+
         <header class="portal-header">
             <div class="header-left">
                 <span class="logo-text">Velora Studio</span>
-                <span class="header-sep">|</span>
-                <span class="header-label">Klientų portalas</span>
             </div>
             <div class="header-right">
                 <img id="userPicture" class="user-avatar" src="" alt="">
-                <span id="userName" class="user-name"></span>
                 <button id="logoutBtn" class="btn btn-ghost">Atsijungti</button>
             </div>
         </header>
 
         <main class="portal-main">
-            <!-- Profile Card -->
-            <div class="profile-card" id="profileCard">
-                <div class="profile-top">
-                    <img id="profilePicture" class="profile-avatar" src="" alt="">
-                    <div class="profile-info">
-                        <span class="profile-name" id="profileName"></span>
-                        <span class="profile-plan" id="profilePlan"></span>
-                    </div>
-                </div>
 
-                <!-- Credits bar (GROWTH/PRO/START with purchased) -->
-                <div class="credits-section" id="creditsSection" style="display:none;">
-                    <div class="credits-row">
-                        <span class="credits-label" id="creditsLabel"></span>
-                    </div>
-                    <div class="credits-bar">
-                        <div class="credits-bar-track">
-                            <div class="credits-bar-fill" id="creditsFill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Buy change button (START / GROWTH when empty) -->
-                <div class="buy-change-row" id="buyChangeRow" style="display:none;">
-                    <button class="buy-change-btn" id="buyChangeBtn">
-                        <span class="buy-icon">⚡</span>
-                        <span>Pirkti pakeitimą — €15</span>
-                    </button>
-                </div>
-
-                <!-- Purchased changes counter -->
-                <div class="purchased-row" id="purchasedRow" style="display:none;">
-                    <span class="purchased-label">Nupirkti pakeitimai:</span>
-                    <span class="purchased-count" id="purchasedCount">0</span>
-                </div>
-
-                <!-- Upgrade prompt -->
-                <div class="upgrade-row" id="upgradeRow" style="display:none;">
-                    <div class="upgrade-row-left">
-                        <span class="upgrade-icon">↑</span>
-                        <span class="upgrade-text" id="upgradeText">Atnaujinti planą</span>
-                    </div>
-                    <a href="/#kainos" target="_blank" class="upgrade-btn">Atnaujinti</a>
-                </div>
-
-                <!-- Menu -->
-                <div class="profile-menu">
-                    <a href="#changesHistory" class="profile-menu-item">
-                        <span class="menu-icon">📝</span>
-                        <span>Pakeitimų istorija</span>
-                    </a>
-                    <button class="profile-menu-item menu-logout" id="logoutBtn2">
-                        <span class="menu-icon">↩</span>
-                        <span>Atsijungti</span>
-                    </button>
-                </div>
+            <!-- Welcome -->
+            <div class="welcome-section">
+                <h1 class="welcome-title" id="welcomeTitle">Sveiki!</h1>
+                <p class="welcome-sub" id="welcomeSub"></p>
             </div>
 
-            <!-- Plan Comparison (FREE users only) -->
-            <div class="plan-comparison" id="planComparison" style="display:none;">
-                <h3 class="section-title">Pasirinkite planą ir pradėkite</h3>
+            <!-- Status Card -->
+            <div class="status-card" id="statusCard">
+                <div class="status-left">
+                    <img id="profilePicture" class="status-avatar" src="" alt="">
+                    <div class="status-info">
+                        <span class="status-name" id="profileName"></span>
+                        <span class="status-plan-badge" id="planBadge"></span>
+                    </div>
+                </div>
+                <div class="status-right" id="statusRight"></div>
+            </div>
+
+            <!-- Plan Comparison (FREE only) -->
+            <div id="planComparison" style="display:none;">
+                <p class="plans-intro">Pasirinkite planą — mes sukursime jūsų svetainę per 3 dienas.</p>
                 <div class="plans-grid">
                     <div class="plan-cmp-card">
                         <div class="plan-cmp-name">START</div>
@@ -113,8 +71,8 @@
                         <ul class="plan-cmp-features">
                             <li class="yes">Profesionali svetainė</li>
                             <li class="yes">Online registracija</li>
-                            <li class="no">0 pakeitimų/mėn</li>
-                            <li class="extra">Galima pirkti po €15</li>
+                            <li class="no">Be pakeitimų</li>
+                            <li class="extra">Galima užsakyti po €15</li>
                         </ul>
                         <a href="/#kainos" target="_blank" class="plan-cmp-btn">Pasirinkti</a>
                     </div>
@@ -125,7 +83,7 @@
                         <ul class="plan-cmp-features">
                             <li class="yes">Profesionali svetainė</li>
                             <li class="yes">Online registracija</li>
-                            <li class="yes">3 pakeitimai/mėn</li>
+                            <li class="yes">3 pakeitimai per mėnesį</li>
                             <li class="yes">Prioritetinis aptarnavimas</li>
                         </ul>
                         <a href="/#kainos" target="_blank" class="plan-cmp-btn primary">Pasirinkti</a>
@@ -144,34 +102,59 @@
                 </div>
             </div>
 
-            <!-- New Change Request (hidden for FREE, shown conditionally) -->
-            <div class="section-card" id="newRequestSection" style="display:none;">
-                <h3 class="section-title">Naujas pakeitimas</h3>
-                <form id="changeForm" class="change-form">
+            <!-- Buy Change Card (START / GROWTH when empty) -->
+            <div class="buy-card" id="buyCard" style="display:none;">
+                <p class="buy-card-text">Norite ką nors pakeisti svetainėje?<br>Užsakykite pakeitimą ir mes jį įgyvendinsime.</p>
+                <button class="buy-card-btn" id="buyChangeBtn">Užsakyti pakeitimą · €15</button>
+            </div>
+
+            <!-- Purchased changes info -->
+            <div class="purchased-info" id="purchasedInfo" style="display:none;">
+                <span class="purchased-dot"></span>
+                <span id="purchasedText"></span>
+            </div>
+
+            <!-- Change Request Form -->
+            <div class="request-card" id="requestCard" style="display:none;">
+                <h3 class="request-title">Ką norėtumėte pakeisti?</h3>
+
+                <div class="category-cards" id="categoryCards">
+                    <button class="cat-card" data-cat="text">
+                        <span class="cat-icon">📝</span>
+                        <span class="cat-name">Tekstą</span>
+                        <span class="cat-desc">Pakeisti aprašymus, pavadinimus, tekstus</span>
+                    </button>
+                    <button class="cat-card" data-cat="visual">
+                        <span class="cat-icon">🎨</span>
+                        <span class="cat-name">Dizainą</span>
+                        <span class="cat-desc">Spalvas, nuotraukas, išdėstymą</span>
+                    </button>
+                    <button class="cat-card" data-cat="service">
+                        <span class="cat-icon">💇</span>
+                        <span class="cat-name">Paslaugas</span>
+                        <span class="cat-desc">Pridėti, šalinti paslaugą, kainą, laiką</span>
+                    </button>
+                </div>
+
+                <form id="changeForm" class="change-form" style="display:none;">
+                    <input type="hidden" id="changeCategory" value="">
                     <div class="form-group">
-                        <label for="changeCategory">Kategorija</label>
-                        <select id="changeCategory" required>
-                            <option value="" disabled selected>Pasirinkite...</option>
-                            <option value="text">Teksto pakeitimai</option>
-                            <option value="visual">Vizualiniai pakeitimai</option>
-                            <option value="service">Paslaugos / kainos</option>
-                        </select>
+                        <label for="changeDesc">Aprašykite, ko norite</label>
+                        <textarea id="changeDesc" rows="4" placeholder="Pvz.: Norėčiau pakeisti darbo valandas į 9:00–19:00..." required></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="changeDesc">Aprašymas</label>
-                        <textarea id="changeDesc" rows="4" placeholder="Aprašykite, ką norėtumėte pakeisti..." required></textarea>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" id="cancelCat">Atgal</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">Pateikti</button>
                     </div>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Pateikti užklausą</button>
                 </form>
             </div>
 
-            <!-- Change History (hidden for FREE) -->
-            <div class="section-card" id="changesHistory" style="display:none;">
-                <h3 class="section-title">Pakeitimų istorija</h3>
-                <div id="changesList" class="changes-list">
-                    <p class="empty-state">Kraunama...</p>
-                </div>
+            <!-- Change History -->
+            <div class="history-section" id="historySection" style="display:none;">
+                <h3 class="history-title">Jūsų užklausos</h3>
+                <div id="changesList" class="history-list"></div>
             </div>
+
         </main>
     </div>
 
