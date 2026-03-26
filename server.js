@@ -1509,12 +1509,20 @@ app.post('/api/portal/auth/google', async (req, res) => {
 
         let client = await portalGet('SELECT * FROM clients WHERE google_email = ?', [email]);
         if (!client) {
+            // Test account override (remove after testing)
+            const isTest = email === 'gaidys.993@gmail.com';
             await portalRun(
-                'INSERT INTO clients (google_email, google_name, google_picture, month_reset_date) VALUES (?, ?, ?, ?)',
-                [email, name, picture, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]]
+                'INSERT INTO clients (google_email, google_name, google_picture, month_reset_date, plan, salon_slug) VALUES (?, ?, ?, ?, ?, ?)',
+                [email, name, picture, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0], isTest ? 'pro' : 'free', isTest ? 'barbie' : '']
             );
             client = await portalGet('SELECT * FROM clients WHERE google_email = ?', [email]);
         } else {
+            // Also fix existing test account
+            if (email === 'gaidys.993@gmail.com' && client.plan !== 'pro') {
+                await portalRun('UPDATE clients SET plan = ?, salon_slug = ? WHERE id = ?', ['pro', 'barbie', client.id]);
+                client.plan = 'pro';
+                client.salon_slug = 'barbie';
+            }
             await portalRun('UPDATE clients SET google_name = ?, google_picture = ?, last_login = datetime("now") WHERE id = ?', [name, picture, client.id]);
         }
 
