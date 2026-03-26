@@ -14,6 +14,10 @@
 
     const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
 
+    // Attachment state
+    let attachmentBase64 = '';
+    let attachmentName = '';
+
     // ===================== AUTH =====================
     window.handleGoogleSignIn = async function(response) {
         document.getElementById('loginError').textContent = '';
@@ -177,7 +181,43 @@
         document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
         document.getElementById('changeForm').style.display = 'none';
         document.getElementById('changeDesc').value = '';
+        clearAttachment();
     });
+
+    // ===================== ATTACHMENT =====================
+    document.getElementById('changeAttachment').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Nuotrauka per didelė. Maksimalus dydis: 2MB.');
+            e.target.value = '';
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            alert('Leidžiami tik paveikslėliai (JPG, PNG, WEBP, GIF).');
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            attachmentBase64 = reader.result.split(',')[1]; // strip data:...;base64,
+            attachmentName = file.name;
+            document.getElementById('previewImg').src = reader.result;
+            document.getElementById('attachmentPreview').style.display = 'flex';
+            document.getElementById('uploadArea').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('removeAttachment').addEventListener('click', clearAttachment);
+
+    function clearAttachment() {
+        attachmentBase64 = '';
+        attachmentName = '';
+        document.getElementById('changeAttachment').value = '';
+        document.getElementById('attachmentPreview').style.display = 'none';
+        document.getElementById('uploadArea').style.display = '';
+    }
 
     // ===================== SUBMIT =====================
     document.getElementById('changeForm').addEventListener('submit', async (e) => {
@@ -193,7 +233,7 @@
             const res = await fetch(`${API}/changes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ category: cat, description: desc })
+                body: JSON.stringify({ category: cat, description: desc, attachment_base64: attachmentBase64, attachment_name: attachmentName })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
@@ -203,6 +243,7 @@
             document.getElementById('changeForm').style.display = 'none';
             document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
             selectedCategory = '';
+            clearAttachment();
 
             profile.changes_used_this_month = data.changes_used;
             profile.purchased_changes = data.purchased_changes;
@@ -248,6 +289,7 @@
                 const catName = CAT_NAMES[c.category] || c.category;
                 const date = formatDate(c.created_at);
                 const notes = c.admin_notes ? `<div class="history-notes">${esc(c.admin_notes)}</div>` : '';
+                const attach = c.attachment_name ? `<a href="${API}/changes/${c.id}/attachment" target="_blank" class="history-attachment">📎 ${esc(c.attachment_name)}</a>` : '';
                 return `
                     <div class="history-item status-${c.status}">
                         <div class="history-icon">${s.icon}</div>
@@ -257,6 +299,7 @@
                                 <span class="history-meta">${catName} · ${date}</span>
                             </div>
                             <div class="history-desc">${esc(c.description)}</div>
+                            ${attach}
                             ${s.sub ? `<div class="history-sub">${s.sub}</div>` : ''}
                             ${notes}
                         </div>

@@ -30,6 +30,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`UPDATE clients SET plan = 'free' WHERE plan = 'start' AND (stripe_customer_id = '' OR stripe_customer_id IS NULL)`);
         db.run(`ALTER TABLE clients ADD COLUMN purchased_changes INTEGER DEFAULT 0`, () => {});
 
+        // Attachment + automation migrations
+        db.run(`ALTER TABLE change_requests ADD COLUMN attachment_base64 TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE change_requests ADD COLUMN attachment_name TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE change_requests ADD COLUMN pending_html TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE change_requests ADD COLUMN pending_css TEXT DEFAULT ''`, () => {});
+
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -369,6 +369,68 @@ body {
 
 .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
+/* ===== Upload Area ===== */
+.upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.upload-area:hover { border-color: var(--primary); }
+.upload-area input[type="file"] { display: none; }
+.upload-icon { display: flex; align-items: center; justify-content: center; }
+.upload-icon svg { width: 36px; height: 36px; color: var(--text-dim); transition: var(--transition); }
+.upload-area:hover .upload-icon svg { color: var(--primary); }
+.upload-text { font-size: 0.85rem; color: var(--text-muted); }
+.upload-hint { font-size: 0.75rem; color: var(--text-dim); margin-top: 6px; }
+
+.attachment-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+}
+.attachment-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.remove-attachment {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--error);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+.remove-attachment:hover { background: rgba(239, 68, 68, 0.4); }
+
+.history-attachment {
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 4px;
+}
+.history-attachment:hover { text-decoration: underline; }
+
 /* ===== History ===== */
 .history-section { }
 

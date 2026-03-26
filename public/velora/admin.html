@@ -162,6 +162,7 @@
                                 <th>Salonas</th>
                                 <th>Kategorija</th>
                                 <th>Aprašymas</th>
+                                <th>📎</th>
                                 <th>Data</th>
                                 <th>Statusas</th>
                                 <th>Veiksmai</th>
@@ -262,6 +263,7 @@
                 <td>${esc(c.salon_name || '-')}</td>
                 <td>${CAT_LABELS[c.category] || c.category}</td>
                 <td style="max-width:200px;white-space:pre-wrap;font-size:0.85rem;">${esc(c.description)}</td>
+                <td>${c.attachment_name ? `<a href="/api/portal/admin/changes/${c.id}/attachment" target="_blank" title="${esc(c.attachment_name)}">📎</a>` : ''}</td>
                 <td style="font-size:0.8rem;">${new Date(c.created_at).toLocaleDateString('lt-LT')}</td>
                 <td><span class="status-badge-ch ch-${c.status}">${{new:'Nauja',in_progress:'Vykdoma',completed:'Atlikta',rejected:'Atmesta'}[c.status]}</span></td>
                 <td>

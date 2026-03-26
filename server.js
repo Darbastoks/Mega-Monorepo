@@ -9,6 +9,7 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const Anthropic = require('@anthropic-ai/sdk');
 
 // ==================== EMAIL SETUP ====================
 const emailTransporter = (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) ? nodemailer.createTransport({
@@ -175,7 +176,7 @@ app.post('/webhook/stripe',
     }
 );
 
-app.use(express.json());
+app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 2. Middlewares
@@ -1556,11 +1557,31 @@ app.get('/api/portal/profile', requirePortalAuth, async (req, res) => {
     }
 });
 
-// Get change requests
+// Get change requests (exclude large base64 blobs from list)
 app.get('/api/portal/changes', requirePortalAuth, async (req, res) => {
     try {
-        const changes = await portalAll('SELECT * FROM change_requests WHERE client_id = ? ORDER BY created_at DESC', [req.session.portalClientId]);
+        const changes = await portalAll(
+            'SELECT id, client_id, category, description, status, admin_notes, created_at, completed_at, attachment_name FROM change_requests WHERE client_id = ? ORDER BY created_at DESC',
+            [req.session.portalClientId]
+        );
         res.json(changes);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Serve attachment image (client)
+app.get('/api/portal/changes/:id/attachment', requirePortalAuth, async (req, res) => {
+    try {
+        const change = await portalGet(
+            'SELECT attachment_base64, attachment_name FROM change_requests WHERE id = ? AND client_id = ?',
+            [req.params.id, req.session.portalClientId]
+        );
+        if (!change || !change.attachment_base64) return res.status(404).json({ error: 'Nėra priedo' });
+        const ext = change.attachment_name.toLowerCase().match(/\.[^.]+$/)?.[0] || '.jpg';
+        const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+        res.set('Content-Type', mimeMap[ext] || 'image/jpeg');
+        res.send(Buffer.from(change.attachment_base64, 'base64'));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1568,9 +1589,19 @@ app.get('/api/portal/changes', requirePortalAuth, async (req, res) => {
 
 // Submit change request
 app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
-    const { category, description } = req.body;
+    const { category, description, attachment_base64, attachment_name } = req.body;
     if (!category || !description) return res.status(400).json({ error: 'Kategorija ir aprašymas privalomi' });
     if (!['text', 'visual', 'service'].includes(category)) return res.status(400).json({ error: 'Neteisinga kategorija' });
+
+    // Validate attachment if provided
+    if (attachment_base64) {
+        const maxSize = 2 * 1024 * 1024; // 2MB raw
+        const rawSize = Math.ceil(attachment_base64.length * 3 / 4);
+        if (rawSize > maxSize) return res.status(400).json({ error: 'Nuotrauka per didelė. Maksimalus dydis: 2MB.' });
+        const validExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        const ext = (attachment_name || '').toLowerCase().match(/\.[^.]+$/)?.[0];
+        if (!ext || !validExts.includes(ext)) return res.status(400).json({ error: 'Netinkamas failo formatas. Leidžiami: JPG, PNG, WEBP, GIF.' });
+    }
 
     try {
         let client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
@@ -1594,11 +1625,23 @@ app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
             return res.status(403).json({ error: 'Pakeitimų limitas pasiektas. Pirkite pakeitimą arba atnaujinkite planą.' });
         }
 
-        await portalRun('INSERT INTO change_requests (client_id, category, description) VALUES (?, ?, ?)', [client.id, category, description]);
+        const result = await portalRun(
+            'INSERT INTO change_requests (client_id, category, description, attachment_base64, attachment_name) VALUES (?, ?, ?, ?, ?)',
+            [client.id, category, description, attachment_base64 || '', attachment_name || '']
+        );
 
         // Only increment monthly counter if using monthly allocation (not purchased)
         if (client.plan !== 'pro' && limit > 0 && client.changes_used_this_month < limit) {
             await portalRun('UPDATE clients SET changes_used_this_month = changes_used_this_month + 1 WHERE id = ?', [client.id]);
+        }
+
+        // Trigger automated change application (fire-and-forget)
+        if (result.lastID) {
+            autoApplyChange(result.lastID, client.id).catch(err => {
+                console.error('Auto-apply failed for change', result.lastID, err.message);
+                portalRun('UPDATE change_requests SET status = ?, admin_notes = ? WHERE id = ?',
+                    ['in_progress', `Automatinis pritaikymas nepavyko: ${err.message}`, result.lastID]).catch(() => {});
+            });
         }
 
         const updated = await portalGet('SELECT changes_used_this_month, purchased_changes FROM clients WHERE id = ?', [client.id]);
@@ -1651,12 +1694,28 @@ app.get('/api/portal/admin/clients', requireVeloraAdmin, async (req, res) => {
 app.get('/api/portal/admin/changes', requireVeloraAdmin, async (req, res) => {
     try {
         const changes = await portalAll(`
-            SELECT cr.*, c.google_email, c.google_name, c.salon_name, c.plan
+            SELECT cr.id, cr.client_id, cr.category, cr.description, cr.status, cr.admin_notes,
+                   cr.created_at, cr.completed_at, cr.attachment_name,
+                   c.google_email, c.google_name, c.salon_name, c.plan
             FROM change_requests cr
             JOIN clients c ON cr.client_id = c.id
             ORDER BY cr.created_at DESC
         `);
         res.json(changes);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: serve attachment
+app.get('/api/portal/admin/changes/:id/attachment', requireVeloraAdmin, async (req, res) => {
+    try {
+        const change = await portalGet('SELECT attachment_base64, attachment_name FROM change_requests WHERE id = ?', [req.params.id]);
+        if (!change || !change.attachment_base64) return res.status(404).json({ error: 'Nėra priedo' });
+        const ext = change.attachment_name.toLowerCase().match(/\.[^.]+$/)?.[0] || '.jpg';
+        const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+        res.set('Content-Type', mimeMap[ext] || 'image/jpeg');
+        res.send(Buffer.from(change.attachment_base64, 'base64'));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1716,6 +1775,307 @@ app.patch('/api/portal/admin/clients/:id', requireVeloraAdmin, async (req, res) 
         res.status(500).json({ error: err.message });
     }
 });
+
+// ==================== AUTOMATED CHANGE APPLICATION ====================
+
+// Claude API client (conditional)
+const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const GITHUB_REPO = process.env.GITHUB_REPO || 'Darbastoks/Mega-Monorepo';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+
+const CSS_PATHS = {
+    barbie: 'public/barbie/css/styles.css',
+    hair: 'public/hair/styles.css',
+    nails: 'public/nails/css/style.css'
+};
+
+// --- GitHub API helpers ---
+async function ghFetch(url, options = {}) {
+    const res = await fetch(`https://api.github.com${url}`, {
+        ...options,
+        headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json', ...options.headers }
+    });
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+    return res.json();
+}
+
+async function fetchFileFromGitHub(filePath) {
+    const data = await ghFetch(`/repos/${GITHUB_REPO}/contents/${filePath}`);
+    return { content: Buffer.from(data.content, 'base64').toString('utf8'), sha: data.sha };
+}
+
+async function commitFilesToGitHub(files, message) {
+    // Get latest commit SHA on main
+    const ref = await ghFetch(`/repos/${GITHUB_REPO}/git/ref/heads/main`);
+    const latestCommitSha = ref.object.sha;
+
+    // Get the tree of the latest commit
+    const commit = await ghFetch(`/repos/${GITHUB_REPO}/git/commits/${latestCommitSha}`);
+    const baseTreeSha = commit.tree.sha;
+
+    // Create blobs for each file
+    const tree = [];
+    for (const f of files) {
+        const blob = await ghFetch(`/repos/${GITHUB_REPO}/git/blobs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: f.content, encoding: 'utf-8' })
+        });
+        tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
+    }
+
+    // Create new tree
+    const newTree = await ghFetch(`/repos/${GITHUB_REPO}/git/trees`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base_tree: baseTreeSha, tree })
+    });
+
+    // Create commit
+    const newCommit = await ghFetch(`/repos/${GITHUB_REPO}/git/commits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, tree: newTree.sha, parents: [latestCommitSha] })
+    });
+
+    // Update ref
+    await ghFetch(`/repos/${GITHUB_REPO}/git/refs/heads/main`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sha: newCommit.sha })
+    });
+
+    return newCommit.sha;
+}
+
+// --- Telegram helpers ---
+async function sendTelegram(text, inlineKeyboard) {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+    const body = {
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: 'HTML'
+    };
+    if (inlineKeyboard) body.reply_markup = JSON.stringify({ inline_keyboard: inlineKeyboard });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+
+// Telegram webhook — receives button callback
+app.post('/webhook/telegram', express.json(), async (req, res) => {
+    res.json({ ok: true }); // respond immediately
+
+    const callback = req.body?.callback_query;
+    if (!callback) return;
+
+    const data = callback.data; // e.g., "approve:42" or "reject:42"
+    const [action, changeIdStr] = data.split(':');
+    const changeId = parseInt(changeIdStr, 10);
+    if (!changeId) return;
+
+    try {
+        if (action === 'approve') {
+            const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
+            if (!change || !change.pending_html) {
+                await answerCallback(callback.id, 'Nėra laukiančio pakeitimo');
+                return;
+            }
+
+            // Determine file paths
+            const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
+            const slug = client?.salon_slug;
+            const htmlPath = `public/${slug}/index.html`;
+            const cssPath = CSS_PATHS[slug];
+
+            const files = [{ path: htmlPath, content: change.pending_html }];
+            if (change.pending_css) files.push({ path: cssPath, content: change.pending_css });
+
+            const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
+            await commitFilesToGitHub(files, `Auto: ${catLabels[change.category] || change.category} — ${change.description.substring(0, 50)}`);
+
+            await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+                ['completed', 'Pakeitimas pritaikytas automatiškai per AI', new Date().toISOString(), changeId]);
+
+            // Send completion email
+            if (emailTransporter && client.google_email) {
+                try {
+                    await emailTransporter.sendMail({
+                        from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
+                        to: client.google_email,
+                        subject: 'Jūsų pakeitimas atliktas — Velora Studio',
+                        text: `Sveiki, ${client.google_name || ''}!\n\nJūsų užklausa buvo sėkmingai įgyvendinta.\n\nPeržiūrėkite savo svetainę ir įsitikinkite, kad viskas atrodo puikiai.\n\nPagarbiai,\nVelora Studio`
+                    });
+                } catch (e) { console.error('Email failed:', e.message); }
+            }
+
+            await answerCallback(callback.id, '✅ Patvirtinta! Render diegia...');
+            await editTelegramMessage(callback.message, `✅ PATVIRTINTA — #${changeId}\n${change.description.substring(0, 100)}`);
+
+        } else if (action === 'reject') {
+            await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+                ['rejected', 'Atmesta per Telegram', changeId]);
+
+            await answerCallback(callback.id, '❌ Atmesta');
+            await editTelegramMessage(callback.message, `❌ ATMESTA — #${changeId}`);
+        }
+    } catch (err) {
+        console.error('Telegram callback error:', err.message);
+        await answerCallback(callback.id, 'Klaida: ' + err.message);
+    }
+});
+
+async function answerCallback(callbackId, text) {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: callbackId, text })
+    });
+}
+
+async function editTelegramMessage(message, newText) {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: message.chat.id, message_id: message.message_id, text: newText, parse_mode: 'HTML' })
+    });
+}
+
+// --- Claude prompt & parser ---
+function buildChangePrompt(change, currentHtml, currentCss) {
+    const catLabels = { text: 'teksto pakeitimas', visual: 'dizaino pakeitimas', service: 'paslaugų pakeitimas' };
+    return `Tu esi web programuotojas. Klientas prašo pakeisti savo svetainę.
+
+UŽKLAUSA: ${catLabels[change.category] || change.category}
+APRAŠYMAS: ${change.description}
+
+Padaryk TIK tai, ko klientas prašo. Nekeisk nieko kito. Nepridėk komentarų į kodą.
+Išsaugok visas esamas klases, ID, JavaScript hooks ir struktūrą.
+
+DABARTINIS HTML:
+\`\`\`html
+${currentHtml}
+\`\`\`
+
+DABARTINIS CSS:
+\`\`\`css
+${currentCss}
+\`\`\`
+
+Grąžink pakeistus failus tokiu formatu:
+<html_file>
+(visas pakeistas HTML čia)
+</html_file>
+
+<css_file>
+(visas pakeistas CSS čia — jei nereikėjo keisti CSS, vis tiek grąžink originalą)
+</css_file>`;
+}
+
+function parseClaudeResponse(text) {
+    const htmlMatch = text.match(/<html_file>\s*([\s\S]*?)\s*<\/html_file>/);
+    const cssMatch = text.match(/<css_file>\s*([\s\S]*?)\s*<\/css_file>/);
+    return {
+        html: htmlMatch ? htmlMatch[1].trim() : null,
+        css: cssMatch ? cssMatch[1].trim() : null
+    };
+}
+
+// --- Main automation pipeline ---
+async function autoApplyChange(changeId, clientId) {
+    // Guard: check required env vars
+    if (!anthropic || !GITHUB_TOKEN || !GITHUB_REPO) {
+        console.log('Auto-apply skipped: missing ANTHROPIC_API_KEY or GITHUB_TOKEN');
+        return;
+    }
+
+    const client = await portalGet('SELECT * FROM clients WHERE id = ?', [clientId]);
+    if (!client || !client.salon_slug) {
+        await portalRun('UPDATE change_requests SET status = ?, admin_notes = ? WHERE id = ?',
+            ['in_progress', 'Salonas nepriskirtas klientui — priskirkite salon_slug admin panelėje', changeId]);
+        await sendTelegram(`⚠️ Pakeitimas #${changeId} — salonas nepriskirtas klientui ${client?.google_name || client?.google_email || clientId}`);
+        return;
+    }
+
+    const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
+    const slug = client.salon_slug;
+    const htmlPath = `public/${slug}/index.html`;
+    const cssPath = CSS_PATHS[slug];
+
+    if (!cssPath) {
+        await portalRun('UPDATE change_requests SET status = ?, admin_notes = ? WHERE id = ?',
+            ['in_progress', `Nežinomas salonas: ${slug}`, changeId]);
+        return;
+    }
+
+    // Fetch current files from GitHub
+    const [htmlFile, cssFile] = await Promise.all([
+        fetchFileFromGitHub(htmlPath),
+        fetchFileFromGitHub(cssPath)
+    ]);
+
+    // Build Claude messages
+    const contentBlocks = [];
+
+    // Include image if present
+    if (change.attachment_base64 && change.attachment_name) {
+        const ext = change.attachment_name.toLowerCase().match(/\.[^.]+$/)?.[0] || '.jpg';
+        const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif' };
+        contentBlocks.push({
+            type: 'image',
+            source: { type: 'base64', media_type: mimeMap[ext] || 'image/jpeg', data: change.attachment_base64 }
+        });
+    }
+
+    contentBlocks.push({
+        type: 'text',
+        text: buildChangePrompt(change, htmlFile.content, cssFile.content)
+    });
+
+    // Call Claude
+    const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        messages: [{ role: 'user', content: contentBlocks }]
+    });
+
+    const result = parseClaudeResponse(response.content[0].text);
+
+    // Validate
+    if (!result.html || !result.html.includes('<!DOCTYPE') || !result.html.includes('</html>')) {
+        await portalRun('UPDATE change_requests SET status = ?, admin_notes = ? WHERE id = ?',
+            ['in_progress', 'AI grąžino netinkamą HTML — reikia rankinės peržiūros', changeId]);
+        await sendTelegram(`⚠️ Pakeitimas #${changeId} — AI grąžino netinkamą rezultatą. Reikia rankinės peržiūros.`);
+        return;
+    }
+
+    // Store pending changes
+    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, status = ? WHERE id = ?',
+        [result.html, result.css || cssFile.content, 'pending_review', changeId]);
+
+    // Send Telegram notification with approve/reject buttons
+    const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
+    const salonName = client.salon_name || slug;
+    const msg = `📋 <b>Naujas pakeitimas — ${salonName}</b>\n\n` +
+        `<b>Kategorija:</b> ${catLabels[change.category] || change.category}\n` +
+        `<b>Klientas:</b> ${client.google_name || client.google_email}\n` +
+        `<b>Aprašymas:</b> ${change.description}\n\n` +
+        `AI paruošė pakeitimą. Patvirtinti?`;
+
+    await sendTelegram(msg, [
+        [
+            { text: '✅ Patvirtinti', callback_data: `approve:${changeId}` },
+            { text: '❌ Atmesti', callback_data: `reject:${changeId}` }
+        ]
+    ]);
+
+    console.log(`Auto-apply: change #${changeId} pending review (Telegram sent)`);
+}
 
 // 404 fallback
 app.use((req, res) => {
