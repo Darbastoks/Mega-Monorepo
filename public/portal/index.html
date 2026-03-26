@@ -43,65 +43,57 @@
 
         <!-- Main Content -->
         <main class="portal-main">
-            <!-- Plan Card -->
-            <div class="plan-card" id="planCard">
-                <div class="plan-card-top">
-                    <div class="plan-header">
-                        <span class="plan-label">Jūsų planas</span>
-                        <span class="plan-badge" id="planBadge">START</span>
-                    </div>
-                    <div class="salon-info">
-                        <span id="salonName" class="salon-name">Jūsų salonas</span>
+            <!-- Profile + Plan Card (reference style) -->
+            <div class="profile-card" id="profileCard">
+                <div class="profile-top">
+                    <img id="profilePicture" class="profile-avatar" src="" alt="">
+                    <div class="profile-info">
+                        <span class="profile-name" id="profileName"></span>
+                        <span class="profile-plan" id="profilePlan">START planas</span>
                     </div>
                 </div>
 
-                <!-- Progress section (GROWTH/PRO with limits) -->
-                <div class="plan-progress" id="planProgress">
-                    <div class="progress-header">
-                        <span class="progress-title">Pakeitimai šį mėnesį</span>
-                        <span class="progress-count" id="progressCount">0 / 3</span>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                    </div>
-                    <div class="progress-footer" id="progressFooter">
-                        <span id="progressStatus">Liko: 3 pakeitimai</span>
-                    </div>
-                </div>
-
-                <!-- PRO unlimited section -->
-                <div class="plan-unlimited" id="planUnlimited" style="display:none;">
-                    <div class="unlimited-badge">∞</div>
-                    <div class="unlimited-info">
-                        <span class="unlimited-title">Neriboti pakeitimai</span>
-                        <span class="unlimited-count" id="unlimitedCount">Pateikta: 0 šį mėnesį</span>
-                    </div>
-                </div>
-
-                <!-- START no-changes section -->
-                <div class="plan-no-changes" id="planNoChanges" style="display:none;">
-                    <p class="no-changes-text">Jūsų planas neapima pakeitimų užklausų.</p>
-                    <p class="no-changes-sub">Atnaujinkite planą ir gaukite galimybę teikti pakeitimų užklausas kiekvieną mėnesį.</p>
-                    <a href="/#kainos" class="btn btn-upgrade" target="_blank">Peržiūrėti planus →</a>
-                </div>
-            </div>
-
-            <!-- Out of changes card (hidden by default) -->
-            <div class="upgrade-card" id="upgradeCard" style="display:none;">
-                <div class="upgrade-content">
-                    <div class="upgrade-bar-visual">
-                        <div class="upgrade-bar-track">
-                            <div class="upgrade-bar-fill"></div>
+                <!-- Changes progress bar -->
+                <div class="credits-section" id="creditsSection">
+                    <a class="credits-row" id="creditsRow" href="#changes-section">
+                        <span class="credits-label" id="creditsLabel">Liko pakeitimų</span>
+                        <span class="credits-arrow">›</span>
+                    </a>
+                    <div class="credits-bar">
+                        <div class="credits-bar-track">
+                            <div class="credits-bar-fill" id="creditsFill" style="width: 100%"></div>
                         </div>
                     </div>
-                    <h3>Pakeitimai išnaudoti</h3>
-                    <p>Šį mėnesį panaudojote visus pakeitimus. Atnaujinkite planą arba palaukite kito mėnesio.</p>
-                    <a href="/#kainos" class="btn btn-primary" target="_blank">Atnaujinti planą →</a>
+                </div>
+
+                <!-- Upgrade row (shown when out of changes or START plan) -->
+                <div class="upgrade-row" id="upgradeRow" style="display:none;">
+                    <div class="upgrade-row-left">
+                        <span class="upgrade-icon">⚡</span>
+                        <span class="upgrade-text">Atnaujinti planą</span>
+                    </div>
+                    <a href="/#kainos" target="_blank" class="upgrade-btn">Atnaujinti</a>
+                </div>
+
+                <!-- Menu links -->
+                <div class="profile-menu">
+                    <a href="#changes-section" class="profile-menu-item" id="menuChanges">
+                        <span class="menu-icon">📝</span>
+                        <span>Pakeitimų užklausos</span>
+                    </a>
+                    <a href="#" class="profile-menu-item" id="menuSalon">
+                        <span class="menu-icon">💇</span>
+                        <span id="menuSalonName">Jūsų salonas</span>
+                    </a>
+                    <button class="profile-menu-item menu-logout" id="logoutBtn2">
+                        <span class="menu-icon">↩</span>
+                        <span>Atsijungti</span>
+                    </button>
                 </div>
             </div>
 
             <!-- New Change Request -->
-            <div class="section-card" id="newRequestSection">
+            <div class="section-card" id="newRequestSection" style="display:none;">
                 <h3 class="section-title">Naujas pakeitimas</h3>
                 <form id="changeForm" class="change-form">
                     <div class="form-group">
@@ -122,7 +114,7 @@
             </div>
 
             <!-- Change History -->
-            <div class="section-card">
+            <div class="section-card" id="changes-section">
                 <h3 class="section-title">Pakeitimų istorija</h3>
                 <div id="changesList" class="changes-list">
                     <p class="empty-state">Kraunama...</p>

@@ -3,17 +3,20 @@
     --primary-light: rgba(34, 211, 238, 0.15);
     --primary-hover: #67e8f9;
     --bg-main: #0a0e17;
-    --bg-card: #1e293b;
+    --bg-card: #1a1f2e;
+    --bg-card-lighter: #242938;
     --bg-input: #0f172a;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    --text-dim: #64748b;
     --border: rgba(255, 255, 255, 0.08);
     --success: #22c55e;
     --warning: #fbbf24;
     --error: #ef4444;
     --pink: #ec4899;
+    --purple: #a855f7;
     --info: #60a5fa;
-    --radius: 12px;
+    --radius: 14px;
     --radius-sm: 8px;
     --transition: all 0.3s ease;
 }
@@ -28,7 +31,7 @@ body {
     min-height: 100vh;
 }
 
-/* Login Screen */
+/* ============ Login Screen ============ */
 .login-screen {
     min-height: 100vh;
     display: flex;
@@ -78,13 +81,13 @@ body {
     margin-top: 12px;
 }
 
-/* Header */
+/* ============ Header ============ */
 .portal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 32px;
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(26, 31, 46, 0.9);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     position: sticky;
@@ -100,7 +103,7 @@ body {
 .user-avatar { width: 32px; height: 32px; border-radius: 50%; }
 .user-name { font-size: 0.9rem; font-weight: 500; }
 
-/* Buttons */
+/* ============ Buttons ============ */
 .btn {
     padding: 10px 20px;
     border: none;
@@ -130,16 +133,7 @@ body {
 }
 .btn-ghost:hover { color: var(--text-main); border-color: rgba(255,255,255,0.15); }
 
-.btn-upgrade {
-    background: linear-gradient(135deg, var(--primary), #a855f7);
-    color: #fff;
-    font-weight: 600;
-    padding: 10px 24px;
-    margin-top: 12px;
-}
-.btn-upgrade:hover { opacity: 0.9; transform: translateY(-1px); }
-
-/* Main Content */
+/* ============ Main Content ============ */
 .portal-main {
     max-width: 700px;
     margin: 0 auto;
@@ -149,211 +143,190 @@ body {
     gap: 24px;
 }
 
-/* ============ Plan Card ============ */
-.plan-card {
+/* ============ Profile Card (Reference Style) ============ */
+.profile-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 28px 32px;
+    overflow: hidden;
 }
 
-.plan-card-top {
+.profile-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
+    gap: 14px;
+    padding: 24px 24px 20px;
 }
 
-.plan-header {
+.profile-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    object-fit: cover;
+}
+
+.profile-info {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.plan-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
-}
-
-.plan-badge {
-    display: inline-block;
-    padding: 5px 16px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    background: var(--primary-light);
-    color: var(--primary);
-}
-.plan-badge.growth { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
-.plan-badge.pro { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
-
-.salon-info { text-align: right; }
-.salon-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
+.profile-name {
+    font-size: 1rem;
     font-weight: 600;
+    color: var(--text-main);
 }
 
-/* ============ Progress Bar ============ */
-.plan-progress { }
+.profile-plan {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-weight: 400;
+}
 
-.progress-header {
+/* ============ Credits / Changes Bar ============ */
+.credits-section {
+    padding: 0 24px 20px;
+}
+
+.credits-row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: baseline;
+    text-decoration: none;
     margin-bottom: 10px;
 }
 
-.progress-title {
+.credits-label {
     font-size: 0.85rem;
-    color: var(--text-muted);
     font-weight: 500;
+    color: var(--primary);
+    transition: var(--transition);
 }
 
-.progress-count {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text-main);
+.credits-label.warning { color: var(--warning); }
+.credits-label.danger { color: var(--pink); }
+
+.credits-arrow {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    transition: var(--transition);
 }
 
-.progress-track {
-    width: 100%;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    overflow: hidden;
+.credits-row:hover .credits-arrow { color: var(--text-main); transform: translateX(2px); }
+
+.credits-bar {
     position: relative;
 }
 
-.progress-fill {
-    height: 100%;
-    border-radius: 10px;
-    background: var(--primary);
-    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.4s ease;
-    min-width: 0;
-}
-
-.progress-fill.warning { background: var(--warning); }
-.progress-fill.danger { background: var(--pink); }
-.progress-fill.empty { background: var(--error); }
-
-.progress-footer {
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#progressStatus {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-}
-#progressStatus.danger {
-    color: var(--pink);
-    font-weight: 600;
-}
-
-/* ============ PRO Unlimited ============ */
-.plan-unlimited {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 0 0;
-}
-
-.unlimited-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(168, 85, 247, 0.15);
-    color: #a855f7;
-    font-size: 1.4rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.unlimited-info { display: flex; flex-direction: column; gap: 2px; }
-.unlimited-title { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
-.unlimited-count { font-size: 0.82rem; color: var(--text-muted); }
-
-/* ============ START — No Changes ============ */
-.plan-no-changes {
-    text-align: center;
-    padding: 8px 0 4px;
-}
-
-.no-changes-text {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--text-main);
-    margin-bottom: 6px;
-}
-
-.no-changes-sub {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    max-width: 380px;
-    margin: 0 auto;
-}
-
-/* ============ Upgrade Card (out of changes) ============ */
-.upgrade-card {
-    background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(168, 85, 247, 0.08));
-    border: 1px solid rgba(236, 72, 153, 0.2);
-    border-radius: var(--radius);
-    padding: 28px 32px;
-}
-
-.upgrade-content { text-align: center; }
-
-.upgrade-bar-visual {
-    max-width: 200px;
-    margin: 0 auto 16px;
-}
-
-.upgrade-bar-track {
+.credits-bar-track {
     width: 100%;
-    height: 10px;
+    height: 6px;
     background: rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
+    border-radius: 6px;
     overflow: hidden;
 }
 
-.upgrade-bar-fill {
+.credits-bar-fill {
     height: 100%;
-    width: 100%;
-    border-radius: 10px;
-    background: var(--pink);
+    border-radius: 6px;
+    background: var(--primary);
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.4s ease;
 }
 
-.upgrade-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
+.credits-bar-fill.warning { background: var(--warning); }
+.credits-bar-fill.low { background: linear-gradient(90deg, var(--pink), var(--error)); }
+
+/* ============ Upgrade Row ============ */
+.upgrade-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--bg-card-lighter);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.upgrade-row-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.upgrade-icon { font-size: 1rem; }
+
+.upgrade-text {
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--text-main);
 }
 
-.upgrade-card p {
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    margin-bottom: 16px;
-    line-height: 1.5;
+.upgrade-btn {
+    padding: 6px 16px;
+    background: var(--primary);
+    color: #0a0e17;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: var(--transition);
 }
 
-/* Section Card */
+.upgrade-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* ============ Profile Menu ============ */
+.profile-menu {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    border-top: 1px solid var(--border);
+}
+
+.profile-menu-item:first-child { border-top: 1px solid var(--border); }
+
+.profile-menu-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+}
+
+.menu-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.menu-logout { color: var(--text-dim); }
+.menu-logout:hover { color: var(--error); }
+
+/* ============ Section Card ============ */
 .section-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 28px 32px;
+    padding: 28px 24px;
 }
 
 .section-title {
@@ -362,7 +335,7 @@ body {
     margin-bottom: 20px;
 }
 
-/* Form */
+/* ============ Form ============ */
 .form-group { margin-bottom: 16px; }
 
 .form-group label {
@@ -394,7 +367,7 @@ body {
 
 .form-group textarea { resize: vertical; min-height: 100px; }
 
-/* Changes List */
+/* ============ Changes List ============ */
 .changes-list { display: flex; flex-direction: column; gap: 12px; }
 
 .change-item {
@@ -409,6 +382,7 @@ body {
 }
 
 .change-item-left { flex: 1; }
+
 .change-category {
     font-size: 0.75rem;
     font-weight: 600;
@@ -445,7 +419,6 @@ body {
     opacity: 0.6;
 }
 
-/* Admin Notes */
 .change-admin-notes {
     margin-top: 8px;
     padding: 8px 12px;
@@ -456,13 +429,14 @@ body {
     color: var(--text-muted);
 }
 
-/* Responsive */
+/* ============ Responsive ============ */
 @media (max-width: 600px) {
     .portal-header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
     .portal-main { padding: 16px; }
-    .plan-card { padding: 24px 20px; }
-    .plan-card-top { flex-direction: column; align-items: flex-start; gap: 8px; }
-    .salon-info { text-align: left; }
+    .profile-top { padding: 20px 20px 16px; }
+    .credits-section { padding: 0 20px 16px; }
+    .upgrade-row { padding: 14px 20px; }
+    .profile-menu-item { padding: 12px 20px; }
     .section-card { padding: 20px; }
     .login-card { padding: 36px 24px; }
     .user-name { display: none; }

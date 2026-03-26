@@ -15,6 +15,12 @@
         rejected: 'Atmesta'
     };
 
+    const PLAN_NAMES = {
+        start: 'START planas',
+        growth: 'GROWTH planas',
+        pro: 'PRO planas'
+    };
+
     // Google Sign-In callback
     window.handleGoogleSignIn = async function(response) {
         const loginError = document.getElementById('loginError');
@@ -33,7 +39,6 @@
         }
     };
 
-    // Check existing session on load
     async function checkSession() {
         try {
             const res = await fetch(`${API}/auth/check`);
@@ -74,78 +79,77 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
 
+        // Header
         document.getElementById('userName').textContent = p.google_name || p.google_email;
         const pic = document.getElementById('userPicture');
         if (p.google_picture) { pic.src = p.google_picture; pic.style.display = 'block'; }
         else { pic.style.display = 'none'; }
 
-        document.getElementById('salonName').textContent = p.salon_name || 'Jūsų salonas';
+        // Profile card
+        const profilePic = document.getElementById('profilePicture');
+        if (p.google_picture) { profilePic.src = p.google_picture; profilePic.style.display = 'block'; }
+        else { profilePic.style.display = 'none'; }
 
-        updatePlanCard(p);
+        document.getElementById('profileName').textContent = p.google_name || p.google_email;
+        document.getElementById('profilePlan').textContent = PLAN_NAMES[p.plan] || p.plan;
+        document.getElementById('menuSalonName').textContent = p.salon_name || 'Jūsų salonas';
+
+        updateCredits(p);
         loadChanges();
     }
 
-    function updatePlanCard(p) {
-        const badge = document.getElementById('planBadge');
-        const planName = p.plan.toUpperCase();
-        badge.textContent = planName;
-        badge.className = 'plan-badge ' + p.plan;
-
+    function updateCredits(p) {
         const limit = getLimit(p.plan);
         const used = p.changes_used_this_month;
+        const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
 
-        const progressSection = document.getElementById('planProgress');
-        const unlimitedSection = document.getElementById('planUnlimited');
-        const noChangesSection = document.getElementById('planNoChanges');
-        const upgradeCard = document.getElementById('upgradeCard');
+        const label = document.getElementById('creditsLabel');
+        const fill = document.getElementById('creditsFill');
+        const upgradeRow = document.getElementById('upgradeRow');
         const requestSection = document.getElementById('newRequestSection');
+        const creditsSection = document.getElementById('creditsSection');
 
-        // Hide all sections first
-        progressSection.style.display = 'none';
-        unlimitedSection.style.display = 'none';
-        noChangesSection.style.display = 'none';
-        upgradeCard.style.display = 'none';
-        requestSection.style.display = 'none';
+        // Reset classes
+        label.className = 'credits-label';
+        fill.className = 'credits-bar-fill';
 
         if (limit === 0) {
-            // START plan — no changes allowed
-            noChangesSection.style.display = 'block';
+            // START — no changes included
+            label.textContent = 'Pakeitimai neįtraukti';
+            label.classList.add('danger');
+            fill.style.width = '100%';
+            fill.classList.add('low');
+            upgradeRow.style.display = 'flex';
+            requestSection.style.display = 'none';
+            creditsSection.style.display = 'block';
         } else if (limit === Infinity) {
-            // PRO plan — unlimited
-            unlimitedSection.style.display = 'flex';
-            document.getElementById('unlimitedCount').textContent = `Pateikta: ${used} šį mėnesį`;
+            // PRO — unlimited
+            label.textContent = `Pateikta: ${used} šį mėnesį · Neribota`;
+            fill.style.width = '0%';
+            upgradeRow.style.display = 'none';
             requestSection.style.display = 'block';
+            creditsSection.style.display = 'block';
         } else {
-            // GROWTH plan — show progress bar
-            progressSection.style.display = 'block';
-            const remaining = Math.max(0, limit - used);
+            // GROWTH — progress bar
             const pct = Math.min((used / limit) * 100, 100);
-
-            document.getElementById('progressCount').textContent = `${used} / ${limit}`;
-
-            const fill = document.getElementById('progressFill');
             fill.style.width = pct + '%';
-            fill.className = 'progress-fill';
-
-            const statusEl = document.getElementById('progressStatus');
-            statusEl.className = '';
+            creditsSection.style.display = 'block';
 
             if (remaining <= 0) {
-                // Out of changes
-                fill.classList.add('danger');
-                statusEl.id = 'progressStatus';
-                statusEl.className = 'danger';
-                statusEl.textContent = 'Pakeitimai išnaudoti';
-                upgradeCard.style.display = 'block';
+                label.textContent = 'Pakeitimai išnaudoti';
+                label.classList.add('danger');
+                fill.classList.add('low');
+                upgradeRow.style.display = 'flex';
+                requestSection.style.display = 'none';
             } else if (remaining === 1) {
+                label.textContent = `Liko: ${remaining}/${limit} pakeitimas`;
+                label.classList.add('warning');
                 fill.classList.add('warning');
-                statusEl.id = 'progressStatus';
-                statusEl.textContent = `Liko: ${remaining} pakeitimas`;
+                upgradeRow.style.display = 'none';
                 requestSection.style.display = 'block';
             } else {
-                // Normal
-                statusEl.id = 'progressStatus';
-                statusEl.textContent = `Liko: ${remaining} pakeitimai`;
+                label.textContent = `Liko: ${remaining}/${limit} pakeitimai`;
+                upgradeRow.style.display = 'none';
                 requestSection.style.display = 'block';
             }
         }
@@ -205,7 +209,7 @@
             document.getElementById('changeDesc').value = '';
 
             profile.changes_used_this_month = data.changes_used;
-            updatePlanCard(profile);
+            updateCredits(profile);
             loadChanges();
         } catch (err) {
             alert('Klaida: ' + err.message);
@@ -215,12 +219,15 @@
         }
     });
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await fetch(`${API}/auth/logout`, { method: 'POST' });
-        profile = null;
-        showLogin();
-    });
+    // Logout (both buttons)
+    function logout() {
+        fetch(`${API}/auth/logout`, { method: 'POST' }).then(() => {
+            profile = null;
+            showLogin();
+        });
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('logoutBtn2').addEventListener('click', logout);
 
     // Helpers
     function escHtml(s) {
@@ -235,7 +242,7 @@
         return d.toLocaleDateString('lt-LT', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
-    // Fetch Google Client ID then init
+    // Init
     async function init() {
         try {
             const res = await fetch(`${API}/config`);
