@@ -18,7 +18,7 @@
                 <p>Klientų portalas</p>
             </div>
             <div class="login-body">
-                <p class="login-desc">Prisijunkite su Google paskyra, kuri buvo naudota registracijai.</p>
+                <p class="login-desc">Prisijunkite su Google paskyra, kad galėtumėte valdyti savo svetainę.</p>
                 <div id="googleBtnWrap" class="google-btn-wrap"></div>
                 <p id="loginError" class="login-error"></p>
             </div>
@@ -41,49 +41,57 @@
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="portal-main">
-            <!-- Profile + Plan Card (reference style) -->
+            <!-- Profile Card -->
             <div class="profile-card" id="profileCard">
                 <div class="profile-top">
                     <img id="profilePicture" class="profile-avatar" src="" alt="">
                     <div class="profile-info">
                         <span class="profile-name" id="profileName"></span>
-                        <span class="profile-plan" id="profilePlan">START planas</span>
+                        <span class="profile-plan" id="profilePlan"></span>
                     </div>
                 </div>
 
-                <!-- Changes progress bar -->
-                <div class="credits-section" id="creditsSection">
-                    <a class="credits-row" id="creditsRow" href="#changes-section">
-                        <span class="credits-label" id="creditsLabel">Liko pakeitimų</span>
-                        <span class="credits-arrow">›</span>
-                    </a>
+                <!-- Credits bar (GROWTH/PRO/START with purchased) -->
+                <div class="credits-section" id="creditsSection" style="display:none;">
+                    <div class="credits-row">
+                        <span class="credits-label" id="creditsLabel"></span>
+                    </div>
                     <div class="credits-bar">
                         <div class="credits-bar-track">
-                            <div class="credits-bar-fill" id="creditsFill" style="width: 100%"></div>
+                            <div class="credits-bar-fill" id="creditsFill" style="width: 0%"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Upgrade row (shown when out of changes or START plan) -->
+                <!-- Buy change button (START / GROWTH when empty) -->
+                <div class="buy-change-row" id="buyChangeRow" style="display:none;">
+                    <button class="buy-change-btn" id="buyChangeBtn">
+                        <span class="buy-icon">⚡</span>
+                        <span>Pirkti pakeitimą — €15</span>
+                    </button>
+                </div>
+
+                <!-- Purchased changes counter -->
+                <div class="purchased-row" id="purchasedRow" style="display:none;">
+                    <span class="purchased-label">Nupirkti pakeitimai:</span>
+                    <span class="purchased-count" id="purchasedCount">0</span>
+                </div>
+
+                <!-- Upgrade prompt -->
                 <div class="upgrade-row" id="upgradeRow" style="display:none;">
                     <div class="upgrade-row-left">
-                        <span class="upgrade-icon">⚡</span>
-                        <span class="upgrade-text">Atnaujinti planą</span>
+                        <span class="upgrade-icon">↑</span>
+                        <span class="upgrade-text" id="upgradeText">Atnaujinti planą</span>
                     </div>
                     <a href="/#kainos" target="_blank" class="upgrade-btn">Atnaujinti</a>
                 </div>
 
-                <!-- Menu links -->
+                <!-- Menu -->
                 <div class="profile-menu">
-                    <a href="#changes-section" class="profile-menu-item" id="menuChanges">
+                    <a href="#changesHistory" class="profile-menu-item">
                         <span class="menu-icon">📝</span>
-                        <span>Pakeitimų užklausos</span>
-                    </a>
-                    <a href="#" class="profile-menu-item" id="menuSalon">
-                        <span class="menu-icon">💇</span>
-                        <span id="menuSalonName">Jūsų salonas</span>
+                        <span>Pakeitimų istorija</span>
                     </a>
                     <button class="profile-menu-item menu-logout" id="logoutBtn2">
                         <span class="menu-icon">↩</span>
@@ -92,7 +100,48 @@
                 </div>
             </div>
 
-            <!-- New Change Request -->
+            <!-- Plan Comparison (FREE users only) -->
+            <div class="plan-comparison" id="planComparison" style="display:none;">
+                <h3 class="section-title">Pasirinkite planą ir pradėkite</h3>
+                <div class="plans-grid">
+                    <div class="plan-cmp-card">
+                        <div class="plan-cmp-name">START</div>
+                        <div class="plan-cmp-price">€25<span>/mėn</span></div>
+                        <ul class="plan-cmp-features">
+                            <li class="yes">Profesionali svetainė</li>
+                            <li class="yes">Online registracija</li>
+                            <li class="no">0 pakeitimų/mėn</li>
+                            <li class="extra">Galima pirkti po €15</li>
+                        </ul>
+                        <a href="/#kainos" target="_blank" class="plan-cmp-btn">Pasirinkti</a>
+                    </div>
+                    <div class="plan-cmp-card recommended">
+                        <div class="plan-cmp-badge">Populiariausias</div>
+                        <div class="plan-cmp-name">GROWTH</div>
+                        <div class="plan-cmp-price">€39<span>/mėn</span></div>
+                        <ul class="plan-cmp-features">
+                            <li class="yes">Profesionali svetainė</li>
+                            <li class="yes">Online registracija</li>
+                            <li class="yes">3 pakeitimai/mėn</li>
+                            <li class="yes">Prioritetinis aptarnavimas</li>
+                        </ul>
+                        <a href="/#kainos" target="_blank" class="plan-cmp-btn primary">Pasirinkti</a>
+                    </div>
+                    <div class="plan-cmp-card">
+                        <div class="plan-cmp-name">PRO</div>
+                        <div class="plan-cmp-price">€59<span>/mėn</span></div>
+                        <ul class="plan-cmp-features">
+                            <li class="yes">Profesionali svetainė</li>
+                            <li class="yes">Online registracija</li>
+                            <li class="yes">Neriboti pakeitimai</li>
+                            <li class="yes">Prioritetinis aptarnavimas</li>
+                        </ul>
+                        <a href="/#kainos" target="_blank" class="plan-cmp-btn">Pasirinkti</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Change Request (hidden for FREE, shown conditionally) -->
             <div class="section-card" id="newRequestSection" style="display:none;">
                 <h3 class="section-title">Naujas pakeitimas</h3>
                 <form id="changeForm" class="change-form">
@@ -113,8 +162,8 @@
                 </form>
             </div>
 
-            <!-- Change History -->
-            <div class="section-card" id="changes-section">
+            <!-- Change History (hidden for FREE) -->
+            <div class="section-card" id="changesHistory" style="display:none;">
                 <h3 class="section-title">Pakeitimų istorija</h3>
                 <div id="changesList" class="changes-list">
                     <p class="empty-state">Kraunama...</p>

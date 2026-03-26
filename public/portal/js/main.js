@@ -22,6 +22,8 @@
         pro: 'PRO planas'
     };
 
+    const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
+
     // Google Sign-In callback
     window.handleGoogleSignIn = async function(response) {
         const loginError = document.getElementById('loginError');
@@ -93,75 +95,108 @@
 
         document.getElementById('profileName').textContent = p.google_name || p.google_email;
         document.getElementById('profilePlan').textContent = PLAN_NAMES[p.plan] || p.plan;
-        document.getElementById('menuSalonName').textContent = p.salon_name || 'Jūsų salonas';
 
-        updateCredits(p);
-        loadChanges();
+        updatePortalUI(p);
+        if (p.plan !== 'free') loadChanges();
     }
 
-    function updateCredits(p) {
-        const limit = getLimit(p.plan);
-        const used = p.changes_used_this_month;
-        const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
+    function updatePortalUI(p) {
+        const plan = p.plan;
+        const limit = PLAN_LIMITS[plan] ?? 0;
+        const used = p.changes_used_this_month || 0;
+        const purchased = p.purchased_changes || 0;
 
-        const label = document.getElementById('creditsLabel');
-        const fill = document.getElementById('creditsFill');
-        const upgradeRow = document.getElementById('upgradeRow');
-        const requestSection = document.getElementById('newRequestSection');
-        const creditsSection = document.getElementById('creditsSection');
+        // Hide everything first
+        hide('creditsSection');
+        hide('buyChangeRow');
+        hide('purchasedRow');
+        hide('upgradeRow');
+        hide('planComparison');
+        hide('newRequestSection');
+        hide('changesHistory');
 
-        // Reset classes
-        label.className = 'credits-label';
-        fill.className = 'credits-bar-fill';
+        if (plan === 'free') {
+            // FREE: show plan comparison only
+            show('planComparison');
+            show('upgradeRow');
+            document.getElementById('upgradeText').textContent = 'Pasirinkite planą';
+            return;
+        }
 
-        if (p.plan === 'free') {
-            // FREE — no plan yet
-            label.textContent = 'Neturite plano';
-            label.classList.add('danger');
+        // All paid plans see change history
+        show('changesHistory');
+
+        if (plan === 'start') {
+            // START: 0 included, can buy one-off
+            show('creditsSection');
+            const label = document.getElementById('creditsLabel');
+            const fill = document.getElementById('creditsFill');
+            label.textContent = 'Pakeitimai neįtraukti į planą';
+            label.className = 'credits-label danger';
             fill.style.width = '100%';
-            fill.classList.add('low');
-            upgradeRow.style.display = 'flex';
-            requestSection.style.display = 'none';
-            creditsSection.style.display = 'block';
-        } else if (limit === Infinity) {
-            // PRO — unlimited
-            label.textContent = `Pateikta: ${used} šį mėnesį · Neribota`;
-            fill.style.width = '0%';
-            upgradeRow.style.display = 'none';
-            requestSection.style.display = 'block';
-            creditsSection.style.display = 'block';
-        } else {
-            // GROWTH — progress bar
+            fill.className = 'credits-bar-fill low';
+
+            show('buyChangeRow');
+            show('upgradeRow');
+            document.getElementById('upgradeText').textContent = 'Atnaujinkite į GROWTH — 3 pakeit./mėn';
+
+            if (purchased > 0) {
+                show('purchasedRow');
+                document.getElementById('purchasedCount').textContent = purchased;
+                show('newRequestSection');
+            }
+
+        } else if (plan === 'growth') {
+            // GROWTH: 3/month progress bar
+            show('creditsSection');
+            const remaining = Math.max(0, limit - used);
             const pct = Math.min((used / limit) * 100, 100);
+
+            const label = document.getElementById('creditsLabel');
+            const fill = document.getElementById('creditsFill');
+
+            label.className = 'credits-label';
+            fill.className = 'credits-bar-fill';
             fill.style.width = pct + '%';
-            creditsSection.style.display = 'block';
 
             if (remaining <= 0) {
                 label.textContent = 'Pakeitimai išnaudoti';
                 label.classList.add('danger');
                 fill.classList.add('low');
-                upgradeRow.style.display = 'flex';
-                requestSection.style.display = 'none';
+                show('buyChangeRow');
+                show('upgradeRow');
+                document.getElementById('upgradeText').textContent = 'Atnaujinkite į PRO — neriboti pakeitimai';
+
+                if (purchased > 0) {
+                    show('purchasedRow');
+                    document.getElementById('purchasedCount').textContent = purchased;
+                    show('newRequestSection');
+                }
             } else if (remaining === 1) {
                 label.textContent = `Liko: ${remaining}/${limit} pakeitimas`;
                 label.classList.add('warning');
                 fill.classList.add('warning');
-                upgradeRow.style.display = 'none';
-                requestSection.style.display = 'block';
+                show('newRequestSection');
             } else {
                 label.textContent = `Liko: ${remaining}/${limit} pakeitimai`;
-                upgradeRow.style.display = 'none';
-                requestSection.style.display = 'block';
+                show('newRequestSection');
             }
+
+        } else if (plan === 'pro') {
+            // PRO: unlimited
+            show('creditsSection');
+            const label = document.getElementById('creditsLabel');
+            const fill = document.getElementById('creditsFill');
+            label.textContent = `Pateikta: ${used} šį mėnesį · Neribota`;
+            label.className = 'credits-label';
+            fill.style.width = '0%';
+            fill.className = 'credits-bar-fill';
+            show('newRequestSection');
         }
     }
 
-    function getLimit(plan) {
-        if (plan === 'free') return 0;
-        if (plan === 'start') return 1;
-        if (plan === 'growth') return 3;
-        return Infinity;
-    }
+    function show(id) { document.getElementById(id).style.display = ''; }
+    function hide(id) { document.getElementById(id).style.display = 'none'; }
 
     async function loadChanges() {
         const list = document.getElementById('changesList');
@@ -211,7 +246,8 @@
             document.getElementById('changeDesc').value = '';
 
             profile.changes_used_this_month = data.changes_used;
-            updateCredits(profile);
+            profile.purchased_changes = data.purchased_changes;
+            updatePortalUI(profile);
             loadChanges();
         } catch (err) {
             alert('Klaida: ' + err.message);
@@ -221,7 +257,22 @@
         }
     });
 
-    // Logout (both buttons)
+    // Buy a change
+    document.getElementById('buyChangeBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('buyChangeBtn');
+        btn.disabled = true;
+        try {
+            const res = await fetch(`${API}/buy-change`, { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            window.location.href = data.url;
+        } catch (err) {
+            alert('Klaida: ' + err.message);
+            btn.disabled = false;
+        }
+    });
+
+    // Logout
     function logout() {
         fetch(`${API}/auth/logout`, { method: 'POST' }).then(() => {
             profile = null;

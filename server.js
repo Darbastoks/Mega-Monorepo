@@ -104,29 +104,40 @@ app.post('/webhook/stripe',
             const session = event.data.object;
             console.log('✅ Payment completed:', session.customer_email, session.amount_total);
 
-            // Auto-create portal client account
-            try {
-                const email = session.customer_email;
-                const customerName = session.customer_details?.name || '';
-                const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-                const priceId = lineItems.data[0]?.price?.id || '';
-                const plan = getPlanFromPriceId(priceId);
-                const nextReset = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0];
-
-                const existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
-                if (existing) {
-                    await portalRun('UPDATE clients SET plan = ?, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?',
-                        [plan, session.customer || '', session.subscription || '', existing.id]);
-                    console.log(`Portal: Updated client ${email} → ${plan}`);
-                } else {
-                    await portalRun(
-                        'INSERT INTO clients (google_email, google_name, plan, stripe_customer_id, stripe_subscription_id, month_reset_date) VALUES (?, ?, ?, ?, ?, ?)',
-                        [email, customerName, plan, session.customer || '', session.subscription || '', nextReset]
-                    );
-                    console.log(`Portal: Created client ${email} → ${plan}`);
+            // Handle one-off change purchase
+            if (session.metadata?.type === 'one-off-change') {
+                try {
+                    const clientId = session.metadata.client_id;
+                    await portalRun('UPDATE clients SET purchased_changes = purchased_changes + 1 WHERE id = ?', [clientId]);
+                    console.log(`Portal: +1 purchased change for client ${clientId}`);
+                } catch (err) {
+                    console.error('One-off change error:', err.message);
                 }
-            } catch (portalErr) {
-                console.error('Portal auto-create error:', portalErr.message);
+            } else {
+                // Auto-create/upgrade portal client account (subscription purchase)
+                try {
+                    const email = session.customer_email;
+                    const customerName = session.customer_details?.name || '';
+                    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+                    const priceId = lineItems.data[0]?.price?.id || '';
+                    const plan = getPlanFromPriceId(priceId);
+                    const nextReset = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0];
+
+                    const existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                    if (existing) {
+                        await portalRun('UPDATE clients SET plan = ?, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?',
+                            [plan, session.customer || '', session.subscription || '', existing.id]);
+                        console.log(`Portal: Updated client ${email} → ${plan}`);
+                    } else {
+                        await portalRun(
+                            'INSERT INTO clients (google_email, google_name, plan, stripe_customer_id, stripe_subscription_id, month_reset_date) VALUES (?, ?, ?, ?, ?, ?)',
+                            [email, customerName, plan, session.customer || '', session.subscription || '', nextReset]
+                        );
+                        console.log(`Portal: Created client ${email} → ${plan}`);
+                    }
+                } catch (portalErr) {
+                    console.error('Portal auto-create error:', portalErr.message);
+                }
             }
 
             const n8nUrl = process.env.N8N_WEBHOOK_URL;
@@ -1445,7 +1456,8 @@ app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslau
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
 // ==================== PORTAL API ====================
-const PLAN_LIMITS = { free: 0, start: 1, growth: 3, pro: Infinity };
+const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
+const ONE_OFF_CHANGE_PRICE = 1500; // €15.00 in cents
 
 // Price ID → plan name mapping
 function getPlanFromPriceId(priceId) {
@@ -1565,14 +1577,62 @@ app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
         client = await checkMonthlyReset(client);
 
         const limit = PLAN_LIMITS[client.plan] ?? 0;
-        if (limit !== Infinity && client.changes_used_this_month >= limit) {
-            return res.status(403).json({ error: 'Pakeitimų limitas pasiektas šį mėnesį. Atnaujinkite planą.' });
+        const purchased = client.purchased_changes || 0;
+
+        if (client.plan === 'free') {
+            return res.status(403).json({ error: 'Įsigykite planą, kad galėtumėte teikti užklausas.' });
+        }
+
+        if (client.plan === 'pro') {
+            // Always allow
+        } else if (limit > 0 && client.changes_used_this_month < limit) {
+            // Use monthly allocation (GROWTH)
+        } else if (purchased > 0) {
+            // Use purchased change
+            await portalRun('UPDATE clients SET purchased_changes = purchased_changes - 1 WHERE id = ?', [client.id]);
+        } else {
+            return res.status(403).json({ error: 'Pakeitimų limitas pasiektas. Pirkite pakeitimą arba atnaujinkite planą.' });
         }
 
         await portalRun('INSERT INTO change_requests (client_id, category, description) VALUES (?, ?, ?)', [client.id, category, description]);
-        await portalRun('UPDATE clients SET changes_used_this_month = changes_used_this_month + 1 WHERE id = ?', [client.id]);
 
-        res.json({ success: true, changes_used: client.changes_used_this_month + 1 });
+        // Only increment monthly counter if using monthly allocation (not purchased)
+        if (client.plan !== 'pro' && limit > 0 && client.changes_used_this_month < limit) {
+            await portalRun('UPDATE clients SET changes_used_this_month = changes_used_this_month + 1 WHERE id = ?', [client.id]);
+        }
+
+        const updated = await portalGet('SELECT changes_used_this_month, purchased_changes FROM clients WHERE id = ?', [client.id]);
+        res.json({ success: true, changes_used: updated.changes_used_this_month, purchased_changes: updated.purchased_changes });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Buy a single change (one-off Stripe checkout)
+app.post('/api/portal/buy-change', requirePortalAuth, async (req, res) => {
+    try {
+        const client = await portalGet('SELECT * FROM clients WHERE id = ?', [req.session.portalClientId]);
+        if (!client || client.plan === 'free') {
+            return res.status(403).json({ error: 'Pirmiausia įsigykite planą.' });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            mode: 'payment',
+            line_items: [{
+                price_data: {
+                    currency: 'eur',
+                    product_data: { name: 'Pakeitimo užklausa — Velora Studio' },
+                    unit_amount: ONE_OFF_CHANGE_PRICE,
+                },
+                quantity: 1,
+            }],
+            customer_email: client.google_email,
+            metadata: { type: 'one-off-change', client_id: String(client.id) },
+            success_url: `${process.env.SITE_URL || 'https://velora-mega-server.onrender.com'}/portal?purchased=1`,
+            cancel_url: `${process.env.SITE_URL || 'https://velora-mega-server.onrender.com'}/portal`,
+        });
+
+        res.json({ url: session.url });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

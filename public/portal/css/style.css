@@ -68,11 +68,7 @@ body {
     line-height: 1.5;
 }
 
-.google-btn-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-}
+.google-btn-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
 
 .login-error {
     color: var(--error);
@@ -98,7 +94,6 @@ body {
 .header-left { display: flex; align-items: center; gap: 12px; }
 .header-sep { color: var(--text-muted); opacity: 0.3; }
 .header-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
-
 .header-right { display: flex; align-items: center; gap: 12px; }
 .user-avatar { width: 32px; height: 32px; border-radius: 50%; }
 .user-name { font-size: 0.9rem; font-weight: 500; }
@@ -119,10 +114,7 @@ body {
     gap: 6px;
 }
 
-.btn-primary {
-    background: var(--primary);
-    color: #0a0e17;
-}
+.btn-primary { background: var(--primary); color: #0a0e17; }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -135,7 +127,7 @@ body {
 
 /* ============ Main Content ============ */
 .portal-main {
-    max-width: 700px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 32px 24px;
     display: flex;
@@ -143,7 +135,7 @@ body {
     gap: 24px;
 }
 
-/* ============ Profile Card (Reference Style) ============ */
+/* ============ Profile Card ============ */
 .profile-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -166,58 +158,23 @@ body {
     object-fit: cover;
 }
 
-.profile-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
+.profile-info { display: flex; flex-direction: column; gap: 2px; }
+.profile-name { font-size: 1rem; font-weight: 600; color: var(--text-main); }
+.profile-plan { font-size: 0.8rem; color: var(--text-dim); }
 
-.profile-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-main);
-}
-
-.profile-plan {
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    font-weight: 400;
-}
-
-/* ============ Credits / Changes Bar ============ */
-.credits-section {
-    padding: 0 24px 20px;
-}
+/* ============ Credits Bar ============ */
+.credits-section { padding: 0 24px 20px; }
 
 .credits-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    text-decoration: none;
     margin-bottom: 10px;
 }
 
-.credits-label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--primary);
-    transition: var(--transition);
-}
-
+.credits-label { font-size: 0.85rem; font-weight: 500; color: var(--primary); }
 .credits-label.warning { color: var(--warning); }
 .credits-label.danger { color: var(--pink); }
-
-.credits-arrow {
-    font-size: 1.1rem;
-    color: var(--text-dim);
-    transition: var(--transition);
-}
-
-.credits-row:hover .credits-arrow { color: var(--text-main); transform: translateX(2px); }
-
-.credits-bar {
-    position: relative;
-}
 
 .credits-bar-track {
     width: 100%;
@@ -237,6 +194,50 @@ body {
 .credits-bar-fill.warning { background: var(--warning); }
 .credits-bar-fill.low { background: linear-gradient(90deg, var(--pink), var(--error)); }
 
+/* ============ Buy Change Button ============ */
+.buy-change-row {
+    padding: 0 24px 16px;
+}
+
+.buy-change-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--primary), #0ea5e9);
+    color: #0a0e17;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.buy-change-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34, 211, 238, 0.3); }
+.buy-change-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.buy-icon { font-size: 1rem; }
+
+/* ============ Purchased Counter ============ */
+.purchased-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(34, 211, 238, 0.05);
+    border-top: 1px solid var(--border);
+}
+
+.purchased-label { font-size: 0.85rem; color: var(--text-muted); }
+.purchased-count {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
 /* ============ Upgrade Row ============ */
 .upgrade-row {
     display: flex;
@@ -245,22 +246,11 @@ body {
     padding: 16px 24px;
     background: var(--bg-card-lighter);
     border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
 }
 
-.upgrade-row-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
+.upgrade-row-left { display: flex; align-items: center; gap: 10px; }
 .upgrade-icon { font-size: 1rem; }
-
-.upgrade-text {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-main);
-}
+.upgrade-text { font-size: 0.88rem; font-weight: 600; color: var(--text-main); }
 
 .upgrade-btn {
     padding: 6px 16px;
@@ -275,16 +265,10 @@ body {
     transition: var(--transition);
 }
 
-.upgrade-btn:hover {
-    background: var(--primary-hover);
-    transform: translateY(-1px);
-}
+.upgrade-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
 /* ============ Profile Menu ============ */
-.profile-menu {
-    display: flex;
-    flex-direction: column;
-}
+.profile-menu { display: flex; flex-direction: column; }
 
 .profile-menu-item {
     display: flex;
@@ -305,21 +289,133 @@ body {
     border-top: 1px solid var(--border);
 }
 
-.profile-menu-item:first-child { border-top: 1px solid var(--border); }
+.profile-menu-item:hover { background: rgba(255, 255, 255, 0.03); color: var(--text-main); }
+.menu-icon { font-size: 1rem; width: 20px; text-align: center; }
+.menu-logout { color: var(--text-dim); }
+.menu-logout:hover { color: var(--error); }
 
-.profile-menu-item:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text-main);
+/* ============ Plan Comparison Cards ============ */
+.plan-comparison { }
+
+.plan-comparison .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 24px;
 }
 
-.menu-icon {
-    font-size: 1rem;
-    width: 20px;
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.plan-cmp-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    position: relative;
+    transition: var(--transition);
+}
+
+.plan-cmp-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+.plan-cmp-card.recommended {
+    border-color: var(--primary);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.1);
+}
+
+.plan-cmp-badge {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px 14px;
+    background: var(--primary);
+    color: #0a0e17;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.plan-cmp-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.plan-cmp-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 20px;
+}
+
+.plan-cmp-price span {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-dim);
+}
+
+.plan-cmp-features {
+    list-style: none;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.plan-cmp-features li {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding-left: 24px;
+    position: relative;
+}
+
+.plan-cmp-features li::before {
+    position: absolute;
+    left: 0;
+    font-size: 0.85rem;
+}
+
+.plan-cmp-features li.yes::before { content: '✓'; color: var(--success); }
+.plan-cmp-features li.no::before { content: '✗'; color: var(--error); }
+.plan-cmp-features li.extra::before { content: '€'; color: var(--warning); }
+
+.plan-cmp-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: var(--transition);
     text-align: center;
 }
 
-.menu-logout { color: var(--text-dim); }
-.menu-logout:hover { color: var(--error); }
+.plan-cmp-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.plan-cmp-btn.primary {
+    background: var(--primary);
+    color: #0a0e17;
+    border-color: var(--primary);
+}
+
+.plan-cmp-btn.primary:hover { background: var(--primary-hover); }
 
 /* ============ Section Card ============ */
 .section-card {
@@ -361,9 +457,7 @@ body {
 }
 
 .form-group select:focus,
-.form-group textarea:focus {
-    border-color: var(--primary);
-}
+.form-group textarea:focus { border-color: var(--primary); }
 
 .form-group textarea { resize: vertical; min-height: 100px; }
 
@@ -430,11 +524,17 @@ body {
 }
 
 /* ============ Responsive ============ */
+@media (max-width: 700px) {
+    .plans-grid { grid-template-columns: 1fr; max-width: 340px; margin: 0 auto; }
+    .plan-cmp-card.recommended { order: -1; }
+}
+
 @media (max-width: 600px) {
     .portal-header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
     .portal-main { padding: 16px; }
     .profile-top { padding: 20px 20px 16px; }
     .credits-section { padding: 0 20px 16px; }
+    .buy-change-row { padding: 0 20px 14px; }
     .upgrade-row { padding: 14px 20px; }
     .profile-menu-item { padding: 12px 20px; }
     .section-card { padding: 20px; }

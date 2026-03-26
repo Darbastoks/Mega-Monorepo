@@ -26,8 +26,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             )
         `);
 
-        // Migrate: users with plan='start' but no Stripe subscription → 'free'
+        // Migrations
         db.run(`UPDATE clients SET plan = 'free' WHERE plan = 'start' AND (stripe_customer_id = '' OR stripe_customer_id IS NULL)`);
+        db.run(`ALTER TABLE clients ADD COLUMN purchased_changes INTEGER DEFAULT 0`, () => {});
 
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (
