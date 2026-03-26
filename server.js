@@ -1704,6 +1704,7 @@ app.get('/api/portal/admin/changes', requireVeloraAdmin, async (req, res) => {
         const changes = await portalAll(`
             SELECT cr.id, cr.client_id, cr.category, cr.description, cr.status, cr.admin_notes,
                    cr.created_at, cr.completed_at, cr.attachment_name,
+                   CASE WHEN cr.pending_html != '' AND cr.pending_html IS NOT NULL THEN 1 ELSE 0 END as has_pending,
                    c.google_email, c.google_name, c.salon_name, c.plan
             FROM change_requests cr
             JOIN clients c ON cr.client_id = c.id
@@ -1800,6 +1801,15 @@ const CSS_PATHS = {
     nails: 'public/nails/css/style.css'
 };
 
+// Startup automation config logging
+console.log('--- Automation config ---');
+console.log('  Anthropic API:', anthropic ? '✅ ready' : '❌ missing ANTHROPIC_API_KEY');
+console.log('  GitHub:', GITHUB_TOKEN ? '✅ ready' : '❌ missing GITHUB_TOKEN');
+console.log('  GitHub Repo:', GITHUB_REPO);
+console.log('  Telegram Bot:', TELEGRAM_BOT_TOKEN ? '✅ ready' : '❌ missing TELEGRAM_BOT_TOKEN');
+console.log('  Telegram Chat:', TELEGRAM_CHAT_ID ? '✅ ready' : '❌ missing TELEGRAM_CHAT_ID');
+console.log('------------------------');
+
 // --- GitHub API helpers ---
 async function ghFetch(url, options = {}) {
     const res = await fetch(`https://api.github.com${url}`, {
@@ -1861,19 +1871,129 @@ async function commitFilesToGitHub(files, message) {
 
 // --- Telegram helpers ---
 async function sendTelegram(text, inlineKeyboard) {
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
-    const body = {
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: 'HTML'
-    };
-    if (inlineKeyboard) body.reply_markup = JSON.stringify({ inline_keyboard: inlineKeyboard });
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+        console.log('Telegram skipped: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID');
+        return;
+    }
+    try {
+        const body = {
+            chat_id: TELEGRAM_CHAT_ID,
+            text,
+            parse_mode: 'HTML'
+        };
+        if (inlineKeyboard) body.reply_markup = JSON.stringify({ inline_keyboard: inlineKeyboard });
+        const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        if (!data.ok) console.error('Telegram API error:', data.description);
+        else console.log('Telegram message sent successfully');
+    } catch (err) {
+        console.error('Telegram send failed:', err.message);
+    }
 }
+
+// --- Approve / Reject reusable functions ---
+async function approveChange(changeId) {
+    const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
+    if (!change || !change.pending_html) {
+        return { ok: false, error: 'Nėra laukiančio pakeitimo' };
+    }
+
+    const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
+    const slug = client?.salon_slug;
+    const htmlPath = `public/${slug}/index.html`;
+    const cssPath = CSS_PATHS[slug];
+
+    const files = [{ path: htmlPath, content: change.pending_html }];
+    if (change.pending_css) files.push({ path: cssPath, content: change.pending_css });
+
+    const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
+    await commitFilesToGitHub(files, `Auto: ${catLabels[change.category] || change.category} — ${change.description.substring(0, 50)}`);
+
+    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+        ['completed', 'Pakeitimas pritaikytas automatiškai per AI', new Date().toISOString(), changeId]);
+
+    // Send completion email to client
+    if (emailTransporter && client.google_email) {
+        try {
+            await emailTransporter.sendMail({
+                from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
+                to: client.google_email,
+                subject: 'Jūsų pakeitimas atliktas — Velora Studio',
+                text: `Sveiki, ${client.google_name || ''}!\n\nJūsų užklausa buvo sėkmingai įgyvendinta.\n\nPeržiūrėkite savo svetainę ir įsitikinkite, kad viskas atrodo puikiai.\n\nPagarbiai,\nVelora Studio`
+            });
+        } catch (e) { console.error('Email failed:', e.message); }
+    }
+
+    console.log(`Change #${changeId} approved and committed to GitHub`);
+    return { ok: true };
+}
+
+async function rejectChange(changeId) {
+    const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
+    if (!change) return { ok: false, error: 'Pakeitimas nerastas' };
+
+    const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
+
+    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+        ['rejected', 'Atmesta per admin peržiūrą', changeId]);
+
+    // Notify client about rejection
+    if (emailTransporter && client?.google_email) {
+        try {
+            await emailTransporter.sendMail({
+                from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
+                to: client.google_email,
+                subject: 'Jūsų pakeitimas atmestas — Velora Studio',
+                text: `Sveiki, ${client.google_name || ''}!\n\nJūsų pakeitimo užklausa buvo peržiūrėta, bet negalėjome jos įgyvendinti tokia forma. Susisiekite su mumis dėl detalesnio aprašymo.\n\nPagarbiai,\nVelora Studio`
+            });
+        } catch (e) { console.error('Email failed:', e.message); }
+    }
+
+    console.log(`Change #${changeId} rejected`);
+    return { ok: true };
+}
+
+// --- Preview endpoint (admin reviews AI-generated change) ---
+app.get('/api/portal/admin/changes/:id/preview', requireVeloraAdmin, async (req, res) => {
+    try {
+        const change = await portalGet('SELECT pending_html FROM change_requests WHERE id = ?', [req.params.id]);
+        if (!change || !change.pending_html) {
+            return res.status(404).send('<h1>Nėra laukiančio pakeitimo peržiūrai</h1><p>Šis pakeitimas jau buvo patvirtintas arba atmestas.</p>');
+        }
+        res.setHeader('Content-Type', 'text/html');
+        res.send(change.pending_html);
+    } catch (err) {
+        console.error('Preview error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Admin approve/reject API endpoints ---
+app.post('/api/portal/admin/changes/:id/approve', requireVeloraAdmin, async (req, res) => {
+    try {
+        const result = await approveChange(parseInt(req.params.id, 10));
+        if (!result.ok) return res.status(400).json({ error: result.error });
+        res.json({ ok: true, message: 'Pakeitimas patvirtintas ir įkeltas į GitHub' });
+    } catch (err) {
+        console.error('Admin approve error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/portal/admin/changes/:id/reject', requireVeloraAdmin, async (req, res) => {
+    try {
+        const result = await rejectChange(parseInt(req.params.id, 10));
+        if (!result.ok) return res.status(400).json({ error: result.error });
+        res.json({ ok: true, message: 'Pakeitimas atmestas' });
+    } catch (err) {
+        console.error('Admin reject error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Telegram webhook — receives button callback
 app.post('/webhook/telegram', express.json(), async (req, res) => {
@@ -1889,46 +2009,16 @@ app.post('/webhook/telegram', express.json(), async (req, res) => {
 
     try {
         if (action === 'approve') {
-            const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
-            if (!change || !change.pending_html) {
-                await answerCallback(callback.id, 'Nėra laukiančio pakeitimo');
+            const result = await approveChange(changeId);
+            if (!result.ok) {
+                await answerCallback(callback.id, result.error);
                 return;
             }
-
-            // Determine file paths
-            const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
-            const slug = client?.salon_slug;
-            const htmlPath = `public/${slug}/index.html`;
-            const cssPath = CSS_PATHS[slug];
-
-            const files = [{ path: htmlPath, content: change.pending_html }];
-            if (change.pending_css) files.push({ path: cssPath, content: change.pending_css });
-
-            const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
-            await commitFilesToGitHub(files, `Auto: ${catLabels[change.category] || change.category} — ${change.description.substring(0, 50)}`);
-
-            await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
-                ['completed', 'Pakeitimas pritaikytas automatiškai per AI', new Date().toISOString(), changeId]);
-
-            // Send completion email
-            if (emailTransporter && client.google_email) {
-                try {
-                    await emailTransporter.sendMail({
-                        from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
-                        to: client.google_email,
-                        subject: 'Jūsų pakeitimas atliktas — Velora Studio',
-                        text: `Sveiki, ${client.google_name || ''}!\n\nJūsų užklausa buvo sėkmingai įgyvendinta.\n\nPeržiūrėkite savo svetainę ir įsitikinkite, kad viskas atrodo puikiai.\n\nPagarbiai,\nVelora Studio`
-                    });
-                } catch (e) { console.error('Email failed:', e.message); }
-            }
-
             await answerCallback(callback.id, '✅ Patvirtinta! Render diegia...');
-            await editTelegramMessage(callback.message, `✅ PATVIRTINTA — #${changeId}\n${change.description.substring(0, 100)}`);
+            await editTelegramMessage(callback.message, `✅ PATVIRTINTA — #${changeId}`);
 
         } else if (action === 'reject') {
-            await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
-                ['rejected', 'Atmesta per Telegram', changeId]);
-
+            await rejectChange(changeId);
             await answerCallback(callback.id, '❌ Atmesta');
             await editTelegramMessage(callback.message, `❌ ATMESTA — #${changeId}`);
         }
@@ -2066,16 +2156,22 @@ async function autoApplyChange(changeId, clientId) {
     await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, status = ? WHERE id = ?',
         [result.html, result.css || cssFile.content, 'in_progress', changeId]);
 
-    // Send Telegram notification with approve/reject buttons
+    // Send Telegram notification with preview link + approve/reject buttons
     const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
     const salonName = client.salon_name || slug;
+    const siteUrl = process.env.SITE_URL || 'https://velora-mega-server.onrender.com';
+    const previewUrl = `${siteUrl}/velora/admin.html#review-${changeId}`;
     const msg = `📋 <b>Naujas pakeitimas — ${salonName}</b>\n\n` +
         `<b>Kategorija:</b> ${catLabels[change.category] || change.category}\n` +
         `<b>Klientas:</b> ${client.google_name || client.google_email}\n` +
         `<b>Aprašymas:</b> ${change.description}\n\n` +
-        `AI paruošė pakeitimą. Patvirtinti?`;
+        `🔗 <a href="${previewUrl}">Peržiūrėti admin panelėje</a>\n\n` +
+        `AI paruošė pakeitimą. Peržiūrėk prieš tvirtinant!`;
 
     await sendTelegram(msg, [
+        [
+            { text: '👁 Peržiūra', url: previewUrl },
+        ],
         [
             { text: '✅ Patvirtinti', callback_data: `approve:${changeId}` },
             { text: '❌ Atmesti', callback_data: `reject:${changeId}` }
