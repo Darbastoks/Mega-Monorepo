@@ -57,6 +57,17 @@
     // ===================== DASHBOARD =====================
     function showDashboard(p) {
         profile = p;
+
+        // Demo mode: ?demo=free|start|growth|pro to preview each plan
+        const demoParam = new URLSearchParams(location.search).get('demo');
+        if (demoParam && PLAN_LIMITS.hasOwnProperty(demoParam)) {
+            p = { ...p, plan: demoParam };
+            if (demoParam === 'growth') { p.changes_used_this_month = 1; }
+            if (demoParam === 'free') { p.changes_used_this_month = 0; p.purchased_changes = 0; }
+            if (demoParam === 'start') { p.purchased_changes = 0; }
+            profile = p;
+        }
+
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
 
