@@ -36,6 +36,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_html TEXT DEFAULT ''`, () => {});
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_css TEXT DEFAULT ''`, () => {});
 
+        // Assign salon_slug to first client for testing (one-time)
+        db.run(`UPDATE clients SET salon_slug = 'barbie' WHERE id = 1 AND salon_slug = ''`, () => {});
+
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
