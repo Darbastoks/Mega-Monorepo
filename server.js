@@ -1932,28 +1932,69 @@ async function approveChange(changeId) {
     return { ok: true };
 }
 
-async function rejectChange(changeId) {
+async function reeditChange(changeId, correction) {
+    if (!anthropic) return { ok: false, error: 'Anthropic API nenustatytas' };
+
     const change = await portalGet('SELECT * FROM change_requests WHERE id = ?', [changeId]);
-    if (!change) return { ok: false, error: 'Pakeitimas nerastas' };
+    if (!change || !change.pending_html) return { ok: false, error: 'Nėra laukiančio pakeitimo koregavimui' };
 
     const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
 
-    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
-        ['rejected', 'Atmesta per admin peržiūrą', changeId]);
+    // Call Claude with the correction
+    const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        messages: [{ role: 'user', content: `Tu esi web programuotojas. Ankstesnis pakeitimas buvo netinkamas. Administratorius prašo korekcijos.
 
-    // Notify client about rejection
-    if (emailTransporter && client?.google_email) {
-        try {
-            await emailTransporter.sendMail({
-                from: `"Velora Studio" <${process.env.GMAIL_USER}>`,
-                to: client.google_email,
-                subject: 'Jūsų pakeitimas atmestas — Velora Studio',
-                text: `Sveiki, ${client.google_name || ''}!\n\nJūsų pakeitimo užklausa buvo peržiūrėta, bet negalėjome jos įgyvendinti tokia forma. Susisiekite su mumis dėl detalesnio aprašymo.\n\nPagarbiai,\nVelora Studio`
-            });
-        } catch (e) { console.error('Email failed:', e.message); }
+ADMINISTRATORIAUS KOREKCIJA: ${correction}
+
+ORIGINALUS KLIENTO PRAŠYMAS: ${change.description}
+
+DABARTINIS HTML (kurį reikia pataisyti):
+\`\`\`html
+${change.pending_html}
+\`\`\`
+
+DABARTINIS CSS:
+\`\`\`css
+${change.pending_css}
+\`\`\`
+
+Padaryk TIK tai, ko administratorius prašo korekcijoje. Nekeisk nieko kito. Nepridėk komentarų į kodą.
+Išsaugok visas esamas klases, ID, JavaScript hooks ir struktūrą.
+
+Grąžink pakeistus failus tokiu formatu:
+<html_file>
+(visas pakeistas HTML čia)
+</html_file>
+
+<css_file>
+(visas pakeistas CSS čia)
+</css_file>` }]
+    });
+
+    const result = parseClaudeResponse(response.content[0].text);
+
+    if (!result.html || !result.html.includes('<!DOCTYPE') || !result.html.includes('</html>')) {
+        return { ok: false, error: 'AI grąžino netinkamą HTML — bandykite dar kartą' };
     }
 
-    console.log(`Change #${changeId} rejected`);
+    // Update pending changes in DB
+    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, admin_notes = ? WHERE id = ?',
+        [result.html, result.css || change.pending_css, `Koreguota: ${correction}`, changeId]);
+
+    // Notify via Telegram
+    const salonName = client?.salon_name || client?.salon_slug || '?';
+    await sendTelegram(`✏️ Pakeitimas #${changeId} (${salonName}) — atnaujintas po korekcijos.\nKorekcija: ${correction}\n\nPeržiūrėkite iš naujo admin panelėje.`);
+
+    console.log(`Change #${changeId} re-edited with correction: ${correction}`);
+    return { ok: true };
+}
+
+async function dismissChange(changeId) {
+    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+        ['rejected', 'Atmesta admin panelėje', changeId]);
+    console.log(`Change #${changeId} dismissed`);
     return { ok: true };
 }
 
@@ -1984,13 +2025,26 @@ app.post('/api/portal/admin/changes/:id/approve', requireVeloraAdmin, async (req
     }
 });
 
-app.post('/api/portal/admin/changes/:id/reject', requireVeloraAdmin, async (req, res) => {
+app.post('/api/portal/admin/changes/:id/reedit', requireVeloraAdmin, async (req, res) => {
     try {
-        const result = await rejectChange(parseInt(req.params.id, 10));
+        const correction = req.body?.correction;
+        if (!correction || !correction.trim()) return res.status(400).json({ error: 'Nurodykite korekciją' });
+        const result = await reeditChange(parseInt(req.params.id, 10), correction.trim());
+        if (!result.ok) return res.status(400).json({ error: result.error });
+        res.json({ ok: true, message: 'Pakeitimas atnaujintas — peržiūrėkite iš naujo' });
+    } catch (err) {
+        console.error('Admin re-edit error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/portal/admin/changes/:id/dismiss', requireVeloraAdmin, async (req, res) => {
+    try {
+        const result = await dismissChange(parseInt(req.params.id, 10));
         if (!result.ok) return res.status(400).json({ error: result.error });
         res.json({ ok: true, message: 'Pakeitimas atmestas' });
     } catch (err) {
-        console.error('Admin reject error:', err.message);
+        console.error('Admin dismiss error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -2016,11 +2070,6 @@ app.post('/webhook/telegram', express.json(), async (req, res) => {
             }
             await answerCallback(callback.id, '✅ Patvirtinta! Render diegia...');
             await editTelegramMessage(callback.message, `✅ PATVIRTINTA — #${changeId}`);
-
-        } else if (action === 'reject') {
-            await rejectChange(changeId);
-            await answerCallback(callback.id, '❌ Atmesta');
-            await editTelegramMessage(callback.message, `❌ ATMESTA — #${changeId}`);
         }
     } catch (err) {
         console.error('Telegram callback error:', err.message);
@@ -2171,10 +2220,7 @@ async function autoApplyChange(changeId, clientId) {
     await sendTelegram(msg, [
         [
             { text: '👁 Peržiūra', url: previewUrl },
-        ],
-        [
-            { text: '✅ Patvirtinti', callback_data: `approve:${changeId}` },
-            { text: '❌ Atmesti', callback_data: `reject:${changeId}` }
+            { text: '✅ Patvirtinti', callback_data: `approve:${changeId}` }
         ]
     ]);
 
