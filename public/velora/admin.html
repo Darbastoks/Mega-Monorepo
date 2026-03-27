@@ -237,6 +237,7 @@
         .reedit-form { margin-top:8px; }
         .reedit-textarea { width:100%; min-height:60px; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:#f8fafc; font-family:inherit; font-size:0.82rem; resize:vertical; }
         .reedit-textarea:focus { outline:none; border-color:#fbbf24; }
+        .settings-preview { margin-top:4px; padding:4px 8px; background:rgba(168,85,247,0.1); border-radius:6px; font-size:0.72rem; color:#a855f7; }
         .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px); background:#1e293b; color:#f8fafc; padding:12px 24px; border-radius:10px; font-size:0.9rem; font-weight:500; opacity:0; transition:all 0.3s ease; z-index:9999; border:1px solid rgba(255,255,255,0.1); }
         .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
     </style>
@@ -275,6 +276,18 @@
             empty.style.display = 'none';
             tbody.innerHTML = list.map(c => {
                 const hasPending = c.has_pending;
+                let settingsInfo = '';
+                if (c.pending_settings) {
+                    try {
+                        const s = JSON.parse(c.pending_settings);
+                        const parts = [];
+                        if (s.startHour) parts.push(`Pradžia: ${s.startHour}`);
+                        if (s.endHour) parts.push(`Pabaiga: ${s.endHour}`);
+                        if (s.workingDays) parts.push(`Dienos: ${s.workingDays.join(',')}`);
+                        if (s.breaks) parts.push(`Pertraukos: ${JSON.stringify(s.breaks)}`);
+                        if (parts.length) settingsInfo = `<div class="settings-preview">⚙️ ${parts.join(' · ')}</div>`;
+                    } catch(e) {}
+                }
                 const reviewBtns = hasPending ? `
                     <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
                         <button class="review-btn preview-btn" onclick="previewChange(${c.id})" title="Peržiūrėti AI pakeitimą">👁 Peržiūra</button>
@@ -299,6 +312,7 @@
                 <td>
                     <span class="status-badge-ch ch-${c.status}">${{new:'Nauja',in_progress:'Vykdoma',completed:'Atlikta',rejected:'Atmesta'}[c.status]}</span>
                     ${hasPending ? '<br><span style="font-size:0.7rem;color:#fbbf24;">⏳ Laukia peržiūros</span>' : ''}
+                    ${settingsInfo}
                 </td>
                 <td>
                     <select class="action-select" onchange="updateChangeStatus(${c.id},this.value)" ${c.status==='completed'?'disabled':''}>

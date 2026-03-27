@@ -1703,8 +1703,8 @@ app.get('/api/portal/admin/changes', requireVeloraAdmin, async (req, res) => {
     try {
         const changes = await portalAll(`
             SELECT cr.id, cr.client_id, cr.category, cr.description, cr.status, cr.admin_notes,
-                   cr.created_at, cr.completed_at, cr.attachment_name,
-                   CASE WHEN cr.pending_html != '' AND cr.pending_html IS NOT NULL THEN 1 ELSE 0 END as has_pending,
+                   cr.created_at, cr.completed_at, cr.attachment_name, cr.pending_settings,
+                   CASE WHEN (cr.pending_html != '' AND cr.pending_html IS NOT NULL) OR (cr.pending_settings != '' AND cr.pending_settings IS NOT NULL) THEN 1 ELSE 0 END as has_pending,
                    c.google_email, c.google_name, c.salon_name, c.plan
             FROM change_requests cr
             JOIN clients c ON cr.client_id = c.id
@@ -1800,6 +1800,46 @@ const CSS_PATHS = {
     hair: 'public/hair/styles.css',
     nails: 'public/nails/css/style.css'
 };
+
+const SALON_DBS = { barbie: dbBarbie, hair: dbHair, nails: dbNails };
+
+function getSalonSettings(slug) {
+    return new Promise((resolve, reject) => {
+        const salonDb = SALON_DBS[slug];
+        if (!salonDb) return resolve(null);
+        salonDb.get("SELECT * FROM settings WHERE id = 1", [], (err, row) => {
+            if (err) return reject(err);
+            if (!row) return resolve({ workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30', breaks: [], blockedDates: [] });
+            try { row.workingDays = JSON.parse(row.workingDays || '[1,2,3,4,5,6]'); } catch(e) { row.workingDays = [1,2,3,4,5,6]; }
+            try { row.breaks = JSON.parse(row.breaks || '[]'); } catch(e) { row.breaks = []; }
+            try { row.blockedDates = JSON.parse(row.blockedDates || '[]'); } catch(e) { row.blockedDates = []; }
+            resolve(row);
+        });
+    });
+}
+
+function updateSalonSettings(slug, settings) {
+    return new Promise((resolve, reject) => {
+        const salonDb = SALON_DBS[slug];
+        if (!salonDb) return reject(new Error('Nežinomas salonas: ' + slug));
+        // Build dynamic UPDATE from the settings object
+        const allowed = ['workingDays', 'startHour', 'endHour', 'breaks', 'blockedDates'];
+        const sets = [];
+        const params = [];
+        for (const key of allowed) {
+            if (settings[key] !== undefined) {
+                sets.push(`${key} = ?`);
+                params.push(typeof settings[key] === 'string' ? settings[key] : JSON.stringify(settings[key]));
+            }
+        }
+        if (sets.length === 0) return resolve();
+        params.push(1); // WHERE id = 1
+        salonDb.run(`UPDATE settings SET ${sets.join(', ')} WHERE id = ?`, params, function(err) {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
+}
 
 // Startup automation config logging
 console.log('--- Automation config ---');
@@ -1913,7 +1953,16 @@ async function approveChange(changeId) {
     const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
     await commitFilesToGitHub(files, `Auto: ${catLabels[change.category] || change.category} — ${change.description.substring(0, 50)}`);
 
-    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ?, pending_html = \'\', pending_css = \'\' WHERE id = ?',
+    // Apply settings changes if any
+    if (change.pending_settings) {
+        try {
+            const settingsToApply = JSON.parse(change.pending_settings);
+            await updateSalonSettings(slug, settingsToApply);
+            console.log(`Settings updated for ${slug}:`, settingsToApply);
+        } catch (e) { console.error('Failed to apply settings:', e.message); }
+    }
+
+    await portalRun('UPDATE change_requests SET status = ?, admin_notes = ?, completed_at = ?, pending_html = \'\', pending_css = \'\', pending_settings = \'\' WHERE id = ?',
         ['completed', 'Pakeitimas pritaikytas automatiškai per AI', new Date().toISOString(), changeId]);
 
     // Send completion email to client
@@ -1939,6 +1988,8 @@ async function reeditChange(changeId, correction) {
     if (!change || !change.pending_html) return { ok: false, error: 'Nėra laukiančio pakeitimo koregavimui' };
 
     const client = await portalGet('SELECT * FROM clients WHERE id = ?', [change.client_id]);
+    const slug = client?.salon_slug;
+    const pendingSettings = change.pending_settings ? `\n\nDABARTINIAI LAUKIANTYS NUSTATYMŲ PAKEITIMAI:\n${change.pending_settings}` : '';
 
     // Call Claude with the correction
     const response = await anthropic.messages.create({
@@ -1958,7 +2009,7 @@ ${change.pending_html}
 DABARTINIS CSS:
 \`\`\`css
 ${change.pending_css}
-\`\`\`
+\`\`\`${pendingSettings}
 
 Padaryk TIK tai, ko administratorius prašo korekcijoje. Nekeisk nieko kito. Nepridėk komentarų į kodą.
 Išsaugok visas esamas klases, ID, JavaScript hooks ir struktūrą.
@@ -1970,7 +2021,14 @@ Grąžink pakeistus failus tokiu formatu:
 
 <css_file>
 (visas pakeistas CSS čia)
-</css_file>` }]
+</css_file>
+
+Jei reikia keisti nustatymus (darbo valandas, dienas, pertraukas), papildomai grąžink:
+<settings_changes>
+{"startHour":"10:00","endHour":"18:00"}
+</settings_changes>
+Galimi laukai: startHour, endHour, workingDays, breaks.
+Jei nereikia keisti nustatymų — NEGRĄŽINK settings_changes bloko.` }]
     });
 
     const result = parseClaudeResponse(response.content[0].text);
@@ -1979,13 +2037,14 @@ Grąžink pakeistus failus tokiu formatu:
         return { ok: false, error: 'AI grąžino netinkamą HTML — bandykite dar kartą' };
     }
 
-    // Update pending changes in DB
-    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, admin_notes = ? WHERE id = ?',
-        [result.html, result.css || change.pending_css, `Koreguota: ${correction}`, changeId]);
+    // Update pending changes in DB (HTML/CSS + settings)
+    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, pending_settings = ?, admin_notes = ? WHERE id = ?',
+        [result.html, result.css || change.pending_css, result.settings ? JSON.stringify(result.settings) : (change.pending_settings || ''), `Koreguota: ${correction}`, changeId]);
 
     // Notify via Telegram
     const salonName = client?.salon_name || client?.salon_slug || '?';
-    await sendTelegram(`✏️ Pakeitimas #${changeId} (${salonName}) — atnaujintas po korekcijos.\nKorekcija: ${correction}\n\nPeržiūrėkite iš naujo admin panelėje.`);
+    const settingsNote = result.settings ? `\n⚙️ Nustatymai: ${JSON.stringify(result.settings)}` : '';
+    await sendTelegram(`✏️ Pakeitimas #${changeId} (${salonName}) — atnaujintas po korekcijos.\nKorekcija: ${correction}${settingsNote}\n\nPeržiūrėkite iš naujo admin panelėje.`);
 
     console.log(`Change #${changeId} re-edited with correction: ${correction}`);
     return { ok: true };
@@ -2094,8 +2153,11 @@ async function editTelegramMessage(message, newText) {
 }
 
 // --- Claude prompt & parser ---
-function buildChangePrompt(change, currentHtml, currentCss) {
+function buildChangePrompt(change, currentHtml, currentCss, settings) {
     const catLabels = { text: 'teksto pakeitimas', visual: 'dizaino pakeitimas', service: 'paslaugų pakeitimas' };
+    const dayNames = { 1:'Pirm', 2:'Antr', 3:'Treč', 4:'Ketv', 5:'Penkt', 6:'Šešt', 7:'Sekm' };
+    const workingDaysStr = settings?.workingDays ? settings.workingDays.map(d => dayNames[d] || d).join(', ') : 'nežinoma';
+
     return `Tu esi web programuotojas. Klientas prašo pakeisti savo svetainę.
 
 UŽKLAUSA: ${catLabels[change.category] || change.category}
@@ -2114,6 +2176,12 @@ DABARTINIS CSS:
 ${currentCss}
 \`\`\`
 
+DABARTINIAI SVETAINĖS NUSTATYMAI (duomenų bazė — valdo rezervacijos laikų dropdown):
+- Darbo pradžia: ${settings?.startHour || '09:00'}
+- Darbo pabaiga: ${settings?.endHour || '18:30'}
+- Darbo dienos: ${workingDaysStr}
+- Pertraukos: ${JSON.stringify(settings?.breaks || [])}
+
 Grąžink pakeistus failus tokiu formatu:
 <html_file>
 (visas pakeistas HTML čia)
@@ -2121,15 +2189,29 @@ Grąžink pakeistus failus tokiu formatu:
 
 <css_file>
 (visas pakeistas CSS čia — jei nereikėjo keisti CSS, vis tiek grąžink originalą)
-</css_file>`;
+</css_file>
+
+Jei klientas prašo keisti darbo valandas, darbo dienas, pertraukas ar kitus nustatymus,
+papildomai grąžink TIK tuos laukus, kuriuos reikia keisti:
+<settings_changes>
+{"startHour":"10:00","endHour":"18:00"}
+</settings_changes>
+Galimi laukai: startHour, endHour, workingDays (masyvas skaičių 1-7), breaks (masyvas objektų [{start,end}]).
+Jei nereikia keisti nustatymų — NEGRĄŽINK settings_changes bloko.`;
 }
 
 function parseClaudeResponse(text) {
     const htmlMatch = text.match(/<html_file>\s*([\s\S]*?)\s*<\/html_file>/);
     const cssMatch = text.match(/<css_file>\s*([\s\S]*?)\s*<\/css_file>/);
+    const settingsMatch = text.match(/<settings_changes>\s*([\s\S]*?)\s*<\/settings_changes>/);
+    let settings = null;
+    if (settingsMatch) {
+        try { settings = JSON.parse(settingsMatch[1].trim()); } catch(e) { console.error('Failed to parse settings_changes:', e.message); }
+    }
     return {
         html: htmlMatch ? htmlMatch[1].trim() : null,
-        css: cssMatch ? cssMatch[1].trim() : null
+        css: cssMatch ? cssMatch[1].trim() : null,
+        settings
     };
 }
 
@@ -2160,10 +2242,11 @@ async function autoApplyChange(changeId, clientId) {
         return;
     }
 
-    // Fetch current files from GitHub
-    const [htmlFile, cssFile] = await Promise.all([
+    // Fetch current files from GitHub + salon settings from database
+    const [htmlFile, cssFile, salonSettings] = await Promise.all([
         fetchFileFromGitHub(htmlPath),
-        fetchFileFromGitHub(cssPath)
+        fetchFileFromGitHub(cssPath),
+        getSalonSettings(slug)
     ]);
 
     // Build Claude messages
@@ -2181,7 +2264,7 @@ async function autoApplyChange(changeId, clientId) {
 
     contentBlocks.push({
         type: 'text',
-        text: buildChangePrompt(change, htmlFile.content, cssFile.content)
+        text: buildChangePrompt(change, htmlFile.content, cssFile.content, salonSettings)
     });
 
     // Call Claude
@@ -2201,19 +2284,20 @@ async function autoApplyChange(changeId, clientId) {
         return;
     }
 
-    // Store pending changes
-    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, status = ? WHERE id = ?',
-        [result.html, result.css || cssFile.content, 'in_progress', changeId]);
+    // Store pending changes (HTML/CSS + settings if any)
+    await portalRun('UPDATE change_requests SET pending_html = ?, pending_css = ?, pending_settings = ?, status = ? WHERE id = ?',
+        [result.html, result.css || cssFile.content, result.settings ? JSON.stringify(result.settings) : '', 'in_progress', changeId]);
 
-    // Send Telegram notification with preview link + approve/reject buttons
+    // Send Telegram notification with preview link + approve button
     const catLabels = { text: 'Tekstas', visual: 'Dizainas', service: 'Paslaugos' };
     const salonName = client.salon_name || slug;
     const siteUrl = process.env.SITE_URL || 'https://velora-mega-server.onrender.com';
     const previewUrl = `${siteUrl}/velora/admin.html#review-${changeId}`;
+    const settingsNote = result.settings ? `\n⚙️ <b>Nustatymų pakeitimai:</b> ${JSON.stringify(result.settings)}` : '';
     const msg = `📋 <b>Naujas pakeitimas — ${salonName}</b>\n\n` +
         `<b>Kategorija:</b> ${catLabels[change.category] || change.category}\n` +
         `<b>Klientas:</b> ${client.google_name || client.google_email}\n` +
-        `<b>Aprašymas:</b> ${change.description}\n\n` +
+        `<b>Aprašymas:</b> ${change.description}${settingsNote}\n\n` +
         `🔗 <a href="${previewUrl}">Peržiūrėti admin panelėje</a>\n\n` +
         `AI paruošė pakeitimą. Peržiūrėk prieš tvirtinant!`;
 

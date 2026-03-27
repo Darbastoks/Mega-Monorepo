@@ -35,6 +35,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`ALTER TABLE change_requests ADD COLUMN attachment_name TEXT DEFAULT ''`, () => {});
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_html TEXT DEFAULT ''`, () => {});
         db.run(`ALTER TABLE change_requests ADD COLUMN pending_css TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE change_requests ADD COLUMN pending_settings TEXT DEFAULT ''`, () => {});
 
         // Set test account to pro + barbie
         db.run(`UPDATE clients SET salon_slug = 'barbie', plan = 'pro' WHERE google_email = 'gaidys.993@gmail.com'`, () => {});
