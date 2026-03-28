@@ -203,7 +203,6 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="toast"></div>
 
     <style>
         .main-tabs { display:flex; gap:4px; padding:0 32px 16px; }
@@ -224,22 +223,6 @@
         .ch-completed { background:rgba(34,197,94,0.15); color:#22c55e; }
         .ch-rejected { background:rgba(239,68,68,0.15); color:#ef4444; }
         .action-select { padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); color:#f8fafc; font-size:0.8rem; font-family:inherit; cursor:pointer; }
-        .pending-row { background:rgba(251,191,36,0.05); }
-        .review-btn { padding:4px 10px; border:none; border-radius:6px; font-size:0.78rem; font-family:inherit; cursor:pointer; font-weight:600; transition:all 0.2s; }
-        .preview-btn { background:rgba(96,165,250,0.15); color:#60a5fa; }
-        .preview-btn:hover { background:rgba(96,165,250,0.3); }
-        .approve-btn { background:rgba(34,197,94,0.15); color:#22c55e; }
-        .approve-btn:hover { background:rgba(34,197,94,0.3); }
-        .reedit-btn { background:rgba(251,191,36,0.15); color:#fbbf24; }
-        .reedit-btn:hover { background:rgba(251,191,36,0.3); }
-        .dismiss-btn { background:transparent; color:#64748b; font-size:0.72rem; text-decoration:underline; padding:4px 6px; }
-        .dismiss-btn:hover { color:#94a3b8; }
-        .reedit-form { margin-top:8px; }
-        .reedit-textarea { width:100%; min-height:60px; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:#f8fafc; font-family:inherit; font-size:0.82rem; resize:vertical; }
-        .reedit-textarea:focus { outline:none; border-color:#fbbf24; }
-        .settings-preview { margin-top:4px; padding:4px 8px; background:rgba(168,85,247,0.1); border-radius:6px; font-size:0.72rem; color:#a855f7; }
-        .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px); background:#1e293b; color:#f8fafc; padding:12px 24px; border-radius:10px; font-size:0.9rem; font-weight:500; opacity:0; transition:all 0.3s ease; z-index:9999; border:1px solid rgba(255,255,255,0.1); }
-        .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
     </style>
     <script src="/velora/js/admin.js"></script>
     <script>
@@ -275,45 +258,14 @@
             if (!list.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
             empty.style.display = 'none';
             tbody.innerHTML = list.map(c => {
-                const hasPending = c.has_pending;
-                let settingsInfo = '';
-                if (c.pending_settings) {
-                    try {
-                        const s = JSON.parse(c.pending_settings);
-                        const parts = [];
-                        if (s.startHour) parts.push(`Pradžia: ${s.startHour}`);
-                        if (s.endHour) parts.push(`Pabaiga: ${s.endHour}`);
-                        if (s.workingDays) parts.push(`Dienos: ${s.workingDays.join(',')}`);
-                        if (s.breaks) parts.push(`Pertraukos: ${JSON.stringify(s.breaks)}`);
-                        if (parts.length) settingsInfo = `<div class="settings-preview">⚙️ ${parts.join(' · ')}</div>`;
-                    } catch(e) {}
-                }
-                const reviewBtns = hasPending ? `
-                    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
-                        <button class="review-btn preview-btn" onclick="previewChange(${c.id})" title="Peržiūrėti AI pakeitimą">👁 Peržiūra</button>
-                        <button class="review-btn approve-btn" onclick="approveChange(${c.id})" title="Patvirtinti ir diegti">✅ Patvirtinti</button>
-                        <button class="review-btn reedit-btn" onclick="showReeditForm(${c.id})" title="Koreguoti — AI bandys iš naujo">✏️ Koreguoti</button>
-                        <button class="review-btn dismiss-btn" onclick="dismissChange(${c.id})" title="Atmesti visiškai">Atmesti</button>
-                    </div>
-                    <div id="reedit-form-${c.id}" class="reedit-form" style="display:none;">
-                        <textarea id="reedit-text-${c.id}" class="reedit-textarea" placeholder="Aprašykite kas netinka ir ką reikia pataisyti..."></textarea>
-                        <div style="display:flex;gap:4px;margin-top:4px;">
-                            <button class="review-btn reedit-btn" onclick="submitReedit(${c.id})">Siųsti korekciją</button>
-                            <button class="review-btn dismiss-btn" onclick="hideReeditForm(${c.id})">Atšaukti</button>
-                        </div>
-                    </div>` : '';
-                return `<tr class="${hasPending ? 'pending-row' : ''}">
+                return `<tr>
                 <td>${esc(c.google_name || c.google_email)}</td>
                 <td>${esc(c.salon_name || '-')}</td>
                 <td>${CAT_LABELS[c.category] || c.category}</td>
                 <td style="max-width:200px;white-space:pre-wrap;font-size:0.85rem;">${esc(c.description)}</td>
                 <td>${c.attachment_name ? `<a href="/api/portal/admin/changes/${c.id}/attachment" target="_blank" title="${esc(c.attachment_name)}">📎</a>` : ''}</td>
                 <td style="font-size:0.8rem;">${new Date(c.created_at).toLocaleDateString('lt-LT')}</td>
-                <td>
-                    <span class="status-badge-ch ch-${c.status}">${{new:'Nauja',in_progress:'Vykdoma',completed:'Atlikta',rejected:'Atmesta'}[c.status]}</span>
-                    ${hasPending ? '<br><span style="font-size:0.7rem;color:#fbbf24;">⏳ Laukia peržiūros</span>' : ''}
-                    ${settingsInfo}
-                </td>
+                <td><span class="status-badge-ch ch-${c.status}">${{new:'Nauja',in_progress:'Vykdoma',completed:'Atlikta',rejected:'Atmesta'}[c.status]}</span></td>
                 <td>
                     <select class="action-select" onchange="updateChangeStatus(${c.id},this.value)" ${c.status==='completed'?'disabled':''}>
                         <option value="new" ${c.status==='new'?'selected':''}>Nauja</option>
@@ -321,7 +273,6 @@
                         <option value="completed" ${c.status==='completed'?'selected':''}>Atlikta</option>
                         <option value="rejected" ${c.status==='rejected'?'selected':''}>Atmesta</option>
                     </select>
-                    ${reviewBtns}
                 </td>
             </tr>`;
             }).join('');
@@ -388,79 +339,6 @@
                 loadPortalClients();
             } catch {}
         };
-
-        window.previewChange = function(id) {
-            window.open(`/api/portal/admin/changes/${id}/preview`, '_blank');
-        };
-
-        window.approveChange = async function(id) {
-            if (!confirm('Ar tikrai norite patvirtinti šį pakeitimą? Jis bus įkeltas į GitHub ir automatiškai diegiamas.')) return;
-            try {
-                const res = await fetch(`/api/portal/admin/changes/${id}/approve`, { method: 'POST' });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('✅ Pakeitimas patvirtintas ir įkeltas!');
-                    loadPortalChanges();
-                } else {
-                    showToast('❌ Klaida: ' + (data.error || 'Nežinoma klaida'));
-                }
-            } catch (e) { showToast('❌ Klaida: ' + e.message); }
-        };
-
-        window.showReeditForm = function(id) {
-            document.getElementById(`reedit-form-${id}`).style.display = 'block';
-            document.getElementById(`reedit-text-${id}`).focus();
-        };
-
-        window.hideReeditForm = function(id) {
-            document.getElementById(`reedit-form-${id}`).style.display = 'none';
-        };
-
-        window.submitReedit = async function(id) {
-            const textarea = document.getElementById(`reedit-text-${id}`);
-            const correction = textarea.value.trim();
-            if (!correction) { showToast('Įrašykite korekciją'); return; }
-
-            textarea.disabled = true;
-            showToast('⏳ AI koreguoja pakeitimą...');
-
-            try {
-                const res = await fetch(`/api/portal/admin/changes/${id}/reedit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ correction })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('✅ Pakeitimas atnaujintas — peržiūrėkite iš naujo');
-                    loadPortalChanges();
-                } else {
-                    showToast('❌ Klaida: ' + (data.error || 'Nežinoma klaida'));
-                }
-            } catch (e) { showToast('❌ Klaida: ' + e.message); }
-            finally { textarea.disabled = false; }
-        };
-
-        window.dismissChange = async function(id) {
-            if (!confirm('Ar tikrai norite visiškai atmesti šį pakeitimą?')) return;
-            try {
-                const res = await fetch(`/api/portal/admin/changes/${id}/dismiss`, { method: 'POST' });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('Pakeitimas atmestas');
-                    loadPortalChanges();
-                } else {
-                    showToast('❌ Klaida: ' + (data.error || 'Nežinoma klaida'));
-                }
-            } catch (e) { showToast('❌ Klaida: ' + e.message); }
-        };
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
 
         function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
