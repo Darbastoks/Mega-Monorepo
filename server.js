@@ -378,8 +378,18 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
         if (!workingDays.includes(dayOfWeek)) return res.json([]);
         if (blockedDates.includes(date)) return res.json([]);
 
-        // Fetch services for duration
-        const services = await new Promise((resolve, reject) => {
+        // Fetch services for duration (DB first, fallback to hardcoded defaults)
+        const defaultServices = [
+            { name: 'Plaukų kirpimas', duration: 30 },
+            { name: 'Barzdos modeliavimas', duration: 30 },
+            { name: 'Barzda su karštų rankšluosčių', duration: 35 },
+            { name: 'Kirpimas + barzdos modeliavimas', duration: 50 },
+            { name: 'Grožio kaukė + antakių korekcija', duration: 20 },
+            { name: 'Dažymo konsultacija', duration: 15 },
+            { name: 'Kirpimas + barzda + grožio kaukė', duration: 60 },
+            { name: 'Kompleksas (viskas)', duration: 75 }
+        ];
+        const dbServices = await new Promise((resolve, reject) => {
             dbBarbie.all("SELECT * FROM services", [], (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows || []);
@@ -388,7 +398,8 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
 
         let requestedDuration = 30;
         if (requestedServiceName) {
-            const s = services.find(sr => sr.name === requestedServiceName);
+            const s = dbServices.find(sr => sr.name === requestedServiceName)
+                || defaultServices.find(sr => sr.name === requestedServiceName);
             if (s) requestedDuration = s.duration;
         }
 
@@ -412,7 +423,7 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
 
         const bookings = await Booking.find({ date, status: { $ne: 'cancelled' } });
         const blockedIntervals = bookings.map(b => {
-            const bSrv = services.find(s => s.name === b.service);
+            const bSrv = dbServices.find(s => s.name === b.service) || defaultServices.find(s => s.name === b.service);
             const bDuration = bSrv ? bSrv.duration : 30;
             const bStartMins = timeToMins(b.time);
             return { start: bStartMins, end: bStartMins + bDuration };

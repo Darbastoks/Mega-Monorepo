@@ -142,9 +142,35 @@ function initBookingForm() {
         }
     };
 
-    // Re-fetch times when service changes (different durations affect available slots)
+    // --- Service-first flow: date/time only enabled after service is selected ---
+    const dateGroup = dateInput.closest('.form-group');
+    const timeGroup = timeSelect.closest('.form-group');
+
+    function setDateTimeEnabled(enabled) {
+        dateInput.disabled = !enabled;
+        timeSelect.disabled = !enabled;
+        if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
+        if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
+        if (!enabled) {
+            dateInput.value = '';
+            if (fp) fp.clear();
+            timeSelect.innerHTML = '<option value="">Pirma pasirinkite paslaugą...</option>';
+        }
+    }
+
+    // Start disabled
+    setDateTimeEnabled(false);
+
     if (serviceSelect) {
-        serviceSelect.addEventListener('change', fetchTimes);
+        serviceSelect.addEventListener('change', () => {
+            if (serviceSelect.value) {
+                setDateTimeEnabled(true);
+                // Re-fetch times if date already selected
+                if (dateInput.value) fetchTimes();
+            } else {
+                setDateTimeEnabled(false);
+            }
+        });
     }
 
     async function loadMonthAvailability(year, month, instance) {
@@ -204,7 +230,7 @@ function initBookingForm() {
             if (res.ok) {
                 showToast('✅', 'Registracija sėkminga! Susisieksime su jumis.');
                 form.reset();
-                timeSelect.innerHTML = '<option value="">Pirma pasirinkite datą...</option>';
+                setDateTimeEnabled(false);
             } else {
                 showToast('❌', data.error || 'Serverio klaida');
             }
