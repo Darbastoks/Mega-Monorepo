@@ -1767,64 +1767,6 @@ button.plan-btn.btn-primary:hover:not(:disabled) {
     line-height: 1.6;
 }
 
-/* ============================
-   CLIENT LOGOS MARQUEE
-   ============================ */
-.client-logos {
-    padding: 40px 0;
-    overflow: hidden;
-}
-
-.client-logos-label {
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-bottom: 24px;
-}
-
-.logos-marquee {
-    overflow: hidden;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-}
-
-.logos-track {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    animation: marquee-scroll 18s linear infinite;
-    width: max-content;
-    will-change: transform;
-}
-
-.logo-item {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.logo-item:hover {
-    color: var(--primary-color);
-}
-
-.logo-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    opacity: 0.4;
-    flex-shrink: 0;
-}
-
-@keyframes marquee-scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-}
 
 /* ============================
    GUARANTEE BADGE
@@ -2242,7 +2184,6 @@ a.service-card {
 .services::after,
 .portfolio::after,
 .stats-bar::after,
-.client-logos::after,
 .comparison::after,
 .testimonials::after,
 .pricing::after {
@@ -2281,7 +2222,7 @@ a.service-card {
 }
 
 .hero, .about, .how-it-works, .services, .portfolio,
-.stats-bar, .client-logos, .comparison, .testimonials,
+.stats-bar, .comparison, .testimonials,
 .pricing, .faq {
     position: relative;
 }
