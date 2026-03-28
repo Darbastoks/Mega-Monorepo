@@ -399,8 +399,9 @@ app.get('/api/barbie/bookings/times/:date', async (req, res) => {
             return `${hh}:${mm}`;
         };
 
-        const startOfDayMins = timeToMins(settings.startHour);
-        const endOfDayMins = timeToMins(settings.endHour);
+        // Allow preview overrides for pending settings
+        const startOfDayMins = timeToMins(req.query.overrideStart || settings.startHour);
+        const endOfDayMins = timeToMins(req.query.overrideEnd || settings.endHour);
         // Parse breaks array (multiple breaks support)
         let breaksArr = [];
         try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
@@ -763,8 +764,9 @@ app.get('/api/nails/available-times', (req, res) => {
                 return `${hh}:${mm}`;
             };
 
-            const startOfDayMins = timeToMins(settings.startHour);
-            const endOfDayMins = timeToMins(settings.endHour);
+            // Allow preview overrides for pending settings
+            const startOfDayMins = timeToMins(req.query.overrideStart || settings.startHour);
+            const endOfDayMins = timeToMins(req.query.overrideEnd || settings.endHour);
 
             // Parse breaks array (multiple breaks support)
             let breaksArr = [];
@@ -1117,8 +1119,9 @@ app.get('/api/hair/bookings/times/:date', (req, res) => {
                 return `${hh}:${mm}`;
             };
 
-            const startOfDayMins = timeToMins(settings.startHour);
-            const endOfDayMins = timeToMins(settings.endHour);
+            // Allow preview overrides for pending settings
+            const startOfDayMins = timeToMins(req.query.overrideStart || settings.startHour);
+            const endOfDayMins = timeToMins(req.query.overrideEnd || settings.endHour);
 
             // Parse breaks array (multiple breaks support)
             let breaksArr = [];
@@ -2060,12 +2063,40 @@ async function dismissChange(changeId) {
 // --- Preview endpoint (admin reviews AI-generated change) ---
 app.get('/api/portal/admin/changes/:id/preview', requireVeloraAdmin, async (req, res) => {
     try {
-        const change = await portalGet('SELECT pending_html FROM change_requests WHERE id = ?', [req.params.id]);
+        const change = await portalGet('SELECT pending_html, pending_settings FROM change_requests WHERE id = ?', [req.params.id]);
         if (!change || !change.pending_html) {
             return res.status(404).send('<h1>Nėra laukiančio pakeitimo peržiūrai</h1><p>Šis pakeitimas jau buvo patvirtintas arba atmestas.</p>');
         }
+
+        let html = change.pending_html;
+
+        // Inject settings overrides so booking dropdown reflects pending changes
+        if (change.pending_settings) {
+            try {
+                const ps = JSON.parse(change.pending_settings);
+                if (ps.startHour || ps.endHour) {
+                    const params = [];
+                    if (ps.startHour) params.push(`overrideStart=${ps.startHour}`);
+                    if (ps.endHour) params.push(`overrideEnd=${ps.endHour}`);
+                    const overrideQS = params.join('&');
+                    const overrideScript = `<script>
+(function(){
+    var _fetch = window.fetch;
+    window.fetch = function(url, opts) {
+        if (typeof url === 'string' && url.includes('/bookings/times/')) {
+            url += (url.includes('?') ? '&' : '?') + '${overrideQS}';
+        }
+        return _fetch.call(this, url, opts);
+    };
+})();
+</script>`;
+                    html = html.replace('</head>', overrideScript + '\n</head>');
+                }
+            } catch(e) { console.error('Preview settings inject error:', e.message); }
+        }
+
         res.setHeader('Content-Type', 'text/html');
-        res.send(change.pending_html);
+        res.send(html);
     } catch (err) {
         console.error('Preview error:', err.message);
         res.status(500).json({ error: err.message });
