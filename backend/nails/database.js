@@ -1,7 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = path.resolve(__dirname, 'database.sqlite');
+const dataDir = process.env.DATA_DIR || __dirname;
+const dbPath = path.resolve(dataDir, 'nails.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error connecting to SQLite database:', err.message);

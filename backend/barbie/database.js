@@ -2,7 +2,8 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.resolve(__dirname, 'barbie.sqlite');
+const dataDir = process.env.DATA_DIR || __dirname;
+const dbPath = path.resolve(dataDir, 'barbie.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error connecting to Barbie SQLite database:', err.message);

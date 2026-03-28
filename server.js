@@ -5,8 +5,6 @@ const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const rLimit = require('express-rate-limit');
-const https = require('https');
-const http = require('http');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
@@ -140,36 +138,6 @@ app.post('/webhook/stripe',
                 }
             }
 
-            const n8nUrl = process.env.N8N_WEBHOOK_URL;
-            if (n8nUrl) {
-                const payload = JSON.stringify({
-                    event: 'checkout.session.completed',
-                    customer_email: session.customer_email,
-                    customer_name: session.customer_details?.name || '',
-                    amount_total: session.amount_total,
-                    currency: session.currency,
-                    session_id: session.id,
-                    subscription_id: session.subscription,
-                    timestamp: new Date().toISOString(),
-                });
-                try {
-                    const url = new URL(n8nUrl);
-                    const lib = url.protocol === 'https:' ? https : http;
-                    const options = {
-                        hostname: url.hostname,
-                        port: url.port || (url.protocol === 'https:' ? 443 : 80),
-                        path: url.pathname + url.search,
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
-                    };
-                    const r2 = lib.request(options);
-                    r2.on('error', (e) => console.error('n8n notification error:', e.message));
-                    r2.write(payload);
-                    r2.end();
-                } catch (e) {
-                    console.error('Failed to send n8n notification:', e.message);
-                }
-            }
         }
         res.json({ received: true });
     }
@@ -523,7 +491,7 @@ function requireBarbieAdmin(req, res, next) {
 
 app.post('/api/barbie/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === (process.env.BARBIE_ADMIN_PASS || 'changeme')) {
+    if (username === 'admin' && password === (process.env.BARBIE_ADMIN_PASS || '')) {
         req.session.isBarbieAdmin = true;
         req.session.barbieAdminId = 'system-admin';
         return res.json({ success: true });
@@ -661,7 +629,7 @@ function requireNailsAdmin(req, res, next) {
 
 app.post('/api/nails/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === (process.env.NAILS_ADMIN_PASS || 'changeme')) {
+    if (password === (process.env.NAILS_ADMIN_PASS || '')) {
         req.session.isNailsAdmin = true;
         return res.json({ success: true });
     }
@@ -993,7 +961,7 @@ app.post('/api/nails/admin/send-cancel-email', requireNailsAdmin, async (req, re
 });
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
-const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || 'changeme';
+const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || '';
 
 function requireHairAdmin(req, res, next) {
     if (req.session && req.session.isHairAdmin) return next();
@@ -1402,7 +1370,7 @@ app.post('/api/velora/admin/login', async (req, res) => {
         const { username, password } = req.body;
 
         // Fallback for admin login
-        if (username === 'admin' && password === (process.env.VELORA_ADMIN_PASS || 'changeme')) {
+        if (username === 'admin' && password === (process.env.VELORA_ADMIN_PASS || '')) {
             req.session.isVeloraAdmin = true;
             return res.json({ success: true });
         }
