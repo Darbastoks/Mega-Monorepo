@@ -122,7 +122,8 @@ function initBookingForm() {
         if (!date) return;
         timeSelect.innerHTML = '<option value="">Kraunama...</option>';
         try {
-            const res = await fetch(`/api/barbie/bookings/times/${date}`);
+            const service = serviceSelect?.value || '';
+            const res = await fetch(`/api/barbie/bookings/times/${date}?service=${encodeURIComponent(service)}`);
             const slots = await res.json();
             if (!slots || slots.length === 0) {
                 timeSelect.innerHTML = '<option value="">Šią dieną laisvų laikų nėra</option>';
@@ -140,6 +141,11 @@ function initBookingForm() {
             timeSelect.innerHTML = '<option value="">Klaida kraunant laikus</option>';
         }
     };
+
+    // Re-fetch times when service changes (different durations affect available slots)
+    if (serviceSelect) {
+        serviceSelect.addEventListener('change', fetchTimes);
+    }
 
     async function loadMonthAvailability(year, month, instance) {
         try {
