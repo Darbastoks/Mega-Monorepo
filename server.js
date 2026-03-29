@@ -149,7 +149,7 @@ app.use(express.urlencoded({ extended: true }));
 // 2. Middlewares
 app.use(cors());
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'mega-monorepo-secret-2024',
+    secret: process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex'),
     resave: true,
     saveUninitialized: true,
     cookie: {
@@ -491,7 +491,7 @@ function requireBarbieAdmin(req, res, next) {
 
 app.post('/api/barbie/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === (process.env.BARBIE_ADMIN_PASS || '')) {
+    if (username === 'admin' && process.env.BARBIE_ADMIN_PASS && password === process.env.BARBIE_ADMIN_PASS) {
         req.session.isBarbieAdmin = true;
         req.session.barbieAdminId = 'system-admin';
         return res.json({ success: true });
@@ -629,7 +629,7 @@ function requireNailsAdmin(req, res, next) {
 
 app.post('/api/nails/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === (process.env.NAILS_ADMIN_PASS || '')) {
+    if (process.env.NAILS_ADMIN_PASS && password === process.env.NAILS_ADMIN_PASS) {
         req.session.isNailsAdmin = true;
         return res.json({ success: true });
     }
@@ -961,7 +961,7 @@ app.post('/api/nails/admin/send-cancel-email', requireNailsAdmin, async (req, re
 });
 
 // ==================== HAIR BEAUTY API (/api/hair/*) ====================
-const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS || '';
+const GRETA_ADMIN_PASS = process.env.HAIR_ADMIN_PASS;
 
 function requireHairAdmin(req, res, next) {
     if (req.session && req.session.isHairAdmin) return next();
@@ -976,7 +976,7 @@ const hairLimiter = rLimit({
 
 app.post('/api/hair/admin/login', (req, res) => {
     const { password } = req.body;
-    if (password === GRETA_ADMIN_PASS) {
+    if (GRETA_ADMIN_PASS && password === GRETA_ADMIN_PASS) {
         req.session.isHairAdmin = true;
         return res.json({ success: true });
     }
@@ -1370,7 +1370,7 @@ app.post('/api/velora/admin/login', async (req, res) => {
         const { username, password } = req.body;
 
         // Fallback for admin login
-        if (username === 'admin' && password === (process.env.VELORA_ADMIN_PASS || '')) {
+        if (username === 'admin' && process.env.VELORA_ADMIN_PASS && password === process.env.VELORA_ADMIN_PASS) {
             req.session.isVeloraAdmin = true;
             return res.json({ success: true });
         }
