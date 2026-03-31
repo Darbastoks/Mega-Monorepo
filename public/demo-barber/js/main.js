@@ -114,6 +114,24 @@ function initBookingForm() {
 
     if (!dateInput || !timeSelect) return;
 
+    // --- Load services from API ---
+    if (serviceSelect) {
+        fetch('/api/demo-barber/services')
+            .then(r => r.json())
+            .then(services => {
+                serviceSelect.innerHTML = '<option value="">Pasirinkite paslaugą...</option>';
+                services.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.price > 0 ? `${s.name} - ${s.price}€` : s.name;
+                    serviceSelect.appendChild(opt);
+                });
+            })
+            .catch(() => {
+                serviceSelect.innerHTML = '<option value="">Klaida kraunant paslaugas</option>';
+            });
+    }
+
     // --- flatpickr color-coded calendar ---
     let monthAvailability = {};
 
@@ -165,7 +183,6 @@ function initBookingForm() {
         serviceSelect.addEventListener('change', () => {
             if (serviceSelect.value) {
                 setDateTimeEnabled(true);
-                // Re-fetch times if date already selected
                 if (dateInput.value) fetchTimes();
             } else {
                 setDateTimeEnabled(false);
@@ -200,6 +217,9 @@ function initBookingForm() {
         onMonthChange: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); },
         onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
     });
+
+    // Handle browser autofill restoring a service selection without firing change event
+    if (serviceSelect && serviceSelect.value) setDateTimeEnabled(true);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -258,6 +278,9 @@ function showToast(icon, message) {
 // Helper per User Request to pre-select service when clicking "scrollToBooking" if it existed
 window.scrollToBooking = (serviceName) => {
     const select = document.getElementById('bookingService');
-    if (select) select.value = serviceName;
+    if (select) {
+        select.value = serviceName;
+        select.dispatchEvent(new Event('change'));
+    }
     document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
 };

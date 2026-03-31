@@ -1425,21 +1425,42 @@ app.delete('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) =
 
 
 // ==================== DEMO PORTFOLIO SITE APIs ====================
-app.use('/api/demo-barber', createDemoRoutes({
+const DEMO_BARBER_SERVICES = [
+    { name: 'Kirpimas', duration: 30, price: 15, sort_order: 1 },
+    { name: 'Barzdos formavimas', duration: 30, price: 12, sort_order: 2 },
+    { name: 'Kirpimas + Barzda', duration: 60, price: 25, sort_order: 3 }
+];
+const DEMO_HAIR_SERVICES = [
+    { name: 'Plaukų SPA', duration: 60, price: 0, sort_order: 1 },
+    { name: 'Tiesinimas', duration: 60, price: 0, sort_order: 2 },
+    { name: 'Kirpimas karštomis žirklėmis', duration: 60, price: 0, sort_order: 3 },
+    { name: 'Konsultacija', duration: 30, price: 0, sort_order: 4 }
+];
+const DEMO_NAILS_SERVICES = [
+    { name: 'Manikiūras', duration: 60, price: 25, sort_order: 1 },
+    { name: 'Pedikiūras', duration: 90, price: 35, sort_order: 2 },
+    { name: 'Priauginimas', duration: 120, price: 45, sort_order: 3 },
+    { name: 'Korekcija', duration: 90, price: 30, sort_order: 4 }
+];
+
+const demoBarber = createDemoRoutes({
     db: dbDemoBarber, slug: 'demo-barber', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Barber', sessionKey: 'isDemoBarberAdmin', bookingsTable: 'bookings',
-    emailTransporter
-}));
-app.use('/api/demo-hair', createDemoRoutes({
+    emailTransporter, defaultServices: DEMO_BARBER_SERVICES
+});
+const demoHair = createDemoRoutes({
     db: dbDemoHair, slug: 'demo-hair', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Hair', sessionKey: 'isDemoHairAdmin', bookingsTable: 'bookings',
-    emailTransporter
-}));
-app.use('/api/demo-nails', createDemoRoutes({
+    emailTransporter, defaultServices: DEMO_HAIR_SERVICES
+});
+const demoNails = createDemoRoutes({
     db: dbDemoNails, slug: 'demo-nails', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Nails', sessionKey: 'isDemoNailsAdmin', bookingsTable: 'reservations',
-    emailTransporter
-}));
+    emailTransporter, defaultServices: DEMO_NAILS_SERVICES
+});
+app.use('/api/demo-barber', demoBarber.router);
+app.use('/api/demo-hair', demoHair.router);
+app.use('/api/demo-nails', demoNails.router);
 
 // Explicit index routes for sub-sites (prevents SPA fallback from catching them)
 app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
@@ -1812,6 +1833,18 @@ async function startServer() {
             console.log(` - Velora: http://localhost:${PORT}/`);
             console.log(` - Barbie: http://localhost:${PORT}/barbie/`);
             console.log(` - Nails:  http://localhost:${PORT}/nails/`);
+
+            // Auto-reset demo databases every 15 minutes
+            setInterval(async () => {
+                try {
+                    await demoBarber.resetDemo();
+                    await demoHair.resetDemo();
+                    await demoNails.resetDemo();
+                } catch (err) {
+                    console.error('[DEMO RESET] auto-reset failed:', err);
+                }
+            }, 15 * 60 * 1000);
+            console.log('[DEMO RESET] Auto-reset scheduled every 15 minutes');
         });
     } catch (err) {
         console.error('CRITICAL: Failed to start server due to database error:', err);

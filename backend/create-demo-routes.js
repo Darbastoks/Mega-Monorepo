@@ -18,7 +18,7 @@ const rateLimit = require('express-rate-limit');
  * @param {Function} [config.emailTransporter] - Nodemailer transporter (optional)
  */
 function createDemoRoutes(config) {
-    const { db, slug, passwordEnvVar, salonName, sessionKey, bookingsTable = 'bookings', emailTransporter } = config;
+    const { db, slug, passwordEnvVar, salonName, sessionKey, bookingsTable = 'bookings', emailTransporter, defaultServices = [] } = config;
     const router = Router();
 
     const limiter = rateLimit({
@@ -449,7 +449,33 @@ function createDemoRoutes(config) {
         } catch(err) { res.status(500).json({ error: 'Nepavyko išsiųsti: ' + err.message }); }
     });
 
-    return router;
+    // ==================== RESET DEMO ====================
+    async function resetDemo() {
+        await dbRun(`DELETE FROM ${bookingsTable}`);
+        await dbRun(
+            "UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, blockedDates = ?, breaks = ? WHERE id = 1",
+            [JSON.stringify([1,2,3,4,5,6]), '09:00', '18:30', '[]', '[]']
+        );
+        await dbRun("DELETE FROM services");
+        for (let i = 0; i < defaultServices.length; i++) {
+            const s = defaultServices[i];
+            await dbRun("INSERT INTO services (name, duration, price, sort_order) VALUES (?, ?, ?, ?)",
+                [s.name, s.duration, s.price, s.sort_order || i + 1]);
+        }
+        console.log(`[DEMO RESET] ${slug} reset at ${new Date().toISOString()}`);
+    }
+
+    router.post('/reset-demo', async (req, res) => {
+        try {
+            await resetDemo();
+            res.json({ success: true, message: 'Demo atstatytas' });
+        } catch (err) {
+            console.error(`[DEMO RESET] ${slug} error:`, err);
+            res.status(500).json({ error: 'Reset klaida' });
+        }
+    });
+
+    return { router, resetDemo };
 }
 
 module.exports = createDemoRoutes;

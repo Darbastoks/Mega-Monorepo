@@ -35,6 +35,9 @@
                 <button type="submit" class="btn btn-primary btn-full">Prisijungti</button>
             </form>
             <div class="login-error" id="loginError"></div>
+            <div style="margin-top:12px;padding:10px 14px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);border-radius:8px;font-size:0.85rem;text-align:center;color:#a0a0a0;">
+                Demo prisijungimas: <strong style="color:#22d3ee">admin</strong> / <strong style="color:#22d3ee">demo123</strong>
+            </div>
             <div class="login-footer">
                 <a href="/demo-barber" class="back-link">← Grįžti į svetainę</a>
             </div>
@@ -49,6 +52,7 @@
                 <h2>VELORA BARBER <span class="logo-accent">Admin</span></h2>
             </div>
             <div class="admin-header-right">
+                <button class="btn btn-sm" id="resetDemoBtn" style="border:1px solid #22d3ee;color:#22d3ee;background:transparent;cursor:pointer;">&#x1f504; Atstatyti demo</button>
                 <button class="btn btn-emergency btn-sm" id="emergencyCancelBtn">SKUBUS atšaukimas</button>
                 <button class="btn btn-outline btn-sm" id="viewSettingsBtn">⚙ Nustatymai</button>
                 <button class="btn btn-outline btn-sm" id="viewBookingsBtn" style="display:none;">📅 Registracijos</button>
@@ -75,6 +79,12 @@
                 <span class="admin-stat-number" id="statCompleted">0</span>
                 <span class="admin-stat-label">Atliktos</span>
             </div>
+        </div>
+
+        <!-- Demo Info Banner -->
+        <div style="margin:0 32px 16px;padding:10px 16px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.15);border-radius:8px;display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#22d3ee;">
+            <span>&#x2139;&#xfe0f;</span>
+            <span>Demo atstatomas automatiškai kas 15 min. Visi pakeitimai laikini.</span>
         </div>
 
         <!-- Plan Card -->
@@ -287,6 +297,16 @@
     </div>
 
     <script src="/demo-barber/js/admin.js?v=3"></script>
+    <script>
+    document.getElementById('resetDemoBtn')?.addEventListener('click', async function() {
+        if (!confirm('Ar tikrai norite atstatyti demo? Visi duomenys bus ištrinti ir atstatyti į pradinius.')) return;
+        try {
+            const res = await fetch('/api/demo-barber/reset-demo', { method: 'POST' });
+            if (res.ok) { alert('Demo atstatytas sėkmingai!'); window.location.reload(); }
+            else { const d = await res.json(); alert('Klaida: ' + (d.error || 'Nepavyko')); }
+        } catch(e) { alert('Tinklo klaida'); }
+    });
+    </script>
 </body>
 
 </html>
