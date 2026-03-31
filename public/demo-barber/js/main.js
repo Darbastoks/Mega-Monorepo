@@ -165,15 +165,20 @@ function initBookingForm() {
     const timeGroup = timeSelect.closest('.form-group');
 
     function setDateTimeEnabled(enabled) {
-        dateInput.disabled = !enabled;
-        timeSelect.disabled = !enabled;
-        if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
-        if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
-        if (!enabled) {
+        if (enabled) {
+            dateInput.disabled = false;
+            dateInput.placeholder = 'Pasirinkite datą...';
+            timeSelect.disabled = false;
+        } else {
+            dateInput.disabled = true;
             dateInput.value = '';
-            if (fp) fp.clear();
+            dateInput.placeholder = 'Pirma pasirinkite paslaugą...';
+            if (typeof fp !== 'undefined' && fp) fp.clear();
+            timeSelect.disabled = true;
             timeSelect.innerHTML = '<option value="">Pirma pasirinkite paslaugą...</option>';
         }
+        if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
+        if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
     }
 
     // Start disabled
