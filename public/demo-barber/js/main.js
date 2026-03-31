@@ -164,37 +164,6 @@ function initBookingForm() {
     const dateGroup = dateInput.closest('.form-group');
     const timeGroup = timeSelect.closest('.form-group');
 
-    function setDateTimeEnabled(enabled) {
-        if (enabled) {
-            dateInput.disabled = false;
-            dateInput.placeholder = 'Pasirinkite datą...';
-            timeSelect.disabled = false;
-        } else {
-            dateInput.disabled = true;
-            dateInput.value = '';
-            dateInput.placeholder = 'Pirma pasirinkite paslaugą...';
-            if (typeof fp !== 'undefined' && fp) fp.clear();
-            timeSelect.disabled = true;
-            timeSelect.innerHTML = '<option value="">Pirma pasirinkite paslaugą...</option>';
-        }
-        if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
-        if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
-    }
-
-    // Start disabled
-    setDateTimeEnabled(false);
-
-    if (serviceSelect) {
-        serviceSelect.addEventListener('change', () => {
-            if (serviceSelect.value) {
-                setDateTimeEnabled(true);
-                if (dateInput.value) fetchTimes();
-            } else {
-                setDateTimeEnabled(false);
-            }
-        });
-    }
-
     async function loadMonthAvailability(year, month, instance) {
         try {
             const res = await fetch(`/api/demo-barber/availability-month?year=${year}&month=${month}`);
@@ -208,7 +177,7 @@ function initBookingForm() {
         dateFormat: 'Y-m-d',
         minDate: 'today',
         disableMobile: true,
-        onDayCreate: function(dObj, dStr, fp, dayElem) {
+        onDayCreate: function(dObj, dStr, fpInst, dayElem) {
             const dt = dayElem.dateObj;
             const today = new Date(); today.setHours(0,0,0,0);
             if (dt < today) { dayElem.classList.add('day-red'); return; }
@@ -223,8 +192,41 @@ function initBookingForm() {
         onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
     });
 
-    // Handle browser autofill restoring a service selection without firing change event
-    if (serviceSelect && serviceSelect.value) setDateTimeEnabled(true);
+    // --- Service-first flow: date/time only enabled after service is selected ---
+    const dateGroup = dateInput.closest('.form-group');
+    const timeGroup = timeSelect.closest('.form-group');
+
+    function setDateTimeEnabled(enabled) {
+        if (enabled) {
+            dateInput.disabled = false;
+            dateInput.placeholder = 'Pasirinkite datą...';
+            timeSelect.disabled = false;
+        } else {
+            dateInput.disabled = true;
+            fp.clear();
+            dateInput.placeholder = 'Pirma pasirinkite paslaugą...';
+            timeSelect.disabled = true;
+            timeSelect.innerHTML = '<option value="">Pirma pasirinkite paslaugą...</option>';
+        }
+        if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
+        if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
+    }
+
+    // Start disabled (AFTER flatpickr init)
+    setDateTimeEnabled(false);
+
+    if (serviceSelect) {
+        serviceSelect.addEventListener('change', () => {
+            if (serviceSelect.value) {
+                setDateTimeEnabled(true);
+                if (dateInput.value) fetchTimes();
+            } else {
+                setDateTimeEnabled(false);
+            }
+        });
+        // Handle browser autofill
+        if (serviceSelect.value) setDateTimeEnabled(true);
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
