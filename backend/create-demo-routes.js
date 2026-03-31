@@ -86,14 +86,43 @@ function createDemoRoutes(config) {
 
     router.post('/services', requireAdmin, async (req, res) => {
         try {
-            const services = req.body;
-            if (!Array.isArray(services)) return res.status(400).json({ error: 'Invalid data' });
-            await dbRun("DELETE FROM services");
-            for (let i = 0; i < services.length; i++) {
-                const s = services[i];
+            const data = req.body;
+            // Handle both array (bulk replace) and single object (add one)
+            if (Array.isArray(data)) {
+                await dbRun("DELETE FROM services");
+                for (let i = 0; i < data.length; i++) {
+                    const s = data[i];
+                    await dbRun("INSERT INTO services (name, duration, price, sort_order) VALUES (?, ?, ?, ?)",
+                        [s.name, s.duration || 30, s.price || 0, i + 1]);
+                }
+            } else {
+                const maxOrder = await dbGet("SELECT MAX(sort_order) as m FROM services");
                 await dbRun("INSERT INTO services (name, duration, price, sort_order) VALUES (?, ?, ?, ?)",
-                    [s.name, s.duration || 30, s.price || 0, i + 1]);
+                    [data.name, data.duration || 30, data.price || 0, (maxOrder?.m || 0) + 1]);
             }
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    router.patch('/services/:id', requireAdmin, async (req, res) => {
+        try {
+            const { name, duration, price, sort_order } = req.body;
+            const fields = [];
+            const params = [];
+            if (name !== undefined) { fields.push('name = ?'); params.push(name); }
+            if (duration !== undefined) { fields.push('duration = ?'); params.push(duration); }
+            if (price !== undefined) { fields.push('price = ?'); params.push(price); }
+            if (sort_order !== undefined) { fields.push('sort_order = ?'); params.push(sort_order); }
+            if (fields.length === 0) return res.status(400).json({ error: 'No fields to update' });
+            params.push(req.params.id);
+            await dbRun(`UPDATE services SET ${fields.join(', ')} WHERE id = ?`, params);
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    router.delete('/services/:id', requireAdmin, async (req, res) => {
+        try {
+            await dbRun("DELETE FROM services WHERE id = ?", [req.params.id]);
             res.json({ success: true });
         } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
     });
@@ -313,25 +342,54 @@ function createDemoRoutes(config) {
         } catch(err) { res.status(500).json({ error: 'Klaida' }); }
     });
 
-    // Alias for nails: /reservations
+    // Aliases: all patterns for listing bookings
     router.get('/reservations', requireAdmin, async (req, res) => {
         try {
             const rows = await dbAll(`SELECT * FROM ${bookingsTable} ORDER BY date DESC, time ASC`);
             res.json(rows);
         } catch(err) { res.status(500).json({ error: 'Klaida' }); }
     });
+    router.get('/bookings', requireAdmin, async (req, res) => {
+        try {
+            const rows = await dbAll(`SELECT * FROM ${bookingsTable} ORDER BY date DESC, time ASC`);
+            res.json(rows);
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    });
 
-    router.patch('/admin/bookings/:id', requireAdmin, async (req, res) => {
+    // Update booking status — all patterns
+    async function updateBookingStatus(req, res) {
         try {
             await dbRun(`UPDATE ${bookingsTable} SET status = ? WHERE id = ?`, [req.body.status, req.params.id]);
             res.json({ success: true });
         } catch(err) { res.status(500).json({ error: 'Klaida' }); }
-    });
+    }
+    router.patch('/admin/bookings/:id', requireAdmin, updateBookingStatus);
+    router.patch('/bookings/:id/status', requireAdmin, updateBookingStatus);
+    router.patch('/reservations/:id/status', requireAdmin, updateBookingStatus);
 
-    router.delete('/admin/bookings/:id', requireAdmin, async (req, res) => {
+    // Delete booking — all patterns
+    async function deleteBooking(req, res) {
         try {
             await dbRun(`DELETE FROM ${bookingsTable} WHERE id = ?`, [req.params.id]);
             res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    }
+    router.delete('/admin/bookings/:id', requireAdmin, deleteBooking);
+    router.delete('/bookings/:id', requireAdmin, deleteBooking);
+    router.delete('/reservations/:id', requireAdmin, deleteBooking);
+
+    // ==================== CHANGE PASSWORD ====================
+    router.post('/admin/change-password', requireAdmin, async (req, res) => {
+        try {
+            const { currentPassword, newPassword } = req.body;
+            if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Trūksta laukų' });
+            const admin = await dbGet("SELECT * FROM admins WHERE id = 1");
+            if (!admin || !bcrypt.compareSync(currentPassword, admin.password)) {
+                return res.status(401).json({ error: 'Neteisingas dabartinis slaptažodis' });
+            }
+            const hashed = bcrypt.hashSync(newPassword, 10);
+            await dbRun("UPDATE admins SET password = ? WHERE id = ?", [hashed, admin.id]);
+            res.json({ success: true, message: 'Slaptažodis pakeistas sėkmingai' });
         } catch(err) { res.status(500).json({ error: 'Klaida' }); }
     });
 
