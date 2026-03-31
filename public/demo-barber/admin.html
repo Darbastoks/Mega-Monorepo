@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Velora Barber Demo
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/demo-barber/css/styles.css?v=3">
+    <link rel="stylesheet" href="/demo-barber/css/admin.css?v=3">
+</head>
+
+<body class="admin-body">
+    <!-- Admin Login -->
+    <div class="admin-login" id="adminLogin">
+        <div class="login-card">
+            <div class="login-header">
+                <span class="logo-icon">✂</span>
+                <h1>VELORA<span class="logo-accent"> BARBER</span></h1>
+                <p>Administratoriaus panelė</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Vartotojo vardas</label>
+                    <input type="text" id="username" name="username" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Slaptažodis</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Prisijungti</button>
+            </form>
+            <div class="login-error" id="loginError"></div>
+            <div class="login-footer">
+                <a href="/demo-barber" class="back-link">← Grįžti į svetainę</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard" style="display:none;">
+        <header class="admin-header">
+            <div class="admin-header-left">
+                <span class="logo-icon">✂</span>
+                <h2>VELORA BARBER <span class="logo-accent">Admin</span></h2>
+            </div>
+            <div class="admin-header-right">
+                <button class="btn btn-emergency btn-sm" id="emergencyCancelBtn">SKUBUS atšaukimas</button>
+                <button class="btn btn-outline btn-sm" id="viewSettingsBtn">⚙ Nustatymai</button>
+                <button class="btn btn-outline btn-sm" id="viewBookingsBtn" style="display:none;">📅 Registracijos</button>
+                <a href="/demo-barber" class="btn btn-outline btn-sm">← Svetainė</a>
+                <button class="btn btn-outline btn-sm" id="logoutBtn">Atsijungti</button>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="admin-stats">
+            <div class="admin-stat-card">
+                <span class="admin-stat-number" id="statTotal">0</span>
+                <span class="admin-stat-label">Viso registracijų</span>
+            </div>
+            <div class="admin-stat-card pending">
+                <span class="admin-stat-number" id="statPending">0</span>
+                <span class="admin-stat-label">Laukiančios</span>
+            </div>
+            <div class="admin-stat-card confirmed">
+                <span class="admin-stat-number" id="statConfirmed">0</span>
+                <span class="admin-stat-label">Patvirtintos</span>
+            </div>
+            <div class="admin-stat-card completed">
+                <span class="admin-stat-number" id="statCompleted">0</span>
+                <span class="admin-stat-label">Atliktos</span>
+            </div>
+        </div>
+
+        <!-- Plan Card -->
+        <div id="portalPlanCard" style="display:none; margin:0 32px 16px; padding:20px 24px; background:var(--bg-card); border:1px solid rgba(255,255,255,0.05); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div>
+                <span id="portalPlanBadge" style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:rgba(148,163,184,0.15);color:#94a3b8;">START</span>
+                <span id="portalChangesInfo" style="font-size:0.85rem;color:var(--text-secondary);margin-left:12px;">Pakeitimų: 0/1 šį mėnesį</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-size:0.8rem;color:var(--text-muted);">Norite pakeisti tekstus, spalvas ar paslaugas?</span>
+                <a href="/portal" target="_blank" style="padding:6px 14px;border-radius:6px;background:rgba(34,211,238,0.15);color:#22d3ee;font-size:0.8rem;font-weight:600;text-decoration:none;transition:all 0.2s;">Pateikti užklausą</a>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-filters">
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">Visos</button>
+                <button class="filter-tab" data-filter="pending">Laukiančios</button>
+                <button class="filter-tab" data-filter="confirmed">Patvirtintos</button>
+                <button class="filter-tab" data-filter="completed">Atliktos</button>
+                <button class="filter-tab" data-filter="cancelled">Atšauktos</button>
+            </div>
+            <div class="filter-search">
+                <input type="text" id="searchInput" placeholder="Ieškoti pagal vardą ar telefoną...">
+            </div>
+        </div>
+
+        <!-- Bookings Section -->
+        <div id="bookingsSection">
+            <!-- Settings Summary Card -->
+            <div id="settingsSummaryCard" style="background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb); border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: none;">
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; font-size: 0.9rem;">
+                    <div><strong>Darbo dienos:</strong> <span id="summaryWorkDays" style="color: #6b7280;">—</span></div>
+                    <div><strong>Laikas:</strong> <span id="summaryHours" style="color: #6b7280;">—</span></div>
+                    <div><strong>Pertraukos:</strong> <span id="summaryBreaks" style="color: #6b7280;">—</span></div>
+                    <div><strong>Nedarbo dienos:</strong> <span id="summaryBlocked" style="color: #6b7280;">—</span></div>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Vardas</th>
+                            <th>Telefonas</th>
+                            <th>Paslauga</th>
+                            <th>Data</th>
+                            <th>Laikas</th>
+                            <th>Statusas</th>
+                            <th>Veiksmai</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsBody">
+                        <!-- Rows loaded dynamically -->
+                    </tbody>
+                </table>
+                <div class="admin-empty" id="emptyState" style="display:none;">
+                    <span>📋</span>
+                    <p>Registracijų nerasta</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settingsSection" style="display:none; margin-top:2rem;">
+            <div style="max-width: 500px; background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin-bottom: 1rem;">Darbo Laikas</h3>
+                <form id="settingsForm">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Darbo Dienos</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <label><input type="checkbox" name="workDays" value="1"> Pr</label>
+                            <label><input type="checkbox" name="workDays" value="2"> An</label>
+                            <label><input type="checkbox" name="workDays" value="3"> Tr</label>
+                            <label><input type="checkbox" name="workDays" value="4"> Kt</label>
+                            <label><input type="checkbox" name="workDays" value="5"> Pn</label>
+                            <label><input type="checkbox" name="workDays" value="6"> Še</label>
+                            <label><input type="checkbox" name="workDays" value="0"> Se</label>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pradžia</label>
+                            <input type="time" id="startHour" required
+                                style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pabaiga</label>
+                            <input type="time" id="endHour" required
+                                style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Pertraukos</label>
+                        <small style="opacity:0.5; display:block; margin-bottom: 0.5rem;">Iki 4 pertraukų per dieną</small>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; align-items: end;">
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.25rem; font-size: 0.85rem; opacity:0.6;">Nuo</label>
+                                <input type="time" id="breakStartInput"
+                                    style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display:block; margin-bottom: 0.25rem; font-size: 0.85rem; opacity:0.6;">Iki</label>
+                                <input type="time" id="breakEndInput"
+                                    style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                            </div>
+                            <button type="button" onclick="addBreak()" class="btn btn-primary" style="padding:0.5rem 1rem;">+</button>
+                        </div>
+                        <div id="breaksList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Išsaugoti Darbo Laiką</button>
+                </form>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <label style="display:block; margin-bottom: 0.5rem; font-weight: 500;">Nedarbo Dienos</label>
+                    <small style="opacity:0.5; display:block; margin-bottom: 0.5rem;">Atostogos, šventės ar kitos laisvos dienos</small>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <input type="date" id="blockedDateInput"
+                            style="flex:1; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;">
+                        <button type="button" onclick="addBlockedDate()"
+                            class="btn btn-primary" style="padding:0.5rem 1rem;">+</button>
+                    </div>
+                    <div id="blockedDatesList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div class="modal" id="passwordModal" style="display:none;">
+            <div class="modal-content">
+                <h3>Keisti slaptažodį</h3>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label>Dabartinis slaptažodis</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Naujas slaptažodis</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline"
+                            onclick="document.getElementById('passwordModal').style.display='none'">Atšaukti</button>
+                        <button type="submit" class="btn btn-primary">Pakeisti</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Cancel Modal -->
+    <div class="modal" id="emergencyModal" style="display:none;">
+        <div class="modal-content emergency-modal">
+            <h3 style="color:#ef4444; margin-bottom:1rem;">SKUBUS atšaukimas</h3>
+            <p style="opacity:0.7; margin-bottom:1rem; font-size:0.9rem;">Pasirinkite datą ir atšaukite visas registracijas. Klientai bus informuoti el. paštu.</p>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Data *</label>
+                <input type="date" id="emergencyDate" required style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+            </div>
+
+            <div style="margin-bottom:1rem;">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+                    <input type="checkbox" id="emergencyFullDay" checked>
+                    <span>Visa diena</span>
+                </label>
+            </div>
+
+            <div id="emergencyTimeRange" style="display:none; margin-bottom:1rem;">
+                <div style="display:flex; gap:1rem;">
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Nuo</label>
+                        <input type="time" id="emergencyStartTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem;">Iki</label>
+                        <input type="time" id="emergencyEndTime" style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Priežastis (neprivaloma)</label>
+                <textarea id="emergencyReason" rows="2" placeholder="Pvz.: Sergama, šeimos reikalai..." style="width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; resize:vertical;"></textarea>
+            </div>
+
+            <div id="emergencyPreview" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                <p style="font-weight:500; margin-bottom:0.5rem;">Paveiktos registracijos:</p>
+                <div id="emergencyPreviewList"></div>
+            </div>
+
+            <div id="emergencyResult" style="display:none; margin-bottom:1rem; padding:1rem; border-radius:8px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3);">
+            </div>
+
+            <div class="form-actions" style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                <button type="button" class="btn btn-outline" id="emergencyCloseBtn">Uždaryti</button>
+                <button type="button" class="btn btn-emergency" id="emergencyConfirmBtn" disabled>Atšaukti registracijas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <span class="toast-icon" id="toastIcon">✅</span>
+            <span class="toast-message" id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="/demo-barber/js/admin.js?v=3"></script>
+</body>
+
+</html>

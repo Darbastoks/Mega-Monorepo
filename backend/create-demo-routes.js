@@ -1,0 +1,397 @@
+/**
+ * Demo Salon Route Factory
+ * Creates a full Express Router with booking, settings, services, and admin endpoints
+ * for a demo salon site. Works with raw SQLite databases.
+ */
+const { Router } = require('express');
+const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
+
+/**
+ * @param {Object} config
+ * @param {Object} config.db - SQLite database instance
+ * @param {string} config.slug - Route slug (e.g., 'demo-barber')
+ * @param {string} config.passwordEnvVar - Env var name for admin password
+ * @param {string} config.salonName - Display name for emails
+ * @param {string} config.sessionKey - Session key for admin auth
+ * @param {string} config.bookingsTable - Name of bookings table ('bookings' or 'reservations')
+ * @param {Function} [config.emailTransporter] - Nodemailer transporter (optional)
+ */
+function createDemoRoutes(config) {
+    const { db, slug, passwordEnvVar, salonName, sessionKey, bookingsTable = 'bookings', emailTransporter } = config;
+    const router = Router();
+
+    const limiter = rateLimit({
+        windowMs: 10 * 60 * 1000,
+        max: 5,
+        message: { error: 'Per daug bandymų. Pabandykite dar kartą vėliau.' }
+    });
+
+    // Helper: require admin
+    function requireAdmin(req, res, next) {
+        if (req.session && req.session[sessionKey]) return next();
+        res.status(401).json({ error: 'Reikia prisijungti' });
+    }
+
+    // Helper: promisified db calls
+    const dbGet = (sql, params = []) => new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => err ? reject(err) : resolve(row));
+    });
+    const dbAll = (sql, params = []) => new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+    });
+    const dbRun = (sql, params = []) => new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) { err ? reject(err) : resolve({ lastID: this.lastID, changes: this.changes }); });
+    });
+
+    const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    const minsToTime = (m) => `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
+
+    // ==================== SETTINGS ====================
+    router.get('/settings', async (req, res) => {
+        try {
+            let row = await dbGet("SELECT * FROM settings WHERE id = 1");
+            if (!row) {
+                await dbRun("INSERT OR IGNORE INTO settings (id) VALUES (1)");
+                row = await dbGet("SELECT * FROM settings WHERE id = 1");
+            }
+            if (row) {
+                if (row.workingDays) row.workingDays = JSON.parse(row.workingDays);
+                try { row.blockedDates = JSON.parse(row.blockedDates || '[]'); } catch(e) { row.blockedDates = []; }
+                try { row.breaks = JSON.parse(row.breaks || '[]'); } catch(e) { row.breaks = []; }
+                if (row.breaks.length === 0 && row.breakStart && row.breakEnd) {
+                    row.breaks = [{ start: row.breakStart, end: row.breakEnd }];
+                }
+            }
+            res.json(row || { workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30', blockedDates: [], breaks: [] });
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    router.put('/settings', requireAdmin, async (req, res) => {
+        try {
+            const { workingDays, startHour, endHour, blockedDates, breaks } = req.body;
+            await dbRun("UPDATE settings SET workingDays = ?, startHour = ?, endHour = ?, blockedDates = ?, breaks = ? WHERE id = 1",
+                [JSON.stringify(workingDays), startHour, endHour, JSON.stringify(blockedDates || []), JSON.stringify(breaks || [])]);
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'DB klaida: ' + err.message }); }
+    });
+
+    // ==================== SERVICES ====================
+    router.get('/services', async (req, res) => {
+        try {
+            const rows = await dbAll("SELECT * FROM services ORDER BY sort_order ASC");
+            res.json(rows);
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    router.post('/services', requireAdmin, async (req, res) => {
+        try {
+            const services = req.body;
+            if (!Array.isArray(services)) return res.status(400).json({ error: 'Invalid data' });
+            await dbRun("DELETE FROM services");
+            for (let i = 0; i < services.length; i++) {
+                const s = services[i];
+                await dbRun("INSERT INTO services (name, duration, price, sort_order) VALUES (?, ?, ?, ?)",
+                    [s.name, s.duration || 30, s.price || 0, i + 1]);
+            }
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    // ==================== AVAILABLE TIMES ====================
+    // Support both endpoint patterns: /bookings/times/:date (barbie/hair) and /available-times (nails)
+    async function getAvailableTimes(req, res) {
+        try {
+            const date = req.params.date || req.query.date;
+            const requestedServiceName = req.query.service;
+            if (!date) return res.status(400).json({ error: 'date required' });
+
+            const settings = await dbGet("SELECT * FROM settings WHERE id = 1") ||
+                { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '18:30', breaks: '[]', blockedDates: '[]' };
+
+            const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+            let blockedDates = [];
+            try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates) : settings.blockedDates; } catch(e) {}
+
+            const dayOfWeek = new Date(date).getDay();
+            if (!workingDays.includes(dayOfWeek)) return res.json([]);
+            if (blockedDates.includes(date)) return res.json([]);
+
+            const services = await dbAll("SELECT * FROM services");
+            let requestedDuration = 30;
+            if (requestedServiceName) {
+                const s = services.find(sr => sr.name === requestedServiceName);
+                if (s) requestedDuration = s.duration;
+            }
+
+            const startOfDayMins = timeToMins(settings.startHour);
+            const endOfDayMins = timeToMins(settings.endHour);
+            let breaksArr = [];
+            try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+            if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) {
+                breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+            }
+
+            const bookings = await dbAll(
+                `SELECT * FROM ${bookingsTable} WHERE date = ? AND status != 'cancelled'`, [date]
+            );
+            const blockedIntervals = bookings.map(b => {
+                const bSrv = services.find(s => s.name === b.service);
+                const bDuration = bSrv ? bSrv.duration : 30;
+                const bStartMins = timeToMins(b.time);
+                return { start: bStartMins, end: bStartMins + bDuration };
+            });
+
+            breaksArr.forEach(br => {
+                if (br.start && br.end) {
+                    const bStart = timeToMins(br.start);
+                    const bEnd = timeToMins(br.end);
+                    if (bEnd > bStart) blockedIntervals.push({ start: bStart, end: bEnd });
+                }
+            });
+
+            const availableSlots = [];
+            for (let curr = startOfDayMins; curr + requestedDuration <= endOfDayMins; curr += 30) {
+                const reqEnd = curr + requestedDuration;
+                const overlaps = blockedIntervals.some(b => curr < b.end && reqEnd > b.start);
+                if (!overlaps) availableSlots.push(minsToTime(curr));
+            }
+
+            res.json(availableSlots);
+        } catch(err) {
+            console.error(`${slug} time slot error:`, err);
+            res.json(["09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00"]);
+        }
+    }
+
+    router.get('/bookings/times/:date', getAvailableTimes);
+    router.get('/available-times', getAvailableTimes);
+
+    // ==================== MONTH AVAILABILITY ====================
+    router.get('/availability-month', async (req, res) => {
+        try {
+            const year = parseInt(req.query.year);
+            const month = parseInt(req.query.month);
+            if (!year || !month) return res.status(400).json({ error: 'year and month required' });
+
+            const monthStr = String(month).padStart(2, '0');
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            const settings = await dbGet("SELECT * FROM settings WHERE id = 1") ||
+                { workingDays: '[1,2,3,4,5,6]', startHour: '09:00', endHour: '18:30', breaks: '[]', blockedDates: '[]' };
+            const workingDays = typeof settings.workingDays === 'string' ? JSON.parse(settings.workingDays) : settings.workingDays;
+            let blockedDates = [];
+            try { blockedDates = typeof settings.blockedDates === 'string' ? JSON.parse(settings.blockedDates) : settings.blockedDates; } catch(e) {}
+            let breaksArr = [];
+            try { breaksArr = typeof settings.breaks === 'string' ? JSON.parse(settings.breaks || '[]') : (settings.breaks || []); } catch(e) {}
+            if (breaksArr.length === 0 && settings.breakStart && settings.breakEnd) breaksArr = [{ start: settings.breakStart, end: settings.breakEnd }];
+
+            const startMins = timeToMins(settings.startHour);
+            const endMins = timeToMins(settings.endHour);
+            const dur = 30;
+
+            const breakIntervals = breaksArr.filter(b => b.start && b.end).map(b => ({ start: timeToMins(b.start), end: timeToMins(b.end) })).filter(b => b.end > b.start);
+            let totalSlots = 0;
+            for (let c = startMins; c + dur <= endMins; c += 30) {
+                if (!breakIntervals.some(b => c < b.end && c + dur > b.start)) totalSlots++;
+            }
+
+            const dateFrom = `${year}-${monthStr}-01`;
+            const dateTo = `${year}-${monthStr}-${String(daysInMonth).padStart(2, '0')}`;
+            const bookings = await dbAll(
+                `SELECT date, service, time FROM ${bookingsTable} WHERE date >= ? AND date <= ? AND status != 'cancelled'`,
+                [dateFrom, dateTo]
+            );
+            const services = await dbAll("SELECT * FROM services");
+
+            const result = {};
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${monthStr}-${String(d).padStart(2, '0')}`;
+                const dow = new Date(dateStr).getDay();
+                if (!workingDays.includes(dow) || blockedDates.includes(dateStr)) {
+                    result[dateStr] = 'closed'; continue;
+                }
+                const dayBookings = bookings.filter(b => b.date === dateStr);
+                const bookedIntervals = dayBookings.map(b => {
+                    const srv = services.find(s => s.name === b.service);
+                    const bDur = srv ? srv.duration : 30;
+                    const st = timeToMins(b.time);
+                    return { start: st, end: st + bDur };
+                });
+                const allBlocked = [...breakIntervals, ...bookedIntervals];
+                let available = 0;
+                for (let c = startMins; c + dur <= endMins; c += 30) {
+                    if (!allBlocked.some(b => c < b.end && c + dur > b.start)) available++;
+                }
+                if (available === 0) result[dateStr] = 'red';
+                else if (available > totalSlots / 2) result[dateStr] = 'green';
+                else result[dateStr] = 'yellow';
+            }
+            res.json(result);
+        } catch(err) { res.status(500).json({ error: 'DB error' }); }
+    });
+
+    // ==================== BOOKING / RESERVATION ====================
+    // Support all endpoint patterns: POST /bookings (barbie), POST /book (hair), POST /reservations (nails)
+    async function createBooking(req, res) {
+        try {
+            const { name, phone, email, service, date, time, message, notes, website_url_fake } = req.body;
+            if (website_url_fake) return res.status(200).json({ success: true }); // honeypot
+            if (!name || !phone || !service || !date || !time) {
+                return res.status(400).json({ error: 'Visi privalomi laukai turi būti užpildyti.' });
+            }
+
+            const existing = await dbGet(
+                `SELECT id FROM ${bookingsTable} WHERE date = ? AND time = ? AND status != 'cancelled'`,
+                [date, time]
+            );
+            if (existing) return res.status(409).json({ error: 'Šis laikas jau užimtas. Prašome pasirinkti kitą.' });
+
+            if (bookingsTable === 'reservations') {
+                await dbRun(
+                    "INSERT INTO reservations (name, phone, service, date, time, notes, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
+                    [name, phone, service, date, time, notes || message || '']
+                );
+            } else {
+                await dbRun(
+                    "INSERT INTO bookings (name, phone, email, service, date, time, message, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')",
+                    [name, phone, email || null, service, date, time, message || notes || '']
+                );
+            }
+            res.status(201).json({ success: true });
+        } catch(err) {
+            console.error(`${slug} booking error:`, err.message);
+            res.status(500).json({ error: 'Serverio klaida.' });
+        }
+    }
+
+    router.post('/bookings', limiter, createBooking);
+    router.post('/book', limiter, createBooking);
+    router.post('/reservations', limiter, createBooking);
+
+    // ==================== ADMIN AUTH ====================
+    router.post('/admin/login', async (req, res) => {
+        const { username, password } = req.body;
+        const envPass = process.env[passwordEnvVar];
+
+        // Simple env-var password check
+        if (envPass && password === envPass) {
+            req.session[sessionKey] = true;
+            return res.json({ success: true });
+        }
+
+        // Also check admin:admin combo with username
+        if (username === 'admin' && envPass && password === envPass) {
+            req.session[sessionKey] = true;
+            return res.json({ success: true });
+        }
+
+        // Check DB admins table
+        try {
+            const admin = await dbGet("SELECT * FROM admins WHERE username = ?", [username || 'admin']);
+            if (admin && bcrypt.compareSync(password, admin.password)) {
+                req.session[sessionKey] = true;
+                return res.json({ success: true });
+            }
+        } catch(e) {}
+
+        res.status(401).json({ error: 'Neteisingi duomenys' });
+    });
+
+    router.post('/admin/logout', (req, res) => {
+        req.session[sessionKey] = false;
+        res.json({ success: true });
+    });
+
+    router.get('/admin/check', requireAdmin, (req, res) => res.json({ isAdmin: true }));
+
+    // ==================== ADMIN BOOKINGS ====================
+    router.get('/admin/bookings', requireAdmin, async (req, res) => {
+        try {
+            const rows = await dbAll(`SELECT * FROM ${bookingsTable} ORDER BY date DESC, time ASC`);
+            res.json(rows);
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    });
+
+    // Alias for nails: /reservations
+    router.get('/reservations', requireAdmin, async (req, res) => {
+        try {
+            const rows = await dbAll(`SELECT * FROM ${bookingsTable} ORDER BY date DESC, time ASC`);
+            res.json(rows);
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    });
+
+    router.patch('/admin/bookings/:id', requireAdmin, async (req, res) => {
+        try {
+            await dbRun(`UPDATE ${bookingsTable} SET status = ? WHERE id = ?`, [req.body.status, req.params.id]);
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    });
+
+    router.delete('/admin/bookings/:id', requireAdmin, async (req, res) => {
+        try {
+            await dbRun(`DELETE FROM ${bookingsTable} WHERE id = ?`, [req.params.id]);
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'Klaida' }); }
+    });
+
+    // ==================== EMERGENCY CANCEL ====================
+    router.post('/admin/emergency-cancel', requireAdmin, async (req, res) => {
+        try {
+            const { date, fullDay, startTime, endTime, reason } = req.body;
+            if (!date) return res.status(400).json({ error: 'Data privaloma' });
+
+            const whereClause = fullDay
+                ? `date = ? AND status != 'cancelled'`
+                : `date = ? AND time >= ? AND time <= ? AND status != 'cancelled'`;
+            const params = fullDay ? [date] : [date, startTime, endTime];
+
+            const bookings = await dbAll(`SELECT * FROM ${bookingsTable} WHERE ${whereClause}`, params);
+
+            // Block the date
+            const settingsRow = await dbGet("SELECT blockedDates FROM settings WHERE id = 1");
+            if (settingsRow) {
+                let blocked = [];
+                try { blocked = JSON.parse(settingsRow.blockedDates || '[]'); } catch(e) {}
+                if (!blocked.includes(date)) {
+                    blocked.push(date);
+                    await dbRun("UPDATE settings SET blockedDates = ? WHERE id = 1", [JSON.stringify(blocked)]);
+                }
+            }
+
+            if (!bookings || bookings.length === 0) {
+                return res.json({ cancelledCount: 0, clients: [] });
+            }
+
+            const ids = bookings.map(b => b.id);
+            const placeholders = ids.map(() => '?').join(',');
+            await dbRun(`UPDATE ${bookingsTable} SET status = 'cancelled' WHERE id IN (${placeholders})`, ids);
+
+            const clients = bookings.map(b => ({
+                name: b.name, phone: b.phone, email: b.email || '',
+                service: b.service, time: b.time, date: b.date
+            }));
+            res.json({ cancelledCount: bookings.length, clients });
+        } catch(err) { res.status(500).json({ error: 'Klaida atšaukiant' }); }
+    });
+
+    // ==================== SEND CANCEL EMAIL ====================
+    router.post('/admin/send-cancel-email', requireAdmin, async (req, res) => {
+        const { to, clientName, message } = req.body;
+        if (!to || !message) return res.status(400).json({ error: 'El. paštas ir žinutė privalomi' });
+        if (!emailTransporter) return res.status(500).json({ error: 'El. paštas nesukonfigūruotas' });
+        try {
+            await emailTransporter.sendMail({
+                from: `"${salonName}" <${process.env.GMAIL_USER}>`,
+                to,
+                subject: `Dėl Jūsų vizito — ${salonName}`,
+                text: message
+            });
+            res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'Nepavyko išsiųsti: ' + err.message }); }
+    });
+
+    return router;
+}
+
+module.exports = createDemoRoutes;

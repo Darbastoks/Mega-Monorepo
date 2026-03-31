@@ -4,3 +4,6 @@ node_modules/
 .DS_Store
 backend/nails/database.sqlite
 data/
+backend/demo-barber/*.sqlite
+backend/demo-hair/*.sqlite
+backend/demo-nails/*.sqlite

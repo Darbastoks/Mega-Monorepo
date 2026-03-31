@@ -62,6 +62,11 @@ const { initDatabase, Admin, Booking, db: dbBarbie } = require('./backend/barbie
 const dbHair = require('./backend/hair/database');
 // Nails SQLite db
 const dbNails = require('./backend/nails/database');
+// Demo salon databases
+const { db: dbDemoBarber } = require('./backend/demo-barber/database');
+const dbDemoHair = require('./backend/demo-hair/database');
+const dbDemoNails = require('./backend/demo-nails/database');
+const createDemoRoutes = require('./backend/create-demo-routes');
 // Velora Lead & Admin
 const { VeloraAdmin, VeloraLead, initVeloraDatabase } = require('./backend/velora/database');
 // Portal (client accounts + change requests)
@@ -218,6 +223,10 @@ app.use('/nails', express.static(path.join(__dirname, 'public/nails')));
 app.use('/hair', express.static(path.join(__dirname, 'public/hair')));
 app.use('/velora', express.static(path.join(__dirname, 'public/velora')));
 app.use('/portal', express.static(path.join(__dirname, 'public/portal')));
+// Demo portfolio sites
+app.use('/demo-barber', express.static(path.join(__dirname, 'public/demo-barber')));
+app.use('/demo-hair', express.static(path.join(__dirname, 'public/demo-hair')));
+app.use('/demo-nails', express.static(path.join(__dirname, 'public/demo-nails')));
 // Root serves the Velora Studio BUSINESS website
 app.use(express.static(path.join(__dirname, 'public/website')));
 
@@ -1415,6 +1424,23 @@ app.delete('/api/velora/admin/leads/:id', requireVeloraAdmin, async (req, res) =
 });
 
 
+// ==================== DEMO PORTFOLIO SITE APIs ====================
+app.use('/api/demo-barber', createDemoRoutes({
+    db: dbDemoBarber, slug: 'demo-barber', passwordEnvVar: 'DEMO_ADMIN_PASS',
+    salonName: 'Velora Barber', sessionKey: 'isDemoBarberAdmin', bookingsTable: 'bookings',
+    emailTransporter
+}));
+app.use('/api/demo-hair', createDemoRoutes({
+    db: dbDemoHair, slug: 'demo-hair', passwordEnvVar: 'DEMO_ADMIN_PASS',
+    salonName: 'Velora Hair', sessionKey: 'isDemoHairAdmin', bookingsTable: 'bookings',
+    emailTransporter
+}));
+app.use('/api/demo-nails', createDemoRoutes({
+    db: dbDemoNails, slug: 'demo-nails', passwordEnvVar: 'DEMO_ADMIN_PASS',
+    salonName: 'Velora Nails', sessionKey: 'isDemoNailsAdmin', bookingsTable: 'reservations',
+    emailTransporter
+}));
+
 // Explicit index routes for sub-sites (prevents SPA fallback from catching them)
 app.get('/barbie', (req, res) => res.sendFile(path.join(__dirname, 'public/barbie', 'index.html')));
 app.get('/nails', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'index.html')));
@@ -1425,6 +1451,13 @@ app.get('/barbie/admin', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/nails', 'admin.html')));
 app.get('/hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/hair', 'admin.html')));
 app.get('/velora/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/velora', 'admin.html')));
+// Demo site routes
+app.get('/demo-barber', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-barber', 'index.html')));
+app.get('/demo-hair', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-hair', 'index.html')));
+app.get('/demo-nails', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-nails', 'index.html')));
+app.get('/demo-barber/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-barber', 'admin.html')));
+app.get('/demo-hair/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-hair', 'admin.html')));
+app.get('/demo-nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/demo-nails', 'admin.html')));
 // Business website pages
 app.get('/thank-you', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'thank-you.html')));
 app.get('/privatumo-politika', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'privatumo-politika.html')));
