@@ -1430,11 +1430,19 @@ const DEMO_BARBER_SERVICES = [
     { name: 'Barzdos formavimas', duration: 30, price: 12, sort_order: 2 },
     { name: 'Kirpimas + Barzda', duration: 60, price: 25, sort_order: 3 }
 ];
+const DEMO_BARBER_STAFF = [
+    { name: 'Kirpėjas A', workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '18:30' },
+    { name: 'Kirpėjas B', workingDays: [1,2,3,4,5], startHour: '10:00', endHour: '19:00' }
+];
 const DEMO_HAIR_SERVICES = [
     { name: 'Plaukų SPA', duration: 60, price: 0, sort_order: 1 },
     { name: 'Tiesinimas', duration: 60, price: 0, sort_order: 2 },
     { name: 'Kirpimas karštomis žirklėmis', duration: 60, price: 0, sort_order: 3 },
     { name: 'Konsultacija', duration: 30, price: 0, sort_order: 4 }
+];
+const DEMO_HAIR_STAFF = [
+    { name: 'Stilistė A', workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '19:00' },
+    { name: 'Stilistė B', workingDays: [1,2,3,4,5], startHour: '10:00', endHour: '18:00' }
 ];
 const DEMO_NAILS_SERVICES = [
     { name: 'Manikiūras', duration: 60, price: 25, sort_order: 1 },
@@ -1442,21 +1450,25 @@ const DEMO_NAILS_SERVICES = [
     { name: 'Priauginimas', duration: 120, price: 45, sort_order: 3 },
     { name: 'Korekcija', duration: 90, price: 30, sort_order: 4 }
 ];
+const DEMO_NAILS_STAFF = [
+    { name: 'Meistrė A', workingDays: [1,2,3,4,5,6], startHour: '09:00', endHour: '19:00' },
+    { name: 'Meistrė B', workingDays: [2,3,4,5,6], startHour: '10:00', endHour: '18:00' }
+];
 
 const demoBarber = createDemoRoutes({
     db: dbDemoBarber, slug: 'demo-barber', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Barber', sessionKey: 'isDemoBarberAdmin', bookingsTable: 'bookings',
-    emailTransporter, defaultServices: DEMO_BARBER_SERVICES
+    emailTransporter, defaultServices: DEMO_BARBER_SERVICES, defaultStaff: DEMO_BARBER_STAFF
 });
 const demoHair = createDemoRoutes({
     db: dbDemoHair, slug: 'demo-hair', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Hair', sessionKey: 'isDemoHairAdmin', bookingsTable: 'bookings',
-    emailTransporter, defaultServices: DEMO_HAIR_SERVICES
+    emailTransporter, defaultServices: DEMO_HAIR_SERVICES, defaultStaff: DEMO_HAIR_STAFF
 });
 const demoNails = createDemoRoutes({
     db: dbDemoNails, slug: 'demo-nails', passwordEnvVar: 'DEMO_ADMIN_PASS',
     salonName: 'Velora Nails', sessionKey: 'isDemoNailsAdmin', bookingsTable: 'reservations',
-    emailTransporter, defaultServices: DEMO_NAILS_SERVICES
+    emailTransporter, defaultServices: DEMO_NAILS_SERVICES, defaultStaff: DEMO_NAILS_STAFF
 });
 app.use('/api/demo-barber', demoBarber.router);
 app.use('/api/demo-hair', demoHair.router);

@@ -77,10 +77,36 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 date TEXT NOT NULL,
                 time TEXT NOT NULL,
                 message TEXT,
+                staff_id INTEGER DEFAULT NULL,
                 status TEXT DEFAULT 'pending',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        // Migration: add staff_id to existing bookings table
+        db.run("ALTER TABLE bookings ADD COLUMN staff_id INTEGER DEFAULT NULL", () => {});
+
+        db.run(`
+            CREATE TABLE IF NOT EXISTS staff (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                workingDays TEXT DEFAULT '[1,2,3,4,5,6]',
+                startHour TEXT DEFAULT '09:00',
+                endHour TEXT DEFAULT '18:30',
+                breaks TEXT DEFAULT '[]',
+                blockedDates TEXT DEFAULT '[]',
+                sort_order INTEGER DEFAULT 0
+            )
+        `, () => {
+            db.get("SELECT COUNT(*) as cnt FROM staff", [], (err, row) => {
+                if (row && row.cnt === 0) {
+                    const stmt = db.prepare("INSERT INTO staff (name, workingDays, startHour, endHour, breaks, blockedDates, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    stmt.run('Kirpėjas A', '[1,2,3,4,5,6]', '09:00', '18:30', '[]', '[]', 1);
+                    stmt.run('Kirpėjas B', '[1,2,3,4,5]', '10:00', '19:00', '[]', '[]', 2);
+                    stmt.finalize();
+                    console.log('✅ Demo-Barber SQLite: Default staff created');
+                }
+            });
+        });
     }
 });
 

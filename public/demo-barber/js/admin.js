@@ -138,6 +138,7 @@ function renderBookings() {
             <td>#${b.id}</td>
             <td><strong>${escapeHtml(b.name)}</strong></td>
             <td>${escapeHtml(b.phone)}</td>
+            <td>${escapeHtml(b.staff_name || '—')}</td>
             <td>${escapeHtml(b.service)}</td>
             <td>${formatDate(b.date)}</td>
             <td>${b.time}</td>
@@ -269,7 +270,9 @@ function initChangePassword() {
     });
 }
 
-// --- Settings ---
+// --- Multi-Staff Settings ---
+let allStaff = [];
+let activeStaffId = null;
 let currentBlockedDates = [];
 let currentBreaks = [];
 
@@ -293,73 +296,184 @@ function initSettings() {
         viewBookingsBtn.style.display = 'none';
     });
 
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await saveAllSettings();
+    document.getElementById('addStaffBtn').addEventListener('click', async () => {
+        const name = prompt('Darbuotojo vardas:');
+        if (!name || !name.trim()) return;
+        try {
+            const res = await fetch('/api/demo-barber/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim() })
+            });
+            if (res.ok) {
+                const d = await res.json();
+                activeStaffId = d.id;
+                await loadStaff();
+                showToast('✅', 'Darbuotojas pridėtas');
+            }
+        } catch(err) { showToast('❌', 'Klaida'); }
     });
 
-    loadSettings();
+    loadStaff();
 }
 
-function getSettingsPayload() {
-    return {
-        workingDays: Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value)),
-        startHour: document.getElementById('startHour').value,
-        endHour: document.getElementById('endHour').value,
-        blockedDates: currentBlockedDates,
-        breaks: currentBreaks
-    };
-}
-
-async function saveAllSettings() {
+async function loadStaff() {
     try {
-        const res = await fetch('/api/demo-barber/settings', {
+        const res = await fetch('/api/demo-barber/staff');
+        allStaff = await res.json();
+        renderStaffTabs();
+        if (allStaff.length > 0 && !activeStaffId) {
+            activeStaffId = allStaff[0].id;
+        }
+        if (activeStaffId) loadStaffSettings(activeStaffId);
+    } catch(err) { console.error('Staff load error:', err); }
+}
+
+function renderStaffTabs() {
+    const container = document.getElementById('staffTabs');
+    container.innerHTML = allStaff.map(s => `
+        <button onclick="switchStaff(${s.id})" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid ${s.id === activeStaffId ? '#c9a96e' : 'rgba(255,255,255,0.15)'}; background:${s.id === activeStaffId ? 'rgba(201,169,110,0.15)' : 'transparent'}; color:${s.id === activeStaffId ? '#c9a96e' : 'inherit'}; cursor:pointer; font-size:0.9rem; font-weight:${s.id === activeStaffId ? '600' : '400'};">
+            ${escapeHtml(s.name)}
+        </button>
+    `).join('');
+}
+
+window.switchStaff = function(staffId) {
+    activeStaffId = staffId;
+    renderStaffTabs();
+    loadStaffSettings(staffId);
+};
+
+async function loadStaffSettings(staffId) {
+    try {
+        const res = await fetch(`/api/demo-barber/staff/${staffId}/settings`);
+        const settings = await res.json();
+        currentBreaks = settings.breaks || [];
+        currentBlockedDates = settings.blockedDates || [];
+        renderStaffSettingsPanel(settings);
+    } catch(err) { console.error('Staff settings load error:', err); }
+}
+
+function renderStaffSettingsPanel(settings) {
+    const panel = document.getElementById('staffSettingsPanel');
+    const inputStyle = 'width:100%; padding:0.5rem; border:1px solid rgba(255,255,255,0.15); border-radius:4px; background:rgba(255,255,255,0.05); color:inherit; font-family:inherit;';
+    const days = [
+        { v: 1, l: 'Pr' }, { v: 2, l: 'An' }, { v: 3, l: 'Tr' }, { v: 4, l: 'Kt' },
+        { v: 5, l: 'Pn' }, { v: 6, l: 'Še' }, { v: 0, l: 'Se' }
+    ];
+    const workingDays = settings.workingDays || [];
+
+    panel.innerHTML = `
+        <div style="max-width:500px; background:rgba(255,255,255,0.05); padding:1.5rem; border-radius:12px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <input type="text" id="staffNameInput" value="${escapeHtml(settings.name)}"
+                    style="font-size:1.1rem; font-weight:600; background:transparent; border:1px solid transparent; border-radius:4px; color:inherit; padding:0.25rem 0.5rem; font-family:inherit; flex:1;"
+                    onblur="saveStaffName()" onfocus="this.style.borderColor='rgba(255,255,255,0.3)'"
+                    onblur="this.style.borderColor='transparent'; saveStaffName()">
+                <button onclick="deleteStaff(${settings.id})" style="padding:0.4rem 0.8rem; background:transparent; border:1px solid #ef4444; border-radius:6px; color:#ef4444; cursor:pointer; font-size:0.8rem; margin-left:0.5rem;" ${allStaff.length <= 1 ? 'disabled title="Turi likti bent vienas darbuotojas"' : ''}>Pašalinti</button>
+            </div>
+            <form id="staffSettingsForm" onsubmit="event.preventDefault(); saveStaffSettings();">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Darbo Dienos</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                        ${days.map(d => `<label><input type="checkbox" name="staffWorkDays" value="${d.v}" ${workingDays.includes(d.v) ? 'checked' : ''}> ${d.l}</label>`).join('')}
+                    </div>
+                </div>
+                <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Pradžia</label>
+                        <input type="time" id="staffStartHour" value="${settings.startHour || '09:00'}" required style="${inputStyle}">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Pabaiga</label>
+                        <input type="time" id="staffEndHour" value="${settings.endHour || '18:30'}" required style="${inputStyle}">
+                    </div>
+                </div>
+                <div style="margin-bottom:1rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Pertraukos</label>
+                    <small style="opacity:0.5; display:block; margin-bottom:0.5rem;">Iki 4 pertraukų per dieną</small>
+                    <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem; align-items:end;">
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem; opacity:0.6;">Nuo</label>
+                            <input type="time" id="breakStartInput" style="${inputStyle}">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem; opacity:0.6;">Iki</label>
+                            <input type="time" id="breakEndInput" style="${inputStyle}">
+                        </div>
+                        <button type="button" onclick="addBreak()" class="btn btn-primary" style="padding:0.5rem 1rem;">+</button>
+                    </div>
+                    <div id="breaksList" style="display:flex; flex-direction:column; gap:6px;"></div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Išsaugoti Darbo Laiką</button>
+            </form>
+            <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1);">
+                <label style="display:block; margin-bottom:0.5rem; font-weight:500;">Nedarbo Dienos</label>
+                <small style="opacity:0.5; display:block; margin-bottom:0.5rem;">Atostogos, šventės ar kitos laisvos dienos</small>
+                <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+                    <input type="date" id="blockedDateInput" style="flex:1; ${inputStyle}">
+                    <button type="button" onclick="addBlockedDate()" class="btn btn-primary" style="padding:0.5rem 1rem;">+</button>
+                </div>
+                <div id="blockedDatesList" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+            </div>
+        </div>
+    `;
+    renderBreaks();
+    renderBlockedDates();
+}
+
+window.saveStaffName = async function() {
+    const nameInput = document.getElementById('staffNameInput');
+    if (!nameInput || !activeStaffId) return;
+    const name = nameInput.value.trim();
+    if (!name) return;
+    try {
+        await fetch(`/api/demo-barber/staff/${activeStaffId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        await loadStaff();
+    } catch(err) {}
+};
+
+window.saveStaffSettings = async function() {
+    if (!activeStaffId) return;
+    const payload = {
+        workingDays: Array.from(document.querySelectorAll('input[name="staffWorkDays"]:checked')).map(cb => parseInt(cb.value)),
+        startHour: document.getElementById('staffStartHour').value,
+        endHour: document.getElementById('staffEndHour').value,
+        breaks: currentBreaks,
+        blockedDates: currentBlockedDates
+    };
+    try {
+        const res = await fetch(`/api/demo-barber/staff/${activeStaffId}/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(getSettingsPayload())
+            body: JSON.stringify(payload)
         });
         if (res.ok) showToast('✅', 'Nustatymai išsaugoti');
         else {
             const errData = await res.json().catch(() => ({}));
             showToast('❌', 'Klaida: ' + (errData.error || res.status));
         }
-    } catch (err) { showToast('❌', 'Tinklo klaida: ' + err.message); }
-}
+    } catch(err) { showToast('❌', 'Tinklo klaida: ' + err.message); }
+};
 
-async function loadSettings() {
+window.deleteStaff = async function(staffId) {
+    if (!confirm('Ar tikrai norite pašalinti šį darbuotoją?')) return;
     try {
-        const res = await fetch('/api/demo-barber/settings');
+        const res = await fetch(`/api/demo-barber/staff/${staffId}`, { method: 'DELETE' });
         if (res.ok) {
-            const settings = await res.json();
-            if (settings) {
-                document.getElementById('startHour').value = settings.startHour;
-                document.getElementById('endHour').value = settings.endHour;
-                document.querySelectorAll('input[name="workDays"]').forEach(cb => {
-                    cb.checked = settings.workingDays.includes(parseInt(cb.value));
-                });
-                currentBlockedDates = settings.blockedDates || [];
-                currentBreaks = settings.breaks || [];
-                renderBlockedDates();
-                renderBreaks();
-                renderSettingsSummary(settings);
-            }
+            activeStaffId = null;
+            await loadStaff();
+            showToast('✅', 'Darbuotojas pašalintas');
+        } else {
+            const d = await res.json();
+            showToast('❌', d.error || 'Klaida');
         }
-    } catch (err) { }
-}
-
-function renderSettingsSummary(settings) {
-    const card = document.getElementById('settingsSummaryCard');
-    if (!card) return;
-    const dayNames = ['Se', 'Pr', 'An', 'Tr', 'Kt', 'Pn', 'Še'];
-    const days = (settings.workingDays || []).sort().map(d => dayNames[d]).join(', ');
-    document.getElementById('summaryWorkDays').textContent = days || 'Nenustatyta';
-    document.getElementById('summaryHours').textContent = `${settings.startHour || '—'} – ${settings.endHour || '—'}`;
-    const breaks = (settings.breaks || []).map(b => `${b.start}–${b.end}`).join(', ');
-    document.getElementById('summaryBreaks').textContent = breaks || 'Nėra';
-    const blocked = settings.blockedDates || [];
-    document.getElementById('summaryBlocked').textContent = blocked.length > 0 ? `${blocked.length} d. (${blocked.slice(0, 3).join(', ')}${blocked.length > 3 ? '…' : ''})` : 'Nėra';
-    card.style.display = 'block';
-}
+    } catch(err) { showToast('❌', 'Tinklo klaida'); }
+};
 
 // --- Breaks (multiple) ---
 function renderBreaks() {
@@ -384,13 +498,13 @@ window.addBreak = function() {
     renderBreaks();
     document.getElementById('breakStartInput').value = '';
     document.getElementById('breakEndInput').value = '';
-    saveAllSettings();
+    saveStaffSettings();
 };
 
 window.removeBreak = function(index) {
     currentBreaks.splice(index, 1);
     renderBreaks();
-    saveAllSettings();
+    saveStaffSettings();
 };
 
 // --- Blocked Dates ---
@@ -414,13 +528,13 @@ window.addBlockedDate = function() {
     currentBlockedDates.sort();
     renderBlockedDates();
     input.value = '';
-    saveAllSettings();
+    saveStaffSettings();
 };
 
 window.removeBlockedDate = function(date) {
     currentBlockedDates = currentBlockedDates.filter(d => d !== date);
     renderBlockedDates();
-    saveAllSettings();
+    saveStaffSettings();
 };
 
 // --- Helpers ---

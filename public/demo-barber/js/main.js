@@ -111,8 +111,27 @@ function initBookingForm() {
     const dateInput = document.getElementById('bookingDate');
     const timeSelect = document.getElementById('bookingTime');
     const serviceSelect = document.getElementById('bookingService');
+    const staffSelect = document.getElementById('bookingStaff');
 
     if (!dateInput || !timeSelect) return;
+
+    // --- Load staff from API ---
+    if (staffSelect) {
+        fetch('/api/demo-barber/staff')
+            .then(r => r.json())
+            .then(staff => {
+                staffSelect.innerHTML = '<option value="">Pasirinkite specialistą...</option>';
+                staff.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    staffSelect.appendChild(opt);
+                });
+            })
+            .catch(() => {
+                staffSelect.innerHTML = '<option value="">Klaida kraunant specialistus</option>';
+            });
+    }
 
     // --- Load services from API ---
     if (serviceSelect) {
@@ -137,11 +156,12 @@ function initBookingForm() {
 
     const fetchTimes = async () => {
         const date = dateInput.value;
-        if (!date) return;
+        const staffId = staffSelect?.value || '';
+        if (!date || !staffId) return;
         timeSelect.innerHTML = '<option value="">Kraunama...</option>';
         try {
             const service = serviceSelect?.value || '';
-            const res = await fetch(`/api/demo-barber/bookings/times/${date}?service=${encodeURIComponent(service)}`);
+            const res = await fetch(`/api/demo-barber/bookings/times/${date}?service=${encodeURIComponent(service)}&staff_id=${staffId}`);
             const slots = await res.json();
             if (!slots || slots.length === 0) {
                 timeSelect.innerHTML = '<option value="">Šią dieną laisvų laikų nėra</option>';
@@ -161,8 +181,10 @@ function initBookingForm() {
     };
 
     async function loadMonthAvailability(year, month, instance) {
+        const staffId = staffSelect?.value || '';
+        if (!staffId) return;
         try {
-            const res = await fetch(`/api/demo-barber/availability-month?year=${year}&month=${month}`);
+            const res = await fetch(`/api/demo-barber/availability-month?year=${year}&month=${month}&staff_id=${staffId}`);
             monthAvailability = await res.json();
             instance.redraw();
         } catch (err) { console.error('Month availability error:', err); }
@@ -188,9 +210,23 @@ function initBookingForm() {
         onOpen: function(sel, str, inst) { loadMonthAvailability(inst.currentYear, inst.currentMonth + 1, inst); }
     });
 
-    // --- Service-first flow: date/time only enabled after service is selected ---
+    // --- Flow: Staff + Service -> Date -> Time ---
     const dateGroup = dateInput.closest('.form-group');
     const timeGroup = timeSelect.closest('.form-group');
+
+    function checkEnableDateTime() {
+        const staffOk = staffSelect && staffSelect.value;
+        const serviceOk = serviceSelect && serviceSelect.value;
+        if (staffOk && serviceOk) {
+            setDateTimeEnabled(true);
+            // Reset calendar availability for new staff
+            monthAvailability = {};
+            fp.clear();
+            timeSelect.innerHTML = '<option value="">Pasirinkite datą...</option>';
+        } else {
+            setDateTimeEnabled(false);
+        }
+    }
 
     function setDateTimeEnabled(enabled) {
         if (enabled) {
@@ -200,9 +236,9 @@ function initBookingForm() {
         } else {
             dateInput.disabled = true;
             fp.clear();
-            dateInput.placeholder = 'Pirma pasirinkite paslaugą...';
+            dateInput.placeholder = 'Pirma pasirinkite specialistą ir paslaugą...';
             timeSelect.disabled = true;
-            timeSelect.innerHTML = '<option value="">Pirma pasirinkite paslaugą...</option>';
+            timeSelect.innerHTML = '<option value="">Pirma pasirinkite specialistą ir paslaugą...</option>';
         }
         if (dateGroup) dateGroup.style.opacity = enabled ? '1' : '0.5';
         if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '0.5';
@@ -211,17 +247,11 @@ function initBookingForm() {
     // Start disabled (AFTER flatpickr init)
     setDateTimeEnabled(false);
 
+    if (staffSelect) {
+        staffSelect.addEventListener('change', checkEnableDateTime);
+    }
     if (serviceSelect) {
-        serviceSelect.addEventListener('change', () => {
-            if (serviceSelect.value) {
-                setDateTimeEnabled(true);
-                if (dateInput.value) fetchTimes();
-            } else {
-                setDateTimeEnabled(false);
-            }
-        });
-        // Handle browser autofill
-        if (serviceSelect.value) setDateTimeEnabled(true);
+        serviceSelect.addEventListener('change', checkEnableDateTime);
     }
 
     form.addEventListener('submit', async (e) => {
@@ -238,6 +268,7 @@ function initBookingForm() {
             date: document.getElementById('bookingDate').value,
             time: document.getElementById('bookingTime').value,
             message: document.getElementById('bookingMessage').value,
+            staff_id: staffSelect ? parseInt(staffSelect.value) || null : null,
             website_url_fake: document.getElementById('website_url_fake').value
         };
 

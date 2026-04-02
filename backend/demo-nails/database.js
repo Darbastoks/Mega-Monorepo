@@ -47,8 +47,32 @@ const db = new sqlite3.Database(dbPath, (err) => {
             db.run("ALTER TABLE settings ADD COLUMN breaks TEXT DEFAULT '[]'", () => {});
         });
 
-        // Migrate: add email column to reservations if missing
+        // Migrate: add email and staff_id columns to reservations if missing
         db.run("ALTER TABLE reservations ADD COLUMN email TEXT DEFAULT ''", () => {});
+        db.run("ALTER TABLE reservations ADD COLUMN staff_id INTEGER DEFAULT NULL", () => {});
+
+        db.run(`
+            CREATE TABLE IF NOT EXISTS staff (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                workingDays TEXT DEFAULT '[1,2,3,4,5,6]',
+                startHour TEXT DEFAULT '09:00',
+                endHour TEXT DEFAULT '18:30',
+                breaks TEXT DEFAULT '[]',
+                blockedDates TEXT DEFAULT '[]',
+                sort_order INTEGER DEFAULT 0
+            )
+        `, () => {
+            db.get("SELECT COUNT(*) as cnt FROM staff", [], (err, row) => {
+                if (row && row.cnt === 0) {
+                    const stmt = db.prepare("INSERT INTO staff (name, workingDays, startHour, endHour, breaks, blockedDates, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    stmt.run('Meistrė A', '[1,2,3,4,5,6]', '09:00', '19:00', '[]', '[]', 1);
+                    stmt.run('Meistrė B', '[2,3,4,5,6]', '10:00', '18:00', '[]', '[]', 2);
+                    stmt.finalize();
+                    console.log('Demo-Nails SQLite: Default staff created');
+                }
+            });
+        });
 
         db.run(`
             CREATE TABLE IF NOT EXISTS services (
