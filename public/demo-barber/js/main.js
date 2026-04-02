@@ -160,10 +160,6 @@ function initBookingForm() {
         }
     };
 
-    // --- Service-first flow: date/time only enabled after service is selected ---
-    const dateGroup = dateInput.closest('.form-group');
-    const timeGroup = timeSelect.closest('.form-group');
-
     async function loadMonthAvailability(year, month, instance) {
         try {
             const res = await fetch(`/api/demo-barber/availability-month?year=${year}&month=${month}`);
