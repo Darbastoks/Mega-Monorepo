@@ -22,6 +22,61 @@
 </head>
 
 <body>
+    <!-- Demo Banner -->
+    <style>
+        #demoBanner{position:fixed;top:0;left:0;right:0;z-index:10000;background:#22d3ee;color:#0a0e17;display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 16px;font-size:0.9rem;font-family:'Inter',sans-serif;font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+        #demoBanner a{background:#0a0e17;color:#22d3ee;padding:6px 16px;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.85rem;white-space:nowrap}
+        #demoBanner a:hover{background:#1a2030}
+        #demoBanner .demo-close{background:none;border:none;color:#0a0e17;font-size:1.2rem;cursor:pointer;padding:0 4px;opacity:0.7}
+        #demoBanner .demo-close:hover{opacity:1}
+        body{padding-top:44px}
+        html{scroll-padding-top:124px}
+        #demoModal{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
+        #demoModal .dm-card{background:#fff;border:1px solid rgba(199,144,129,0.3);border-radius:16px;padding:2rem;max-width:460px;width:90%;text-align:center;color:#333}
+        #demoModal h2{font-family:'Playfair Display',serif;color:#c79081;margin:0 0 8px;font-size:1.5rem}
+        #demoModal .dm-sub{color:#777;font-size:0.9rem;margin-bottom:16px}
+        #demoModal ol{text-align:left;margin:0 0 16px 20px;line-height:1.8;font-size:0.95rem;color:#555}
+        #demoModal .dm-creds{background:rgba(199,144,129,0.08);border:1px solid rgba(199,144,129,0.2);border-radius:10px;padding:12px;margin-bottom:20px;font-size:0.9rem}
+        #demoModal .dm-creds strong{color:#c79081}
+        #demoModal .dm-creds code{background:rgba(0,0,0,0.06);padding:2px 8px;border-radius:4px;font-size:0.95rem;color:#333}
+        #demoModal .dm-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+        #demoModal .dm-btn{padding:10px 24px;border-radius:8px;font-weight:600;font-size:0.9rem;text-decoration:none;cursor:pointer;border:none}
+        #demoModal .dm-btn-primary{background:#c79081;color:#fff}
+        #demoModal .dm-btn-primary:hover{background:#d4a090}
+        #demoModal .dm-btn-outline{background:transparent;color:#c79081;border:1px solid #c79081}
+        #demoModal .dm-btn-outline:hover{background:rgba(199,144,129,0.1)}
+    </style>
+
+    <div id="demoBanner">
+        <span>Tai demo svetainė — išbandykite registraciją ir admin panelę</span>
+        <a href="/demo-nails/admin.html">Admin panelė &rarr;</a>
+        <button class="demo-close" onclick="this.parentElement.style.display='none'">&times;</button>
+    </div>
+
+    <div id="demoModal">
+        <div class="dm-card">
+            <h2>Sveiki! Tai Velora demo</h2>
+            <p class="dm-sub">Išbandykite kaip veikia salono registracijos sistema:</p>
+            <ol>
+                <li>Išbandykite registracijos formą</li>
+                <li>Peržiūrėkite admin panelę</li>
+                <li>Pakeiskite nustatymus</li>
+            </ol>
+            <div class="dm-creds">
+                <p style="margin:0 0 4px"><strong>Admin prisijungimas:</strong></p>
+                <p style="margin:0">Vartotojas: <code>admin</code> &nbsp;|&nbsp; Slaptažodis: <code>demo123</code></p>
+            </div>
+            <div class="dm-btns">
+                <a href="/demo-nails/admin.html" class="dm-btn dm-btn-primary">Eiti į Admin</a>
+                <button class="dm-btn dm-btn-outline" onclick="closeDemoModal()">Peržiūrėti svetainę</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function closeDemoModal(){document.getElementById('demoModal').style.display='none';sessionStorage.setItem('demoNailsModalSeen','1')}
+    if(!sessionStorage.getItem('demoNailsModalSeen')){document.getElementById('demoModal').style.display='flex'}
+    </script>
 
     <!-- Light Mode Floating Card Hero -->
     <header class="hero-wrapper" id="home">
