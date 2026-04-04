@@ -168,6 +168,13 @@ function createDemoRoutes(config) {
         try {
             const { name } = req.body;
             if (!name) return res.status(400).json({ error: 'Vardas privalomas' });
+            if (config.getStaffLimit) {
+                const limit = await config.getStaffLimit();
+                const count = await dbGet("SELECT COUNT(*) as cnt FROM staff");
+                if (count.cnt >= limit) {
+                    return res.status(403).json({ error: 'Pasiektas darbuotojų limitas. Atnaujinkite planą.' });
+                }
+            }
             const maxOrder = await dbGet("SELECT MAX(sort_order) as m FROM staff");
             const result = await dbRun(
                 "INSERT INTO staff (name, sort_order) VALUES (?, ?)",
@@ -198,6 +205,14 @@ function createDemoRoutes(config) {
             params.push(req.params.id);
             await dbRun(`UPDATE staff SET ${fields.join(', ')} WHERE id = ?`, params);
             res.json({ success: true });
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
+    });
+
+    router.get('/staff/limit', requireAdmin, async (req, res) => {
+        try {
+            const count = await dbGet("SELECT COUNT(*) as cnt FROM staff");
+            const limit = config.getStaffLimit ? await config.getStaffLimit() : Infinity;
+            res.json({ count: count.cnt, limit });
         } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
     });
 

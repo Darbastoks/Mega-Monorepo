@@ -326,6 +326,15 @@ async function loadStaff() {
             activeStaffId = allStaff[0].id;
         }
         if (activeStaffId) loadStaffSettings(activeStaffId);
+        // Check staff limit for plan-based gating
+        try {
+            const limitRes = await fetch('/api/demo-barber/staff/limit');
+            if (limitRes.ok) {
+                const { count, limit } = await limitRes.json();
+                const addBtn = document.getElementById('addStaffBtn');
+                if (addBtn) addBtn.style.display = count >= limit ? 'none' : '';
+            }
+        } catch(e) {}
     } catch(err) { console.error('Staff load error:', err); }
 }
 

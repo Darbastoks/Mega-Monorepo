@@ -50,9 +50,9 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 const PRICES = {
-    start:  { monthly: process.env.STRIPE_PRICE_START_MONTHLY,  annual: process.env.STRIPE_PRICE_START_ANNUAL  },
+    solo:   { monthly: process.env.STRIPE_PRICE_SOLO_MONTHLY,   annual: process.env.STRIPE_PRICE_SOLO_ANNUAL   },
     growth: { monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY, annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL },
-    pro:    { monthly: process.env.STRIPE_PRICE_PRO_MONTHLY,     annual: process.env.STRIPE_PRICE_PRO_ANNUAL    },
+    team:   { monthly: process.env.STRIPE_PRICE_TEAM_MONTHLY,   annual: process.env.STRIPE_PRICE_TEAM_ANNUAL   },
 };
 const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
 
@@ -1504,7 +1504,8 @@ app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslau
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
 // ==================== PORTAL API ====================
-const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
+const PLAN_LIMITS = { free: 0, solo: 0, growth: 3, team: Infinity };
+const STAFF_LIMITS = { free: 1, solo: 1, growth: 3, team: Infinity };
 const ONE_OFF_CHANGE_PRICE = 1500; // €15.00 in cents
 
 // Price ID → plan name mapping
@@ -1512,7 +1513,7 @@ function getPlanFromPriceId(priceId) {
     for (const [plan, prices] of Object.entries(PRICES)) {
         if (prices.monthly === priceId || prices.annual === priceId) return plan;
     }
-    return 'start';
+    return 'solo';
 }
 
 // Portal auth middleware
@@ -1560,14 +1561,14 @@ app.post('/api/portal/auth/google', async (req, res) => {
             const isTest = email === 'gaidys.993@gmail.com';
             await portalRun(
                 'INSERT INTO clients (google_email, google_name, google_picture, month_reset_date, plan, salon_slug) VALUES (?, ?, ?, ?, ?, ?)',
-                [email, name, picture, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0], isTest ? 'pro' : 'free', isTest ? 'barbie' : '']
+                [email, name, picture, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0], isTest ? 'team' : 'free', isTest ? 'barbie' : '']
             );
             client = await portalGet('SELECT * FROM clients WHERE google_email = ?', [email]);
         } else {
             // Also fix existing test account
-            if (email === 'gaidys.993@gmail.com' && client.plan !== 'pro') {
-                await portalRun('UPDATE clients SET plan = ?, salon_slug = ? WHERE id = ?', ['pro', 'barbie', client.id]);
-                client.plan = 'pro';
+            if (email === 'gaidys.993@gmail.com' && client.plan !== 'team') {
+                await portalRun('UPDATE clients SET plan = ?, salon_slug = ? WHERE id = ?', ['team', 'barbie', client.id]);
+                client.plan = 'team';
                 client.salon_slug = 'barbie';
             }
             await portalRun('UPDATE clients SET google_name = ?, google_picture = ?, last_login = datetime("now") WHERE id = ?', [name, picture, client.id]);
@@ -1669,7 +1670,7 @@ app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
             return res.status(403).json({ error: 'Įsigykite planą, kad galėtumėte teikti užklausas.' });
         }
 
-        if (client.plan === 'pro') {
+        if (client.plan === 'team') {
             // Always allow
         } else if (limit > 0 && client.changes_used_this_month < limit) {
             // Use monthly allocation (GROWTH)
@@ -1686,7 +1687,7 @@ app.post('/api/portal/changes', requirePortalAuth, async (req, res) => {
         );
 
         // Only increment monthly counter if using monthly allocation (not purchased)
-        if (client.plan !== 'pro' && limit > 0 && client.changes_used_this_month < limit) {
+        if (client.plan !== 'team' && limit > 0 && client.changes_used_this_month < limit) {
             await portalRun('UPDATE clients SET changes_used_this_month = changes_used_this_month + 1 WHERE id = ?', [client.id]);
         }
 

@@ -172,13 +172,14 @@ body {
     width: fit-content;
 }
 .status-plan-badge.free { background: rgba(100,116,139,0.15); color: var(--text-dim); }
+.status-plan-badge.solo { background: rgba(100,116,139,0.15); color: var(--text-dim); }
 .status-plan-badge.growth { background: rgba(251,191,36,0.15); color: var(--warning); }
-.status-plan-badge.pro { background: rgba(168,85,247,0.15); color: var(--purple); }
+.status-plan-badge.team { background: rgba(168,85,247,0.15); color: var(--purple); }
 
 .status-msg { font-size: 0.85rem; color: var(--primary); font-weight: 500; }
 .status-msg.muted { color: var(--text-dim); }
 .status-msg.danger { color: var(--pink); }
-.status-msg.pro { color: var(--purple); }
+.status-msg.team { color: var(--purple); }
 
 /* ===== Plan Comparison ===== */
 .plans-intro {

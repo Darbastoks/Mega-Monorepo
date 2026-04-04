@@ -509,11 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkoutPlanPrice = document.getElementById('checkout-plan-price');
     let pendingPriceId = null;
 
-    const planNames = { start: 'START', growth: 'GROWTH', pro: 'PRO' };
+    const planNames = { solo: 'SOLO', growth: 'GROWTH', team: 'TEAM' };
     const planPrices = {
-        start: { monthly: '25€<span>/mėn</span>', annual: '199€<span>/metus</span>' },
+        solo: { monthly: '25€<span>/mėn</span>', annual: '199€<span>/metus</span>' },
         growth: { monthly: '39€<span>/mėn</span>', annual: '349€<span>/metus</span>' },
-        pro: { monthly: '59€<span>/mėn</span>', annual: '399€<span>/metus</span>' }
+        team: { monthly: '59€<span>/mėn</span>', annual: '399€<span>/metus</span>' }
     };
 
     function showCheckoutOverlay(plan, billingCycle, priceId) {

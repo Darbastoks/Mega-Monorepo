@@ -29,6 +29,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
         // Migrations
         db.run(`UPDATE clients SET plan = 'free' WHERE plan = 'start' AND (stripe_customer_id = '' OR stripe_customer_id IS NULL)`);
+        db.run(`UPDATE clients SET plan = 'solo' WHERE plan = 'start' AND stripe_customer_id != '' AND stripe_customer_id IS NOT NULL`);
+        db.run(`UPDATE clients SET plan = 'team' WHERE plan = 'pro'`);
         db.run(`ALTER TABLE clients ADD COLUMN purchased_changes INTEGER DEFAULT 0`, () => {});
 
         // Attachment migrations
@@ -36,7 +38,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`ALTER TABLE change_requests ADD COLUMN attachment_name TEXT DEFAULT ''`, () => {});
 
         // Set test account to pro + barbie
-        db.run(`UPDATE clients SET salon_slug = 'barbie', plan = 'pro' WHERE google_email = 'gaidys.993@gmail.com'`, () => {});
+        db.run(`UPDATE clients SET salon_slug = 'barbie', plan = 'team' WHERE google_email = 'gaidys.993@gmail.com'`, () => {});
 
         db.run(`
             CREATE TABLE IF NOT EXISTS change_requests (

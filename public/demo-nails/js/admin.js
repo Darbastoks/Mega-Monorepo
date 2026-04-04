@@ -274,6 +274,15 @@ if (adminDashboard) {
                 if (allStaff.length > 0 && !activeStaffId) activeStaffId = allStaff[0].id;
                 renderStaffTabs();
                 if (activeStaffId) loadStaffSettings(activeStaffId);
+                // Check staff limit for plan-based gating
+                try {
+                    const limitRes = await fetch('/api/demo-nails/staff/limit');
+                    if (limitRes.ok) {
+                        const { count, limit } = await limitRes.json();
+                        const addBtn = document.getElementById('addStaffBtn');
+                        if (addBtn) addBtn.style.display = count >= limit ? 'none' : '';
+                    }
+                } catch(e) {}
             }
         } catch(e) { console.error('Failed to load staff', e); }
     }

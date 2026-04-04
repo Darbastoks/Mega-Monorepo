@@ -12,7 +12,7 @@
         rejected:    { icon: '✗',  label: 'Atmesta',   sub: '' }
     };
 
-    const PLAN_LIMITS = { free: 0, start: 0, growth: 3, pro: Infinity };
+    const PLAN_LIMITS = { free: 0, solo: 0, growth: 3, team: Infinity };
 
     // Attachment state
     let attachmentBase64 = '';
@@ -62,13 +62,13 @@
     function showDashboard(p) {
         profile = p;
 
-        // Demo mode: ?demo=free|start|growth|pro to preview each plan
+        // Demo mode: ?demo=free|solo|growth|team to preview each plan
         const demoParam = new URLSearchParams(location.search).get('demo');
         if (demoParam && PLAN_LIMITS.hasOwnProperty(demoParam)) {
             p = { ...p, plan: demoParam };
             if (demoParam === 'growth') { p.changes_used_this_month = 1; }
             if (demoParam === 'free') { p.changes_used_this_month = 0; p.purchased_changes = 0; }
-            if (demoParam === 'start') { p.purchased_changes = 0; }
+            if (demoParam === 'solo') { p.purchased_changes = 0; }
             profile = p;
         }
 
@@ -117,13 +117,13 @@
             return;
         }
 
-        const planLabel = { start: 'START', growth: 'GROWTH', pro: 'PRO' }[plan] || plan.toUpperCase();
+        const planLabel = { solo: 'SOLO', growth: 'GROWTH', team: 'TEAM' }[plan] || plan.toUpperCase();
         badge.textContent = planLabel;
         badge.className = 'status-plan-badge ' + plan;
 
         show('historySection');
 
-        if (plan === 'start') {
+        if (plan === 'solo') {
             document.getElementById('welcomeSub').textContent = 'Jūsų svetainė aktyvi. Užsakykite pakeitimą, jei norite ką nors pakeisti.';
             statusRight.innerHTML = '<span class="status-msg muted">Pakeitimai neįtraukti</span>';
             show('buyCard');
@@ -153,9 +153,9 @@
                 }
             }
 
-        } else if (plan === 'pro') {
+        } else if (plan === 'team') {
             document.getElementById('welcomeSub').textContent = 'Pateikite užklausą ir mes pakeitimu pasirūpinsime.';
-            statusRight.innerHTML = '<span class="status-msg pro">Neriboti pakeitimai</span>';
+            statusRight.innerHTML = '<span class="status-msg team">Neriboti pakeitimai</span>';
             show('requestCard');
         }
     }
