@@ -181,7 +181,7 @@ app.post('/create-checkout-session', async (req, res) => {
             mode: 'subscription',
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${SITE_URL}/#kainos`,
+            cancel_url: `${SITE_URL}/kainos`,
             locale: 'lt',
             billing_address_collection: 'auto',
         });
@@ -1495,6 +1495,9 @@ app.get('/demo-nails/admin', (req, res) => res.sendFile(path.join(__dirname, 'pu
 app.get('/thank-you', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'thank-you.html')));
 app.get('/privatumo-politika', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'privatumo-politika.html')));
 app.get('/paslaugos-salygos', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'paslaugos-salygos.html')));
+app.get('/kainos', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'kainos.html')));
+app.get('/atsiliepimai', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'atsiliepimai.html')));
+app.get('/kontaktai', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'kontaktai.html')));
 // Service showcase pages
 app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslaugos')));
 // SEO files

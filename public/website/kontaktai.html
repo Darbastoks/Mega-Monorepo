@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontaktai | Velora Studio</title>
+    <meta name="description" content="Susisiekite su Velora Studio. Parašykite mums el. paštu arba užpildykite kontaktinę formą.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23060a12'/><text x='50' y='72' font-size='60' text-anchor='middle' fill='%2322d3ee' font-family='serif'>V</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .contact-page { padding: 140px 0 80px; }
+        .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+        .contact-info h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 16px; }
+        .contact-info p { color: #94a3b8; line-height: 1.7; margin-bottom: 32px; }
+        .contact-methods { display: flex; flex-direction: column; gap: 20px; }
+        .contact-method { display: flex; align-items: center; gap: 16px; }
+        .contact-method-icon { width: 48px; height: 48px; min-width: 48px; border-radius: 50%; background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.2); display: flex; align-items: center; justify-content: center; color: #22d3ee; font-size: 1.1rem; }
+        .contact-method-text { color: #f8fafc; }
+        .contact-method-text a { color: #22d3ee; text-decoration: none; }
+        .contact-method-text span { display: block; font-size: 0.85rem; color: #94a3b8; }
+        .contact-form-card { background: rgba(10, 14, 23, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 32px; }
+        .contact-form-card h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 24px; }
+        .contact-form-card .form-group { margin-bottom: 16px; }
+        .contact-form-card label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px; }
+        .contact-form-card input,
+        .contact-form-card textarea { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color 0.3s; box-sizing: border-box; }
+        .contact-form-card input:focus,
+        .contact-form-card textarea:focus { border-color: #22d3ee; }
+        .contact-form-card .btn-full { width: 100%; padding: 14px; font-size: 1rem; }
+        .contact-form-message { margin-top: 12px; padding: 12px; border-radius: 8px; display: none; }
+        .contact-form-message.success { display: block; background: rgba(34, 211, 238, 0.1); color: #22d3ee; border: 1px solid rgba(34, 211, 238, 0.2); }
+        .contact-form-message.error { display: block; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+        @media (max-width: 768px) {
+            .contact-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mouse Glow -->
+    <div class="cursor-glow"></div>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">Velora Studio</a>
+            <ul class="nav-links">
+                <li><a href="/#apie">Apie mus</a></li>
+                <li><a href="/#paslaugos">Paslaugos</a></li>
+                <li><a href="/#pavyzdziai">Pavyzdžiai</a></li>
+                <li><a href="/kainos">Kainos</a></li>
+                <li><a href="/kontaktai" class="btn btn-nav">Susisiekti</a></li>
+                <li><a href="/portal" class="btn btn-portal">Registruotis</a></li>
+            </ul>
+            <div class="hamburger">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+    <div class="menu-overlay"></div>
+
+    <!-- Contact Section -->
+    <section class="contact-page">
+        <div class="container fade-in">
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h2>Susisiekite su mumis</h2>
+                    <p>Turite klausimų apie mūsų paslaugas? Norite sužinoti daugiau? Parašykite mums ir atsakysime per 24 valandas.</p>
+                    <div class="contact-methods">
+                        <div class="contact-method">
+                            <div class="contact-method-icon"><i class="far fa-envelope"></i></div>
+                            <div class="contact-method-text">
+                                <a href="mailto:velorastudio.support@gmail.com">velorastudio.support@gmail.com</a>
+                                <span>Atsakome per 24 val.</span>
+                            </div>
+                        </div>
+                        <div class="contact-method">
+                            <div class="contact-method-icon"><i class="fab fa-instagram"></i></div>
+                            <div class="contact-method-text">
+                                Demo
+                                <span>Instagram</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form-card">
+                    <h3>Parašykite mums</h3>
+                    <form id="contactPageForm">
+                        <div class="form-group">
+                            <label for="contactName">Vardas *</label>
+                            <input type="text" id="contactName" name="name" placeholder="Jūsų vardas" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">El. paštas *</label>
+                            <input type="email" id="contactEmail" name="email" placeholder="vardenis@pastas.lt" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Žinutė *</label>
+                            <textarea id="contactMessage" name="message" rows="5" placeholder="Kuo galime padėti?" required></textarea>
+                        </div>
+
+                        <!-- Honeypot -->
+                        <div class="form-group" style="display: none;" aria-hidden="true">
+                            <label for="website_url_fake">Jei esate žmogus, palikite šį laukelį tuščią</label>
+                            <input type="text" id="website_url_fake" name="website_url_fake" autocomplete="off" tabindex="-1">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full">Siųsti žinutę</button>
+                        <div id="contactFormMessage" class="contact-form-message"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container fade-in">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h2>Velora Studio</h2>
+                    <p>Modernios svetainės grožio verslams.</p>
+                </div>
+                <div class="footer-contact">
+                    <h3>Kontaktai</h3>
+                    <a href="#" class="contact-link">
+                        <div class="contact-icon"><i class="fab fa-instagram"></i></div>
+                        Demo
+                    </a>
+                    <a href="mailto:velorastudio.support@gmail.com" class="contact-link">
+                        <div class="contact-icon"><i class="far fa-envelope"></i></div>
+                        velorastudio.support@gmail.com
+                    </a>
+                </div>
+            </div>
+            <div class="footer-legal">
+                <a href="/privatumo-politika">Privatumo politika</a>
+                <a href="/paslaugos-salygos">Paslaugų sąlygos</a>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Velora Studio. Visos teisės saugomos.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+</body>
+
+</html>
