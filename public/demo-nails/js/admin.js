@@ -100,6 +100,7 @@ if (adminDashboard) {
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Klientas</th>
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Kontaktai</th>
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Paslauga</th>
+                        <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Darbuotojas</th>
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Data / Laikas</th>
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Būsena</th>
                         <th style="padding:15px; color:var(--text-muted); font-size:0.85rem;">Veiksmas</th>
@@ -121,6 +122,7 @@ if (adminDashboard) {
                     <td style="padding:15px; font-weight:600; color:var(--text-main);">${res.name}</td>
                     <td style="padding:15px; font-size:0.9rem; color:var(--text-muted);">${res.phone}</td>
                     <td style="padding:15px; font-size:0.9rem; color:var(--text-main);">${res.service}</td>
+                    <td style="padding:15px; font-size:0.9rem; color:var(--text-muted);">${res.staff_name || '-'}</td>
                     <td style="padding:15px; font-size:0.9rem; color:var(--text-muted);">${dateStr}</td>
                     <td style="padding:15px;">
                         <span style="background:${statusColor}22; color:${statusColor}; padding:5px 10px; border-radius:12px; font-size:0.75rem; font-weight:600;">
@@ -210,7 +212,7 @@ if (adminDashboard) {
 
     // Initial Load — settings/services init independently of reservations
     initSettingsView();
-    loadSettings();
+    loadStaff();
     loadServices();
     fetchReservations();
 
@@ -228,12 +230,6 @@ if (adminDashboard) {
             document.getElementById('settingsSection').style.display = 'none';
             document.getElementById('viewSettingsBtn').style.display = 'inline-block';
             document.getElementById('viewBookingsBtn').style.display = 'none';
-        });
-
-        // Settings form submit
-        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await saveAllNailsSettings();
         });
 
         // Service form submit
@@ -266,49 +262,157 @@ if (adminDashboard) {
 
     let currentBlockedDates = [];
     let currentBreaks = [];
+    let allStaff = [];
+    let activeStaffId = null;
 
-    function getNailsSettingsPayload() {
-        return {
-            workingDays: Array.from(document.querySelectorAll('input[name="workDays"]:checked')).map(cb => parseInt(cb.value)),
-            startHour: document.getElementById('startHour').value,
-            endHour: document.getElementById('endHour').value,
-            blockedDates: currentBlockedDates,
-            breaks: currentBreaks
-        };
+    // ---- STAFF MULTI-TAB SYSTEM ----
+    async function loadStaff() {
+        try {
+            const res = await fetch('/api/demo-nails/staff');
+            if (res.ok) {
+                allStaff = await res.json();
+                if (allStaff.length > 0 && !activeStaffId) activeStaffId = allStaff[0].id;
+                renderStaffTabs();
+                if (activeStaffId) loadStaffSettings(activeStaffId);
+            }
+        } catch(e) { console.error('Failed to load staff', e); }
     }
 
-    async function saveAllNailsSettings() {
+    function renderStaffTabs() {
+        const container = document.getElementById('staffTabs');
+        if (!container) return;
+        container.innerHTML = allStaff.map(s => {
+            const isActive = s.id === activeStaffId;
+            return `<button onclick="switchStaff(${s.id})" style="padding:8px 16px; border-radius:8px; border:1px solid ${isActive ? 'var(--primary-color)' : 'var(--border-light)'}; background:${isActive ? 'rgba(255,91,187,0.12)' : 'transparent'}; color:${isActive ? 'var(--primary-color)' : 'var(--text-muted)'}; cursor:pointer; font-family:inherit; font-weight:${isActive ? '600' : '400'}; font-size:0.9rem; transition:all 0.2s;">${s.name}</button>`;
+        }).join('');
+    }
+
+    window.switchStaff = function(id) {
+        activeStaffId = id;
+        renderStaffTabs();
+        loadStaffSettings(id);
+    };
+
+    async function loadStaffSettings(staffId) {
         try {
-            const res = await fetch('/api/demo-nails/settings', {
+            const res = await fetch(`/api/demo-nails/staff/${staffId}/settings`);
+            if (res.ok) {
+                const settings = await res.json();
+                currentBreaks = settings.breaks || [];
+                currentBlockedDates = settings.blockedDates || [];
+                renderStaffSettingsPanel(settings);
+                renderSettingsSummary(settings);
+            }
+        } catch(e) { console.error('Failed to load staff settings', e); }
+    }
+
+    function renderStaffSettingsPanel(settings) {
+        const panel = document.getElementById('staffSettingsPanel');
+        if (!panel) return;
+        const staff = allStaff.find(s => s.id === activeStaffId);
+        const dayLabels = ['Se','Pr','An','Tr','Kt','Pn','Še'];
+        const daysHTML = dayLabels.map((label, i) => {
+            const checked = (settings.workingDays || []).includes(i) ? 'checked' : '';
+            return `<label style="display:inline-flex;align-items:center;gap:4px;"><input type="checkbox" name="staffWorkDays" value="${i}" ${checked}> ${label}</label>`;
+        }).join(' ');
+
+        panel.innerHTML = `
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.25rem;font-size:0.85rem;color:var(--text-muted);">Vardas</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="staffNameInput" value="${staff ? staff.name : ''}" style="flex:1;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;">
+                    <button onclick="saveStaffName()" style="padding:0.5rem 1rem;background:var(--primary-color);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;">Saugoti</button>
+                </div>
+            </div>
+            <form id="staffSettingsForm" onsubmit="event.preventDefault();saveStaffSettings();">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.5rem;font-weight:500;">Darbo Dienos</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;">${daysHTML}</div>
+                </div>
+                <div style="display:flex;gap:1rem;margin-bottom:1rem;">
+                    <div style="flex:1;"><label style="display:block;margin-bottom:0.25rem;font-weight:500;">Pradžia</label><input type="time" id="staffStartHour" value="${settings.startHour || '09:00'}" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;"></div>
+                    <div style="flex:1;"><label style="display:block;margin-bottom:0.25rem;font-weight:500;">Pabaiga</label><input type="time" id="staffEndHour" value="${settings.endHour || '18:00'}" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;"></div>
+                </div>
+                <div style="margin-bottom:1rem;padding-top:0.75rem;border-top:1px solid var(--border-light);">
+                    <label style="display:block;margin-bottom:0.5rem;font-weight:500;">Pertraukos</label>
+                    <small style="color:var(--text-muted);display:block;margin-bottom:0.5rem;">Iki 4 pertraukų per dieną</small>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:end;">
+                        <div style="flex:1;"><label style="display:block;margin-bottom:0.25rem;font-size:0.85rem;color:var(--text-muted);">Nuo</label><input type="time" id="breakStartInput" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;"></div>
+                        <div style="flex:1;"><label style="display:block;margin-bottom:0.25rem;font-size:0.85rem;color:var(--text-muted);">Iki</label><input type="time" id="breakEndInput" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;"></div>
+                        <button type="button" onclick="addBreak()" style="padding:0.5rem 0.75rem;background:var(--primary-color);color:#fff;border:none;border-radius:6px;cursor:pointer;">+</button>
+                    </div>
+                    <div id="breaksList" style="display:flex;flex-direction:column;gap:6px;"></div>
+                </div>
+                <div style="margin-bottom:1rem;padding-top:0.75rem;border-top:1px solid var(--border-light);">
+                    <label style="display:block;margin-bottom:0.5rem;font-weight:500;">Nedarbo Dienos</label>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
+                        <input type="date" id="blockedDateInput" style="flex:1;padding:0.5rem;border:1px solid var(--border-light);border-radius:6px;font-family:inherit;">
+                        <button type="button" onclick="addBlockedDate()" style="padding:0.5rem 0.75rem;background:var(--primary-color);color:#fff;border:none;border-radius:6px;cursor:pointer;">+</button>
+                    </div>
+                    <div id="blockedDatesList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+                </div>
+                <button type="submit" class="btn-submit" style="width:100%;">Išsaugoti Darbo Laiką</button>
+            </form>
+            ${allStaff.length > 1 ? `<button onclick="deleteStaff(${activeStaffId})" style="width:100%;margin-top:0.75rem;padding:0.5rem;background:transparent;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;cursor:pointer;font-family:inherit;">Ištrinti darbuotoją</button>` : ''}
+        `;
+        renderBreaks();
+        renderBlockedDates();
+    }
+
+    window.saveStaffSettings = async function() {
+        const payload = {
+            workingDays: Array.from(document.querySelectorAll('input[name="staffWorkDays"]:checked')).map(cb => parseInt(cb.value)),
+            startHour: document.getElementById('staffStartHour').value,
+            endHour: document.getElementById('staffEndHour').value,
+            breaks: currentBreaks,
+            blockedDates: currentBlockedDates
+        };
+        try {
+            const res = await fetch(`/api/demo-nails/staff/${activeStaffId}/settings`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(getNailsSettingsPayload())
+                body: JSON.stringify(payload)
             });
             if (res.ok) alert('Nustatymai išsaugoti');
             else alert('Klaida išsaugant');
-        } catch (err) { alert('Tinklo klaida'); }
-    }
+        } catch(e) { alert('Tinklo klaida'); }
+    };
 
-    async function loadSettings() {
+    window.saveStaffName = async function() {
+        const name = document.getElementById('staffNameInput').value.trim();
+        if (!name) return;
         try {
-            const res = await fetch('/api/demo-nails/settings');
-            if (res.ok) {
-                const settings = await res.json();
-                if (settings) {
-                    document.getElementById('startHour').value = settings.startHour;
-                    document.getElementById('endHour').value = settings.endHour;
-                    document.querySelectorAll('input[name="workDays"]').forEach(cb => {
-                        cb.checked = settings.workingDays.includes(parseInt(cb.value));
-                    });
-                    currentBlockedDates = settings.blockedDates || [];
-                    currentBreaks = settings.breaks || [];
-                    renderBlockedDates();
-                    renderBreaks();
-                    renderSettingsSummary(settings);
-                }
-            }
-        } catch (err) { }
-    }
+            await fetch(`/api/demo-nails/staff/${activeStaffId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            loadStaff();
+        } catch(e) { alert('Klaida'); }
+    };
+
+    window.addStaffPrompt = async function() {
+        const name = prompt('Naujo darbuotojo vardas:');
+        if (!name || !name.trim()) return;
+        try {
+            await fetch('/api/demo-nails/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim() })
+            });
+            loadStaff();
+        } catch(e) { alert('Klaida'); }
+    };
+
+    window.deleteStaff = async function(id) {
+        if (allStaff.length <= 1) { alert('Turi likti bent vienas darbuotojas'); return; }
+        if (!confirm('Ar tikrai norite ištrinti šį darbuotoją?')) return;
+        try {
+            await fetch(`/api/demo-nails/staff/${id}`, { method: 'DELETE' });
+            activeStaffId = null;
+            loadStaff();
+        } catch(e) { alert('Klaida'); }
+    };
 
     function renderSettingsSummary(settings) {
         const card = document.getElementById('settingsSummaryCard');
@@ -329,9 +433,9 @@ if (adminDashboard) {
         const container = document.getElementById('breaksList');
         if (!container) return;
         container.innerHTML = currentBreaks.map((br, i) => `
-            <span style="background: rgba(52,152,219,0.15); color: #3498db; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+            <span style="background: rgba(255,91,187,0.12); color: var(--primary-color); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
                 ${br.start} - ${br.end}
-                <button onclick="removeBreak(${i})" style="background:none; border:none; color:#3498db; cursor:pointer; font-size:1rem; padding:0; line-height:1;">&times;</button>
+                <button onclick="removeBreak(${i})" style="background:none; border:none; color:var(--primary-color); cursor:pointer; font-size:1rem; padding:0; line-height:1;">&times;</button>
             </span>
         `).join('');
     }
@@ -347,13 +451,13 @@ if (adminDashboard) {
         renderBreaks();
         document.getElementById('breakStartInput').value = '';
         document.getElementById('breakEndInput').value = '';
-        saveAllNailsSettings();
+        saveStaffSettings();
     };
 
     window.removeBreak = function(index) {
         currentBreaks.splice(index, 1);
         renderBreaks();
-        saveAllNailsSettings();
+        saveStaffSettings();
     };
 
     // --- Blocked Dates ---
@@ -377,13 +481,13 @@ if (adminDashboard) {
         currentBlockedDates.sort();
         renderBlockedDates();
         input.value = '';
-        saveAllNailsSettings();
+        saveStaffSettings();
     };
 
     window.removeBlockedDate = function(date) {
         currentBlockedDates = currentBlockedDates.filter(d => d !== date);
         renderBlockedDates();
-        saveAllNailsSettings();
+        saveStaffSettings();
     };
 
     async function loadServices() {
