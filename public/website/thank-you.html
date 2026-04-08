@@ -205,6 +205,32 @@
         .conditional-fields { animation: fadeIn 0.3s; }
         .field-hint { font-size: 0.78rem; color: rgba(248,250,252,0.35); margin: 2px 0 8px; }
 
+        /* Info tooltip */
+        .info-hint { position: relative; display: inline-flex; align-items: center; gap: 5px; }
+        .info-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: rgba(34,211,238,0.15); color: #22d3ee; font-size: 0.6rem; cursor: help; flex-shrink: 0; }
+        .info-tooltip { display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #1a1f2e; border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; color: rgba(248,250,252,0.7); white-space: nowrap; z-index: 10; font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .info-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #1a1f2e; }
+        .info-icon:hover + .info-tooltip { display: block; }
+
+        /* Time picker rows */
+        .time-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .time-row input[type="time"] { padding: 10px 12px; background: #0f1729; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f8fafc; font-family: inherit; font-size: 0.9rem; }
+        .time-row input[type="time"]:focus { outline: none; border-color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,0.15); }
+        .time-row span { color: rgba(248,250,252,0.4); font-size: 0.85rem; }
+        .break-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; animation: fadeIn 0.3s; }
+        .break-row input[type="time"] { padding: 10px 12px; background: #0f1729; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f8fafc; font-family: inherit; font-size: 0.9rem; flex: 1; }
+        .break-row input[type="time"]:focus { outline: none; border-color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,0.15); }
+        .break-row span { color: rgba(248,250,252,0.4); font-size: 0.85rem; }
+        .remove-break { background: none; border: none; color: #f87171; cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
+        .remove-break:hover { background: rgba(248,113,113,0.1); }
+        .add-break-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; color: #22d3ee; font-family: inherit; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+        .add-break-btn:hover { background: rgba(34,211,238,0.15); }
+
+        @media (max-width: 480px) {
+            .info-tooltip { white-space: normal; min-width: 200px; }
+            .time-row, .break-row { flex-wrap: wrap; }
+        }
+
         .wizard-nav { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
         .wiz-btn { padding: 12px 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(248,250,252,0.7); font-family: inherit; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
         .wiz-btn.primary { background: linear-gradient(135deg, #22d3ee, #0ea5e9); color: #0a0e17; border: none; font-weight: 600; }
@@ -284,21 +310,44 @@
             <!-- Step 2: Services & schedule -->
             <div class="wizard-step" data-step="2">
                 <h3 class="step-title">Paslaugos ir darbo laikas</h3>
-                <div class="form-group"><label>Paslaugos, kainos ir trukmė <span class="req">*</span></label><textarea id="services_prices" rows="6" required placeholder="Kirpimas – 20€ – 30 min&#10;Dažymas – 40€ – 90 min&#10;Manikiūras – 25€ – 45 min&#10;&#10;(trukmę rašykite jei norite online registracijos)"></textarea></div>
-                <div class="form-group"><label>Darbo valandos <span class="req">*</span></label><textarea id="working_hours" rows="3" required placeholder="Pn–Pt 9:00–19:00&#10;Šeštadienis 10:00–15:00"></textarea></div>
                 <div class="form-group">
-                    <label>Nedarbo dienos</label>
-                    <div class="checkbox-group">
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Pirmadienis"> Pr</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Antradienis"> An</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Trečiadienis"> Tr</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Ketvirtadienis"> Kt</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Penktadienis"> Pn</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Šeštadienis"> Š</label>
-                        <label class="cb-option"><input type="checkbox" name="off_days" value="Sekmadienis" checked> S</label>
+                    <label class="info-hint">Paslaugos, kainos ir trukmė <span class="req">*</span>
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Visas paslaugas galėsite keisti vėliau administratoriaus panelėje.</span>
+                    </label>
+                    <textarea id="services_prices" rows="6" required placeholder="Kirpimas – 20€ – 30 min&#10;Dažymas – 40€ – 90 min&#10;Manikiūras – 25€ – 45 min&#10;&#10;(trukmę rašykite jei norite online registracijos)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="info-hint">Darbo valandos <span class="req">*</span>
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Darbo laiką galėsite keisti administratoriaus panelėje.</span>
+                    </label>
+                    <div class="time-row">
+                        <input type="time" id="work_start" value="09:00" required>
+                        <span>–</span>
+                        <input type="time" id="work_end" value="18:00" required>
                     </div>
                 </div>
-                <div class="form-group"><label>Pietų pertrauka</label><input type="text" id="break_times" placeholder="pvz. 13:00–14:00 (palikite tuščią jei nėra)"></div>
+                <div class="form-group">
+                    <label>Darbo dienos <span class="req">*</span></label>
+                    <div class="checkbox-group">
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Pirmadienis" checked> Pr</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Antradienis" checked> An</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Trečiadienis" checked> Tr</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Ketvirtadienis" checked> Kt</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Penktadienis" checked> Pn</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Šeštadienis"> Š</label>
+                        <label class="cb-option"><input type="checkbox" name="work_days" value="Sekmadienis"> S</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="info-hint">Pertraukos
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Pertraukas galėsite pridėti ir keisti administratoriaus panelėje.</span>
+                    </label>
+                    <div id="breaks-container"></div>
+                    <button type="button" class="add-break-btn" id="add-break"><i class="fas fa-plus"></i> Pridėti pertrauką</button>
+                </div>
             </div>
 
             <!-- Step 3: Design -->
@@ -457,9 +506,13 @@
                 instagram: document.getElementById('instagram')?.value || '',
                 address: document.getElementById('address')?.value || '',
                 services_prices: document.getElementById('services_prices')?.value || '',
-                working_hours: document.getElementById('working_hours')?.value || '',
-                off_days: [...document.querySelectorAll('input[name="off_days"]:checked')].map(c => c.value),
-                break_times: document.getElementById('break_times')?.value || '',
+                work_start: document.getElementById('work_start')?.value || '',
+                work_end: document.getElementById('work_end')?.value || '',
+                work_days: [...document.querySelectorAll('input[name="work_days"]:checked')].map(c => c.value),
+                breaks: [...document.querySelectorAll('.break-row')].map(row => ({
+                    start: row.querySelector('.break-start')?.value || '',
+                    end: row.querySelector('.break-end')?.value || ''
+                })).filter(b => b.start && b.end),
                 has_logo: toggleState.has_logo === 'yes',
                 preferred_colors: document.getElementById('preferred_colors')?.value || '',
                 design_style: document.querySelector('input[name="design_style"]:checked')?.value || 'surprise',
@@ -486,6 +539,23 @@
                 submitBtn.disabled = false; submitBtn.textContent = 'Pateikti informaciją';
             }
         });
+    }());
+
+    // Break add/remove logic
+    (function() {
+        const container = document.getElementById('breaks-container');
+        const addBtn = document.getElementById('add-break');
+        if (!container || !addBtn) return;
+
+        function addBreak(startVal, endVal) {
+            const row = document.createElement('div');
+            row.className = 'break-row';
+            row.innerHTML = '<input type="time" class="break-start" value="' + (startVal || '12:00') + '"><span>–</span><input type="time" class="break-end" value="' + (endVal || '12:30') + '"><button type="button" class="remove-break" title="Pašalinti"><i class="fas fa-times"></i></button>';
+            row.querySelector('.remove-break').addEventListener('click', function() { row.remove(); });
+            container.appendChild(row);
+        }
+
+        addBtn.addEventListener('click', function() { addBreak(); });
     }());
     </script>
 
