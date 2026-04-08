@@ -1,32 +1,87 @@
+// Loading screen
+window.addEventListener('load', () => {
+    const loader = document.getElementById('loadingScreen');
+    if (loader) {
+        setTimeout(() => {
+            loader.classList.add('fade-out');
+            setTimeout(() => loader.remove(), 400);
+        }, 800);
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
+    // ============ TYPEWRITER EFFECT ============
+    (function initTypewriter() {
+        const el = document.getElementById('typewriter');
+        if (!el) return;
+        const words = ['kirpykloms', 'barberiams', 'nagų salonams', 'grožio studijoms'];
+        let wordIdx = 0, charIdx = 0, isDeleting = false;
+
+        function tick() {
+            const word = words[wordIdx];
+            if (isDeleting) {
+                charIdx--;
+                el.textContent = word.substring(0, charIdx);
+                if (charIdx === 0) {
+                    isDeleting = false;
+                    wordIdx = (wordIdx + 1) % words.length;
+                    setTimeout(tick, 300);
+                    return;
+                }
+                setTimeout(tick, 40);
+            } else {
+                charIdx++;
+                el.textContent = word.substring(0, charIdx);
+                if (charIdx === word.length) {
+                    isDeleting = true;
+                    setTimeout(tick, 2000);
+                    return;
+                }
+                setTimeout(tick, 80);
+            }
+        }
+        setTimeout(tick, 500);
+    })();
+
+    // ============ SCROLL PROGRESS BAR ============
+    (function initScrollProgress() {
+        const bar = document.getElementById('scrollProgress');
+        if (!bar) return;
+        window.addEventListener('scroll', function() {
+            var h = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + '%';
+        }, { passive: true });
+    })();
+
+    // ============ MOBILE MENU (slide-in + overlay) ============
     const hamburger = document.querySelector('.hamburger');
     const navLinks = document.querySelector('.nav-links');
+    const menuOverlay = document.querySelector('.menu-overlay');
+
+    function closeMenu() {
+        if (!navLinks) return;
+        navLinks.classList.remove('active');
+        if (menuOverlay) menuOverlay.classList.remove('active');
+        const icon = hamburger && hamburger.querySelector('i');
+        if (icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+    }
 
     if (hamburger && navLinks) {
         hamburger.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
+            const isOpen = navLinks.classList.toggle('active');
+            if (menuOverlay) menuOverlay.classList.toggle('active', isOpen);
             const icon = hamburger.querySelector('i');
-            if (navLinks.classList.contains('active')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
+            icon.classList.toggle('fa-bars', !isOpen);
+            icon.classList.toggle('fa-times', isOpen);
         });
     }
 
+    if (menuOverlay) menuOverlay.addEventListener('click', closeMenu);
+
     // Close mobile menu when clicking a link
-    const links = document.querySelectorAll('.nav-links a');
-    links.forEach(link => {
+    document.querySelectorAll('.nav-links a').forEach(link => {
         link.addEventListener('click', () => {
-            if (window.innerWidth <= 768) {
-                navLinks.classList.remove('active');
-                const icon = hamburger.querySelector('i');
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
+            if (window.innerWidth <= 768) closeMenu();
         });
     });
 
@@ -96,17 +151,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const serviceCards = document.querySelectorAll('.service-card');
     const modal = document.getElementById('previewModal');
     const modalImg = document.getElementById('previewImage');
-    const closeBtn = modal ? modal.querySelector('.close-modal') : null;
+    const closeBtn = document.querySelector('.close-modal');
 
     if (modal && modalImg && closeBtn) {
         serviceCards.forEach(card => {
             card.addEventListener('click', (e) => {
+                // Ignore clicks if somehow an actual link is clicked inside the card
                 if (e.target.tagName !== 'A') {
                     const imgSrc = card.getAttribute('data-preview');
                     if (imgSrc) {
                         modalImg.src = imgSrc;
                         modal.classList.add('show');
-                        document.body.style.overflow = 'hidden';
+                        document.body.style.overflow = 'hidden'; // Prevent scrolling in background
                     }
                 }
             });
@@ -114,18 +170,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const closeModal = () => {
             modal.classList.remove('show');
-            document.body.style.overflow = 'auto';
-            setTimeout(() => { modalImg.src = ''; }, 300);
+            document.body.style.overflow = 'auto'; // Restore scrolling
+            setTimeout(() => { modalImg.src = ''; }, 300); // Clear image after transition
         };
 
         closeBtn.addEventListener('click', closeModal);
 
+        // Close on outside click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closeModal();
             }
         });
-
+        
+        // Close on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.classList.contains('show')) {
                 closeModal();
@@ -133,21 +191,240 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // FAQ Accordion
-    document.querySelectorAll('.faq-question').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const item = btn.closest('.faq-item');
-            const isOpen = item.classList.contains('active');
-            document.querySelectorAll('.faq-item.active').forEach(open => {
-                if (open !== item) open.classList.remove('active');
-            });
-            item.classList.toggle('active', !isOpen);
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', e => {
+            const id = link.getAttribute('href');
+            if (id === '#') return;
+            const target = document.querySelector(id);
+            if (target) {
+                e.preventDefault();
+                const offset = 80; // navbar height
+                const top = target.getBoundingClientRect().top + window.scrollY - offset;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
         });
     });
+
+    // Active nav link highlight on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navAnchors = document.querySelectorAll('.nav-links a[href^="#"]');
+
+    const navObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.getAttribute('id');
+                navAnchors.forEach(a => {
+                    a.classList.toggle('nav-active', a.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+
+    sections.forEach(s => navObserver.observe(s));
+
+    // Testimonials carousel
+    const carousel = document.querySelector('.testimonials-carousel');
+    const track = document.querySelector('.testimonials-track');
+    if (carousel && track) {
+        const cards = Array.from(track.querySelectorAll('.testimonial-card'));
+        const totalOriginal = cards.length;
+        let currentIndex = 0;
+        let autoInterval;
+
+        // Clone first 3 cards for seamless loop
+        const clonesNeeded = Math.min(3, totalOriginal);
+        for (let i = 0; i < clonesNeeded; i++) {
+            track.appendChild(cards[i].cloneNode(true));
+        }
+
+        function getCardStep() {
+            const card = track.querySelector('.testimonial-card');
+            return card.offsetWidth + 24; // card width + gap
+        }
+
+        let isTransitioning = false;
+
+        function advance() {
+            if (isTransitioning) return;
+            currentIndex++;
+            const step = getCardStep();
+            track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            track.style.transform = 'translateX(-' + (currentIndex * step) + 'px)';
+
+            if (currentIndex >= totalOriginal) {
+                isTransitioning = true;
+                setTimeout(function() {
+                    track.style.transition = 'none';
+                    currentIndex = 0;
+                    track.style.transform = 'translateX(0)';
+                    // Force reflow before allowing next transition
+                    track.offsetHeight;
+                    isTransitioning = false;
+                }, 650);
+            }
+        }
+
+        function startAuto() {
+            stopAuto();
+            autoInterval = setInterval(advance, 3500);
+        }
+
+        function stopAuto() {
+            clearInterval(autoInterval);
+        }
+
+        carousel.addEventListener('mouseenter', stopAuto);
+        carousel.addEventListener('mouseleave', startAuto);
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            stopAuto();
+        }, { passive: true });
+        carousel.addEventListener('touchend', (e) => {
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    advance();
+                } else if (!isTransitioning && currentIndex > 0) {
+                    currentIndex--;
+                    const step = getCardStep();
+                    track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)';
+                    track.style.transform = 'translateX(-' + (currentIndex * step) + 'px)';
+                }
+            }
+            startAuto();
+        }, { passive: true });
+
+        startAuto();
+    }
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = btn.parentElement;
+            const wasActive = item.classList.contains('active');
+            document.querySelectorAll('.faq-item.active').forEach(el => el.classList.remove('active'));
+            if (!wasActive) item.classList.add('active');
+        });
+    });
+
+    // ============ FLIP CARDS ============
+    document.querySelectorAll('.flip-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const wasFlipped = card.classList.contains('flipped');
+            document.querySelectorAll('.flip-card.flipped').forEach(c => c.classList.remove('flipped'));
+            if (!wasFlipped) card.classList.add('flipped');
+        });
+    });
+
+    // ============ ABOUT ICON BOUNCE ON SCROLL ============
+    const aboutIcons = document.querySelectorAll('.about-value-icon');
+    if (aboutIcons.length) {
+        const iconObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const icons = entry.target.querySelectorAll('.about-value-icon');
+                    icons.forEach((icon, i) => {
+                        setTimeout(() => icon.classList.add('icon-visible'), i * 150);
+                    });
+                    iconObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        const aboutSection = document.querySelector('.about-values');
+        if (aboutSection) iconObserver.observe(aboutSection);
+    }
+
+    // ============ STEP SEQUENTIAL ANIMATION ============
+    const steps = document.querySelectorAll('.step');
+    if (steps.length) {
+        const stepObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const allSteps = entry.target.querySelectorAll('.step');
+                    allSteps.forEach((step, i) => {
+                        setTimeout(() => step.classList.add('step-visible'), i * 200);
+                    });
+                    stepObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.2 });
+        const stepsGrid = document.querySelector('.steps-grid');
+        if (stepsGrid) stepObserver.observe(stepsGrid);
+    }
+
+    // ============ COMPARISON ANIMATED ITEMS ============
+    const compSection = document.querySelector('.comparison');
+    if (compSection) {
+        const compObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const items = compSection.querySelectorAll('.comparison-col ul li');
+                    items.forEach((li, i) => {
+                        setTimeout(() => li.classList.add('comp-visible'), i * 100);
+                    });
+                    compObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+        compObserver.observe(compSection);
+    }
+
+    // ============ SUBTLE PARALLAX ============
+    if (window.innerWidth > 768) {
+        const auroraGlows = document.querySelectorAll('.aurora-glow-1, .aurora-glow-2, .aurora-glow-3');
+        const floorGlow = document.querySelector('.floor-glow');
+        let ticking = false;
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const y = window.scrollY;
+                    auroraGlows.forEach(el => {
+                        el.style.transform = 'translateY(' + (y * 0.3) + 'px)';
+                    });
+                    if (floorGlow) {
+                        floorGlow.style.transform = 'translateY(' + (y * 0.15) + 'px)';
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+
+    // Stats count-up on scroll
+    const statNums = document.querySelectorAll('.stat-number');
+    if (statNums.length) {
+        const statObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const el = entry.target;
+                    const target = parseInt(el.dataset.target, 10);
+                    const suffix = el.dataset.suffix || '';
+                    const prefix = el.dataset.prefix || '';
+                    const duration = 1200;
+                    const start = performance.now();
+                    function tick(now) {
+                        const t = Math.min((now - start) / duration, 1);
+                        const ease = 1 - Math.pow(1 - t, 3);
+                        el.textContent = prefix + Math.round(target * ease) + suffix;
+                        if (t < 1) requestAnimationFrame(tick);
+                    }
+                    requestAnimationFrame(tick);
+                    statObserver.unobserve(el);
+                }
+            });
+        }, { threshold: 0.5 });
+        statNums.forEach(el => statObserver.observe(el));
+    }
 });
 
 // ================================================================
-// PRICING, ADD-ONS & STRIPE CHECKOUT
+// PRICING TOGGLE & STRIPE CHECKOUT
 // ================================================================
 (async function initPricing() {
     const toggle = document.getElementById('billing-toggle');
@@ -155,28 +432,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const labelAnnual = document.getElementById('label-annual');
     const priceDisplays = document.querySelectorAll('.pricing-card .price');
     const planBtns = document.querySelectorAll('.plan-btn');
-    const purchaseModal = document.getElementById('purchaseModal');
 
     if (!toggle || planBtns.length === 0) return;
 
-    // State
-    let catalog = { plans: {}, addons: {} };
-    let isAnnual = false;
-    let selectedPlan = null;
-    let selectedAddons = new Set();
-
-    // Fetch catalog from server
+    // Fetch price IDs from server (not secret — just plan slugs)
+    let prices = {};
     try {
         const res = await fetch('/api/prices');
-        catalog = await res.json();
+        prices = await res.json();
     } catch (e) {
-        console.warn('Could not load prices:', e.message);
+        console.warn('Could not load price IDs from server:', e.message);
     }
 
-    const billingCycle = () => isAnnual ? 'annual' : 'monthly';
-    const cycleLabel = () => isAnnual ? '/metus' : '/mėn';
+    let isAnnual = false;
 
-    // --- Toggle UI ---
+    // Animated price counter
+    function animateValue(el, from, to, duration, suffix, prefix) {
+        const start = performance.now();
+        prefix = prefix || '';
+        function tick(now) {
+            const t = Math.min((now - start) / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+            const val = Math.round(from + (to - from) * ease);
+            el.innerHTML = prefix + val + '€<span>' + suffix + '</span>';
+            if (t < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function extractPrice(html) {
+        // Extract the main price number (ignoring old-price spans)
+        const clean = html.replace(/<span class="old-price">.*?<\/span>\s*/g, '');
+        const m = clean.match(/(\d+)€/);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
+    function extractOldPrice(html) {
+        const m = html.match(/<span class="old-price">(\d+)€<\/span>/);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
     function updateToggleUI() {
         if (isAnnual) {
             labelMonthly.classList.remove('active');
@@ -185,486 +480,98 @@ document.addEventListener('DOMContentLoaded', () => {
             labelMonthly.classList.add('active');
             labelAnnual.classList.remove('active');
         }
+
         priceDisplays.forEach(el => {
-            const html = isAnnual ? el.dataset.annualHtml : el.dataset.monthlyHtml;
-            if (html) el.innerHTML = html;
+            const fromHtml = isAnnual ? el.dataset.monthlyHtml : el.dataset.annualHtml;
+            const toHtml = isAnnual ? el.dataset.annualHtml : el.dataset.monthlyHtml;
+            if (!toHtml) return;
+
+            const fromVal = extractPrice(fromHtml);
+            const toVal = extractPrice(toHtml);
+            const suffix = isAnnual ? '/metus' : '/mėn';
+            const oldPrice = extractOldPrice(toHtml);
+            const prefix = oldPrice ? '<span class="old-price">' + oldPrice + '€</span> ' : '';
+
+            animateValue(el, fromVal, toVal, 600, suffix, prefix);
         });
     }
 
     toggle.addEventListener('change', function () {
         isAnnual = this.checked;
         updateToggleUI();
-        // Re-render modal if open
-        if (purchaseModal && purchaseModal.classList.contains('show')) {
-            renderPlanHeader();
-            renderAddons();
-            renderSummary();
-        }
     });
 
-    // --- Plan button click: open purchase modal ---
-    planBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            selectedPlan = this.dataset.plan;
-            selectedAddons.clear();
-            openPurchaseModal();
-        });
-    });
+    // Wire checkout buttons — show overlay first, then proceed to Stripe
+    const checkoutOverlay = document.getElementById('checkout-overlay');
+    const checkoutClose = document.getElementById('checkout-close');
+    const checkoutPayBtn = document.getElementById('checkout-pay-btn');
+    const checkoutPlanName = document.getElementById('checkout-plan-name');
+    const checkoutPlanPrice = document.getElementById('checkout-plan-price');
+    let pendingPriceId = null;
 
-    // --- Purchase Modal ---
-    if (!purchaseModal) return;
+    const planNames = { solo: 'SOLO', growth: 'GROWTH', team: 'TEAM' };
+    const planPrices = {
+        solo: { monthly: '25€<span>/mėn</span>', annual: '199€<span>/metus</span>' },
+        growth: { monthly: '39€<span>/mėn</span>', annual: '349€<span>/metus</span>' },
+        team: { monthly: '59€<span>/mėn</span>', annual: '399€<span>/metus</span>' }
+    };
 
-    function openPurchaseModal() {
-        renderPlanHeader();
-        renderAddons();
-        showPurchaseStep(1);
-        purchaseModal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+    function showCheckoutOverlay(plan, billingCycle, priceId) {
+        pendingPriceId = priceId;
+        if (checkoutPlanName) checkoutPlanName.textContent = planNames[plan] || plan.toUpperCase();
+        if (checkoutPlanPrice) checkoutPlanPrice.innerHTML = planPrices[plan] ? planPrices[plan][billingCycle] : '';
+        if (checkoutOverlay) { checkoutOverlay.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
     }
 
-    function closePurchaseModal() {
-        purchaseModal.classList.remove('show');
-        document.body.style.overflow = 'auto';
+    function hideCheckoutOverlay() {
+        if (checkoutOverlay) { checkoutOverlay.style.display = 'none'; document.body.style.overflow = ''; }
+        pendingPriceId = null;
     }
 
-    document.getElementById('closePurchaseModal').addEventListener('click', closePurchaseModal);
-    purchaseModal.addEventListener('click', (e) => {
-        if (e.target === purchaseModal) closePurchaseModal();
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && purchaseModal.classList.contains('show')) {
-            closePurchaseModal();
-        }
-    });
+    if (checkoutClose) checkoutClose.addEventListener('click', hideCheckoutOverlay);
+    if (checkoutOverlay) checkoutOverlay.addEventListener('click', (e) => { if (e.target === checkoutOverlay) hideCheckoutOverlay(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCheckoutOverlay(); });
 
-    // --- Modal step navigation ---
-    function showPurchaseStep(step) {
-        document.querySelectorAll('.purchase-step-content').forEach(el => {
-            el.classList.toggle('active', parseInt(el.dataset.pstep) === step);
-        });
-        document.querySelectorAll('.purchase-step').forEach(el => {
-            el.classList.toggle('active', parseInt(el.dataset.pstep) === step);
-        });
-        if (step === 2) renderSummary();
-    }
+    if (checkoutPayBtn) {
+        checkoutPayBtn.addEventListener('click', async () => {
+            if (!pendingPriceId || checkoutPayBtn.disabled) return;
+            checkoutPayBtn.disabled = true;
+            checkoutPayBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kraunama...';
 
-    document.getElementById('toSummary').addEventListener('click', () => showPurchaseStep(2));
-    document.getElementById('skipAddons').addEventListener('click', () => {
-        selectedAddons.clear();
-        showPurchaseStep(2);
-    });
-    document.getElementById('backToAddons').addEventListener('click', () => showPurchaseStep(1));
-
-    // --- Render plan header ---
-    function renderPlanHeader() {
-        const header = document.getElementById('purchasePlanHeader');
-        const plan = catalog.plans[selectedPlan];
-        if (!plan || !header) return;
-        const cycle = billingCycle();
-        header.innerHTML = `
-            <span class="plan-name">${plan.label} planas</span>
-            <span class="plan-price">${plan[cycle].display}€${cycleLabel()}</span>
-        `;
-    }
-
-    // --- Render add-on cards ---
-    function renderAddons() {
-        const grid = document.getElementById('addonsGrid');
-        if (!grid) return;
-        grid.innerHTML = '';
-
-        for (const [key, addon] of Object.entries(catalog.addons)) {
-            const cycle = billingCycle();
-            const price = addon[cycle].display;
-            const isSelected = selectedAddons.has(key);
-
-            const card = document.createElement('div');
-            card.className = `addon-card${isSelected ? ' selected' : ''}`;
-            card.dataset.addon = key;
-            card.innerHTML = `
-                <div class="addon-icon"><i class="fas ${addon.icon}"></i></div>
-                <div class="addon-info">
-                    <h4>${addon.label}</h4>
-                    <p>${addon.description}</p>
-                </div>
-                <div class="addon-price">+${price}€${cycleLabel()}</div>
-                <div class="addon-check">${isSelected ? '<i class="fas fa-check"></i>' : ''}</div>
-            `;
-            card.addEventListener('click', () => {
-                if (selectedAddons.has(key)) {
-                    selectedAddons.delete(key);
-                } else {
-                    selectedAddons.add(key);
-                }
-                renderAddons();
-            });
-            grid.appendChild(card);
-        }
-    }
-
-    // --- Render order summary ---
-    function renderSummary() {
-        const summaryEl = document.getElementById('orderSummary');
-        const totalEl = document.getElementById('orderTotal');
-        if (!summaryEl || !totalEl) return;
-
-        const cycle = billingCycle();
-        const plan = catalog.plans[selectedPlan];
-        if (!plan) return;
-
-        let total = plan[cycle].display;
-
-        let html = `<div class="order-line plan-line">
-            <span class="line-label"><i class="fas fa-crown" style="color:#22d3ee;margin-right:6px"></i>${plan.label} planas</span>
-            <span class="line-price">${plan[cycle].display}€${cycleLabel()}</span>
-        </div>`;
-
-        for (const key of selectedAddons) {
-            const addon = catalog.addons[key];
-            if (!addon) continue;
-            const price = addon[cycle].display;
-            total += price;
-            html += `<div class="order-line">
-                <span class="line-label"><i class="fas ${addon.icon}" style="color:#94a3b8;margin-right:6px;font-size:0.85em"></i>${addon.label}</span>
-                <span class="line-price">+${price}€${cycleLabel()}</span>
-            </div>`;
-        }
-
-        summaryEl.innerHTML = html;
-        totalEl.innerHTML = `<span>Iš viso:</span><span>${total}€${cycleLabel()}</span>`;
-    }
-
-    // --- Checkout ---
-    document.getElementById('checkoutBtn').addEventListener('click', async function () {
-        const cycle = billingCycle();
-        const plan = catalog.plans[selectedPlan];
-        if (!plan) return;
-
-        const priceIds = [plan[cycle].priceId];
-        for (const key of selectedAddons) {
-            const addon = catalog.addons[key];
-            if (addon) priceIds.push(addon[cycle].priceId);
-        }
-
-        // Save to localStorage for thank-you page
-        localStorage.setItem('velora_order', JSON.stringify({
-            plan: selectedPlan,
-            addons: Array.from(selectedAddons),
-            billingCycle: cycle,
-        }));
-
-        const originalText = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kraunama...';
-        this.disabled = true;
-
-        try {
-            const res = await fetch('/create-checkout-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ priceIds }),
-            });
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                throw new Error(data.error || 'Nežinoma klaida');
-            }
-        } catch (e) {
-            console.error('Checkout error:', e);
-            alert('Nepavyko atidaryti mokėjimo. Bandykite dar kartą arba susisiekite su mumis.');
-            this.innerHTML = originalText;
-            this.disabled = false;
-        }
-    });
-}());
-
-// ================================================================
-// ONBOARDING WIZARD FORM (thank-you.html)
-// ================================================================
-(async function initWizard() {
-    const form = document.getElementById('onboarding-form');
-    if (!form) return;
-
-    // Read order data from localStorage
-    let order = JSON.parse(localStorage.getItem('velora_order') || '{}');
-
-    // Fallback: if no plan in localStorage, fetch from Stripe session
-    if (!order.plan) {
-        const params = new URLSearchParams(window.location.search);
-        const sessionId = params.get('session_id');
-        if (sessionId) {
             try {
-                const res = await fetch(`/api/session/${encodeURIComponent(sessionId)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    order = { plan: data.plan, addons: data.addons };
-                    localStorage.setItem('velora_order', JSON.stringify(order));
+                const res = await fetch('/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ priceId: pendingPriceId }),
+                });
+                const data = await res.json();
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error(data.error || 'Nežinoma klaida');
                 }
             } catch (e) {
-                console.warn('Could not fetch session data:', e.message);
-            }
-        }
-    }
-
-    const purchasedAddons = new Set(order.addons || []);
-
-    const steps = Array.from(form.querySelectorAll('.wizard-step'));
-    const progressSteps = Array.from(form.querySelectorAll('.progress-step'));
-    const progressBar = document.getElementById('progress-bar');
-    const btnPrev = form.querySelector('.wizard-prev');
-    const btnNext = form.querySelector('.wizard-next');
-    const btnSubmit = form.querySelector('.wizard-submit');
-    const successEl = document.getElementById('form-success');
-
-    // Track toggle choices
-    const choices = {};
-    let currentStep = 0;
-
-    // Hide add-on steps that weren't purchased
-    steps.forEach(step => {
-        const addonKey = step.dataset.addon;
-        if (addonKey && !purchasedAddons.has(addonKey)) {
-            step.dataset.hidden = 'true';
-        }
-    });
-
-    function getVisibleStepIndices() {
-        const indices = [];
-        steps.forEach((step, i) => {
-            // Skip hidden add-on steps
-            if (step.dataset.hidden === 'true') return;
-            // Skip conditional steps where user chose "No"
-            const cond = step.dataset.conditional;
-            if (cond && choices[cond] === false) return;
-            indices.push(i);
-        });
-        return indices;
-    }
-
-    function showStep(index) {
-        steps.forEach((s, i) => {
-            s.classList.toggle('active', i === index);
-        });
-
-        const visibleIndices = getVisibleStepIndices();
-        const currentVisiblePos = visibleIndices.indexOf(index);
-        const totalVisible = visibleIndices.length;
-
-        progressSteps.forEach((ps, i) => {
-            const stepNum = parseInt(ps.dataset.step) - 1;
-            ps.classList.remove('active', 'completed');
-            if (visibleIndices.indexOf(stepNum) === -1) {
-                ps.style.display = 'none';
-            } else {
-                ps.style.display = 'flex';
-                const visPos = visibleIndices.indexOf(stepNum);
-                if (visPos < currentVisiblePos) {
-                    ps.classList.add('completed');
-                } else if (visPos === currentVisiblePos) {
-                    ps.classList.add('active');
-                }
+                console.error('Checkout error:', e);
+                alert('Nepavyko atidaryti mokėjimo. Bandykite dar kartą.');
+                checkoutPayBtn.disabled = false;
+                checkoutPayBtn.innerHTML = '<i class="fas fa-lock"></i> Apmokėti dabar';
             }
         });
-
-        const pct = totalVisible > 1 ? (currentVisiblePos / (totalVisible - 1)) * 100 : 0;
-        progressBar.style.width = pct + '%';
-
-        btnPrev.style.display = currentVisiblePos > 0 ? 'inline-flex' : 'none';
-
-        const isLast = currentVisiblePos === totalVisible - 1;
-        btnNext.style.display = isLast ? 'none' : 'inline-flex';
-        btnSubmit.style.display = isLast ? 'inline-flex' : 'none';
-
-        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    function getNextVisibleStep(from, direction) {
-        const visibleIndices = getVisibleStepIndices();
-        const currentVisiblePos = visibleIndices.indexOf(from);
-        const nextPos = currentVisiblePos + direction;
-        if (nextPos < 0 || nextPos >= visibleIndices.length) return -1;
-        return visibleIndices[nextPos];
-    }
+    planBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const plan = this.dataset.plan;
+            const billingCycle = isAnnual ? 'annual' : 'monthly';
+            const priceId = prices[plan] && prices[plan][billingCycle];
 
-    function validateStep(index) {
-        const step = steps[index];
-        const requiredInputs = step.querySelectorAll('input[required], textarea[required], select[required]');
-        let valid = true;
-
-        requiredInputs.forEach(input => {
-            const group = input.closest('.form-group');
-            const condParent = input.closest('.conditional-fields');
-            if (condParent && condParent.style.display === 'none') return;
-
-            if (!input.value.trim()) {
-                group.classList.add('has-error');
-                valid = false;
-            } else {
-                group.classList.remove('has-error');
+            if (!priceId) {
+                alert('Šiuo metu mokėjimai dar nesukonfigūruoti. Susisiekite su mumis tiesiogiai.');
+                return;
             }
 
-            if (input.type === 'email' && input.value.trim()) {
-                const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRe.test(input.value.trim())) {
-                    group.classList.add('has-error');
-                    valid = false;
-                }
-            }
+            showCheckoutOverlay(plan, billingCycle, priceId);
         });
-
-        return valid;
-    }
-
-    // Toggle choice buttons (Yes/No)
-    form.addEventListener('click', function(e) {
-        const btn = e.target.closest('.choice-btn');
-        if (!btn) return;
-
-        const toggleEl = btn.closest('.toggle-choice');
-        const field = toggleEl.dataset.field;
-        const value = btn.dataset.value;
-
-        toggleEl.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        choices[field] = value === 'yes';
-
-        const conditionals = form.querySelectorAll(`.conditional-fields[data-show-when="${field}=yes"]`);
-        conditionals.forEach(cf => {
-            if (value === 'yes') {
-                cf.style.display = 'block';
-                cf.classList.add('visible');
-            } else {
-                cf.style.display = 'none';
-                cf.classList.remove('visible');
-            }
-        });
-
-        if (steps[currentStep].dataset.conditional === field) {
-            showStep(currentStep);
-        }
     });
-
-    form.addEventListener('input', function(e) {
-        const group = e.target.closest('.form-group');
-        if (group) group.classList.remove('has-error');
-    });
-
-    btnNext.addEventListener('click', function() {
-        if (!validateStep(currentStep)) return;
-        const step = steps[currentStep];
-        const cond = step.dataset.conditional;
-        if (cond && choices[cond] === undefined) return;
-
-        const next = getNextVisibleStep(currentStep, 1);
-        if (next === -1) return;
-        currentStep = next;
-        showStep(currentStep);
-    });
-
-    btnPrev.addEventListener('click', function() {
-        const prev = getNextVisibleStep(currentStep, -1);
-        if (prev === -1) return;
-        currentStep = prev;
-        showStep(currentStep);
-    });
-
-    // Submit
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        if (!validateStep(currentStep)) return;
-
-        const val = (id) => {
-            const el = form.querySelector('#' + id);
-            return el ? el.value.trim() : '';
-        };
-
-        const data = {
-            // Order metadata
-            plan: order.plan || '',
-            addons: order.addons || [],
-            billing_cycle: order.billingCycle || '',
-
-            // Core fields
-            business_type: val('business_type'),
-            salon_name: val('salon_name'),
-            phone: val('phone'),
-            email: val('email'),
-            instagram: val('instagram'),
-            facebook: val('facebook'),
-            address: val('address'),
-            services_prices: val('services_prices'),
-            working_hours: val('working_hours'),
-
-            // Design
-            has_logo: choices.has_logo === true,
-            preferred_colors: val('preferred_colors'),
-            design_style: (function() {
-                const checked = form.querySelector('input[name="design_style"]:checked');
-                return checked ? checked.value : '';
-            })(),
-            brand_vibe: val('brand_vibe'),
-
-            // Gallery
-            gallery_count: val('gallery_count'),
-            gallery_categories: val('gallery_categories'),
-
-            // Add-on: Gift Cards
-            gift_denominations: val('gift_denominations'),
-            gift_design: val('gift_design'),
-
-            // Add-on: Memberships
-            membership_tiers: val('membership_tiers'),
-            membership_perks: val('membership_perks'),
-
-            // Add-on: Email Reminders
-            email_timing: val('email_timing'),
-            email_language: val('email_language'),
-
-            // Add-on: SMS
-            sms_timing: val('sms_timing'),
-            sms_language: val('sms_language'),
-
-            // Add-on: Inventory
-            inventory_categories: val('inventory_categories'),
-            inventory_notes: val('inventory_notes'),
-
-            // Add-on: Products
-            product_categories: val('product_categories'),
-            product_pricing: val('product_pricing'),
-            product_image_notes: val('product_image_notes'),
-
-            // Extra
-            notes: val('notes'),
-        };
-
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Siunčiama...';
-
-        try {
-            const res = await fetch('https://velora-ops.onrender.com/webhook/onboarding', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (!res.ok) {
-                throw new Error('Serverio klaida: ' + res.status);
-            }
-
-            // Clear order from localStorage
-            localStorage.removeItem('velora_order');
-
-            form.style.display = 'none';
-            successEl.style.display = 'block';
-        } catch (err) {
-            console.error('Onboarding submit error:', err);
-            alert('Nepavyko išsiųsti formos. Bandykite dar kartą arba susisiekite su mumis el. paštu velorastudios.lt@gmail.com');
-            btnSubmit.disabled = false;
-            btnSubmit.textContent = 'Pateikti informaciją';
-        }
-    });
-
-    // Initialize
-    showStep(0);
 }());
+
