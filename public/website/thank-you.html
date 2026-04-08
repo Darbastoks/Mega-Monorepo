@@ -226,9 +226,25 @@
         .add-break-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; color: #22d3ee; font-family: inherit; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
         .add-break-btn:hover { background: rgba(34,211,238,0.15); }
 
+        /* Upload zones */
+        .upload-zone { border: 2px dashed rgba(255,255,255,0.12); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.02); }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #22d3ee; background: rgba(34,211,238,0.05); }
+        .upload-zone i { font-size: 1.5rem; color: rgba(34,211,238,0.5); margin-bottom: 8px; display: block; }
+        .upload-zone p { font-size: 0.82rem; color: rgba(248,250,252,0.45); margin: 0; }
+        .upload-zone .upload-hint { font-size: 0.75rem; color: rgba(248,250,252,0.3); margin-top: 4px; }
+        .upload-zone input[type="file"] { display: none; }
+        .upload-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .upload-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .upload-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .upload-thumb .remove-thumb { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; border-radius: 50%; background: #f87171; border: none; color: #fff; font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .upload-progress { margin-top: 8px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; display: none; }
+        .upload-progress .bar { height: 100%; background: #22d3ee; border-radius: 2px; transition: width 0.3s; width: 0%; }
+        .upload-status { font-size: 0.78rem; color: rgba(248,250,252,0.4); margin-top: 6px; display: none; }
+
         @media (max-width: 480px) {
             .info-tooltip { white-space: normal; min-width: 200px; }
             .time-row, .break-row { flex-wrap: wrap; }
+            .upload-thumb { width: 64px; height: 64px; }
         }
 
         .wizard-nav { display: flex; justify-content: space-between; margin-top: 28px; gap: 12px; }
@@ -363,12 +379,27 @@
                         <button type="button" class="choice-btn" data-value="no">Ne</button>
                     </div>
                     <div class="conditional-fields" data-show-when="has_logo=yes" style="display:none">
-                        <input type="file" id="logo_file" accept="image/*" style="margin-top:12px">
-                        <div id="logo-preview" style="display:none; margin-top:12px; position:relative;">
-                            <img id="logo-preview-img" src="" alt="Logo" style="max-width:200px; max-height:120px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
-                            <button type="button" id="logo-remove" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#f87171; border:none; color:#fff; font-size:0.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>
+                        <div class="upload-zone" id="logo-zone" style="margin-top:12px">
+                            <input type="file" id="logo_file" accept="image/jpeg,image/png,image/webp,image/svg+xml">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Paspauskite arba vilkite logotipą</p>
+                            <p class="upload-hint">JPG, PNG, SVG, WEBP — max 5MB</p>
                         </div>
+                        <div class="upload-previews" id="logo-previews"></div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label class="info-hint">Galerijos nuotraukos
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Nuotraukas galėsite keisti vėliau administratoriaus panelėje.</span>
+                    </label>
+                    <div class="upload-zone" id="gallery-zone">
+                        <input type="file" id="gallery_files" accept="image/jpeg,image/png,image/webp" multiple>
+                        <i class="fas fa-images"></i>
+                        <p>Paspauskite arba vilkite nuotraukas</p>
+                        <p class="upload-hint">Iki 10 nuotraukų — JPG, PNG, WEBP — max 5MB kiekviena</p>
+                    </div>
+                    <div class="upload-previews" id="gallery-previews"></div>
                 </div>
                 <div class="form-group"><label>Pageidaujamos spalvos</label><input type="text" id="preferred_colors" placeholder="pvz. juoda, auksinė, rožinė"></div>
                 <div class="form-group">
@@ -524,6 +555,8 @@
                     end: row.querySelector('.break-end')?.value || ''
                 })).filter(b => b.start && b.end),
                 has_logo: toggleState.has_logo === 'yes',
+                logo_url: window.__uploads ? window.__uploads.logo || '' : '',
+                gallery_urls: window.__uploads ? window.__uploads.gallery || [] : [],
                 preferred_colors: document.getElementById('preferred_colors')?.value || '',
                 design_style: document.querySelector('input[name="design_style"]:checked')?.value || 'surprise',
                 wants_booking: toggleState.wants_booking === 'yes',
@@ -551,30 +584,98 @@
         });
     }());
 
-    // Logo preview + remove
+    // Cloudinary upload system (logo + gallery)
     (function() {
-        const fileInput = document.getElementById('logo_file');
-        const preview = document.getElementById('logo-preview');
-        const previewImg = document.getElementById('logo-preview-img');
-        const removeBtn = document.getElementById('logo-remove');
-        if (!fileInput || !preview) return;
+        const CLOUD_NAME = 'dpg1rxaqy';
+        const UPLOAD_PRESET = 'velora_onboarding';
+        const UPLOAD_URL = 'https://api.cloudinary.com/v1_1/' + CLOUD_NAME + '/image/upload';
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    preview.style.display = 'inline-block';
+        // Shared state for uploaded URLs
+        window.__uploads = { logo: null, gallery: [] };
+
+        function uploadToCloudinary(file, folder) {
+            return new Promise(function(resolve, reject) {
+                var fd = new FormData();
+                fd.append('file', file);
+                fd.append('upload_preset', UPLOAD_PRESET);
+                fd.append('folder', folder);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', UPLOAD_URL);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        var res = JSON.parse(xhr.responseText);
+                        resolve(res.secure_url);
+                    } else { reject(new Error('Upload failed')); }
                 };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+                xhr.onerror = function() { reject(new Error('Network error')); };
+                xhr.send(fd);
+            });
+        }
 
-        removeBtn.addEventListener('click', function() {
-            fileInput.value = '';
-            preview.style.display = 'none';
-            previewImg.src = '';
-        });
+        function createThumb(url, onRemove) {
+            var div = document.createElement('div');
+            div.className = 'upload-thumb';
+            div.innerHTML = '<img src="' + url + '" alt=""><button type="button" class="remove-thumb"><i class="fas fa-times"></i></button>';
+            div.querySelector('.remove-thumb').addEventListener('click', function() {
+                onRemove();
+                div.remove();
+            });
+            return div;
+        }
+
+        function setupZone(zoneId, inputId, previewsId, opts) {
+            var zone = document.getElementById(zoneId);
+            var input = document.getElementById(inputId);
+            var previews = document.getElementById(previewsId);
+            if (!zone || !input) return;
+
+            zone.addEventListener('click', function() { input.click(); });
+            zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
+            zone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+            input.addEventListener('change', function() { handleFiles(this.files); this.value = ''; });
+
+            async function handleFiles(files) {
+                var arr = Array.from(files);
+                if (opts.single) arr = arr.slice(0, 1);
+                if (opts.maxCount) {
+                    var remaining = opts.maxCount - window.__uploads.gallery.length;
+                    arr = arr.slice(0, Math.max(0, remaining));
+                }
+                for (var i = 0; i < arr.length; i++) {
+                    var f = arr[i];
+                    if (f.size > MAX_FILE_SIZE) { alert(f.name + ' per didelis (max 5MB)'); continue; }
+                    if (!f.type.startsWith('image/')) continue;
+                    zone.style.opacity = '0.6';
+                    zone.querySelector('p').textContent = 'Įkeliama...';
+                    try {
+                        var url = await uploadToCloudinary(f, opts.folder);
+                        if (opts.single) {
+                            window.__uploads.logo = url;
+                            previews.innerHTML = '';
+                            previews.appendChild(createThumb(url, function() { window.__uploads.logo = null; }));
+                        } else {
+                            window.__uploads.gallery.push(url);
+                            var idx = window.__uploads.gallery.length - 1;
+                            previews.appendChild(createThumb(url, function() {
+                                var pos = window.__uploads.gallery.indexOf(url);
+                                if (pos > -1) window.__uploads.gallery.splice(pos, 1);
+                            }));
+                        }
+                    } catch(err) { alert('Nepavyko įkelti ' + f.name); }
+                    zone.style.opacity = '1';
+                    zone.querySelector('p').textContent = opts.single ? 'Paspauskite arba vilkite logotipą' : 'Paspauskite arba vilkite nuotraukas';
+                }
+            }
+        }
+
+        setupZone('logo-zone', 'logo_file', 'logo-previews', { single: true, folder: 'velora-onboarding/logos' });
+        setupZone('gallery-zone', 'gallery_files', 'gallery-previews', { single: false, maxCount: 10, folder: 'velora-onboarding/gallery' });
     }());
 
     // Break add/remove logic
