@@ -329,7 +329,10 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Darbo dienos <span class="req">*</span></label>
+                    <label class="info-hint">Darbo dienos <span class="req">*</span>
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Darbo dienas galėsite keisti administratoriaus panelėje.</span>
+                    </label>
                     <div class="checkbox-group">
                         <label class="cb-option"><input type="checkbox" name="work_days" value="Pirmadienis" checked> Pr</label>
                         <label class="cb-option"><input type="checkbox" name="work_days" value="Antradienis" checked> An</label>
@@ -361,6 +364,10 @@
                     </div>
                     <div class="conditional-fields" data-show-when="has_logo=yes" style="display:none">
                         <input type="file" id="logo_file" accept="image/*" style="margin-top:12px">
+                        <div id="logo-preview" style="display:none; margin-top:12px; position:relative;">
+                            <img id="logo-preview-img" src="" alt="Logo" style="max-width:200px; max-height:120px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+                            <button type="button" id="logo-remove" style="position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#f87171; border:none; color:#fff; font-size:0.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group"><label>Pageidaujamos spalvos</label><input type="text" id="preferred_colors" placeholder="pvz. juoda, auksinė, rožinė"></div>
@@ -401,7 +408,10 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 24px;">
-                    <label>Papildomi pageidavimai</label>
+                    <label class="info-hint">Papildomi pageidavimai
+                        <span class="info-icon"><i class="fas fa-info"></i></span>
+                        <span class="info-tooltip">Pageidavimai bus įvertinti, bet 100% garantijos nėra — priklausomai nuo techninių galimybių.</span>
+                    </label>
                     <textarea id="notes" rows="3" placeholder="Ar turite kokių nors specialių pageidavimų ar pastabų?"></textarea>
                 </div>
             </div>
@@ -538,6 +548,32 @@
                 alert('Ryšio klaida. Patikrinkite internetą ir bandykite dar kartą.');
                 submitBtn.disabled = false; submitBtn.textContent = 'Pateikti informaciją';
             }
+        });
+    }());
+
+    // Logo preview + remove
+    (function() {
+        const fileInput = document.getElementById('logo_file');
+        const preview = document.getElementById('logo-preview');
+        const previewImg = document.getElementById('logo-preview-img');
+        const removeBtn = document.getElementById('logo-remove');
+        if (!fileInput || !preview) return;
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'inline-block';
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        removeBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            preview.style.display = 'none';
+            previewImg.src = '';
         });
     }());
 
