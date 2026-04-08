@@ -51,7 +51,6 @@ const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 const PRICES = {
     solo:   { monthly: process.env.STRIPE_PRICE_SOLO_MONTHLY,   annual: process.env.STRIPE_PRICE_SOLO_ANNUAL   },
-    growth: { monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY, annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL },
     team:   { monthly: process.env.STRIPE_PRICE_TEAM_MONTHLY,   annual: process.env.STRIPE_PRICE_TEAM_ANNUAL   },
 };
 const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
@@ -1504,8 +1503,8 @@ app.use('/paslaugos', express.static(path.join(__dirname, 'public/website/paslau
 app.get('/robots.txt', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'robots.txt')));
 app.get('/sitemap.xml', (req, res) => res.sendFile(path.join(__dirname, 'public/website', 'sitemap.xml')));
 // ==================== PORTAL API ====================
-const PLAN_LIMITS = { free: 0, solo: 0, growth: 3, team: Infinity };
-const STAFF_LIMITS = { free: 1, solo: 1, growth: 3, team: Infinity };
+const PLAN_LIMITS = { free: 0, solo: 0, team: Infinity };
+const STAFF_LIMITS = { free: 1, solo: 1, team: Infinity };
 const ONE_OFF_CHANGE_PRICE = 1500; // €15.00 in cents
 
 // Price ID → plan name mapping

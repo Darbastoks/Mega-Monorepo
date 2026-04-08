@@ -509,10 +509,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkoutPlanPrice = document.getElementById('checkout-plan-price');
     let pendingPriceId = null;
 
-    const planNames = { solo: 'SOLO', growth: 'GROWTH', team: 'TEAM' };
+    const planNames = { solo: 'SOLO', team: 'TEAM' };
     const planPrices = {
         solo: { monthly: '25€<span>/mėn</span>', annual: '199€<span>/metus</span>' },
-        growth: { monthly: '39€<span>/mėn</span>', annual: '349€<span>/metus</span>' },
         team: { monthly: '59€<span>/mėn</span>', annual: '399€<span>/metus</span>' }
     };
 
