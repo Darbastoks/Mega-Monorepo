@@ -49,12 +49,76 @@ async function sendCancellationEmail(to, clientName, service, date, time, reason
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || '');
 const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
-const PRICES = {
-    solo:   { monthly: process.env.STRIPE_PRICE_SOLO_MONTHLY,   annual: process.env.STRIPE_PRICE_SOLO_ANNUAL   },
-    growth: { monthly: process.env.STRIPE_PRICE_GROWTH_MONTHLY, annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL },
-    team:   { monthly: process.env.STRIPE_PRICE_TEAM_MONTHLY,   annual: process.env.STRIPE_PRICE_TEAM_ANNUAL   },
+// ==================== PLANS & ADD-ONS CONFIG ====================
+const PLANS = {
+    solo: {
+        monthly: { priceId: process.env.STRIPE_PRICE_SOLO_MONTHLY, display: 25 },
+        annual:  { priceId: process.env.STRIPE_PRICE_SOLO_ANNUAL,  display: 199 },
+        label: 'Solo',
+        description: '1 grožio specialistas',
+        mediaAllowance: { images: 20, storageMB: 500 },
+    },
+    team: {
+        monthly: { priceId: process.env.STRIPE_PRICE_TEAM_MONTHLY, display: 59 },
+        annual:  { priceId: process.env.STRIPE_PRICE_TEAM_ANNUAL,  display: 399 },
+        label: 'Team',
+        description: 'Keli darbuotojai',
+        mediaAllowance: { images: 50, storageMB: 2048 },
+    },
 };
-const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
+
+const ADDONS = {
+    giftcards: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_GIFTCARDS_MONTHLY, display: 9 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_GIFTCARDS_ANNUAL,  display: 79 },
+        label: 'Dovanų kortelės', icon: 'fa-gift',
+        description: 'Parduokite dovanų korteles internetu',
+    },
+    memberships: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_MEMBERSHIPS_MONTHLY, display: 9 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_MEMBERSHIPS_ANNUAL,  display: 79 },
+        label: 'Narystės', icon: 'fa-id-card',
+        description: 'Mėnesinės narystės ir lojalumo programos',
+    },
+    email: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_EMAIL_MONTHLY, display: 9 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_EMAIL_ANNUAL,  display: 79 },
+        label: 'El. pašto priminimai', icon: 'fa-envelope',
+        description: 'Automatiniai vizitų priminimai el. paštu',
+    },
+    sms: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_SMS_MONTHLY, display: 19 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_SMS_ANNUAL,  display: 179 },
+        label: 'SMS priminimai', icon: 'fa-comment-sms',
+        description: 'Automatiniai vizitų priminimai SMS žinutėmis',
+    },
+    inventory: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_INVENTORY_MONTHLY, display: 12 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_INVENTORY_ANNUAL,  display: 99 },
+        label: 'Inventoriaus valdymas', icon: 'fa-boxes-stacked',
+        description: 'Sekite produktų atsargas ir užsakymus',
+    },
+    products: {
+        monthly: { priceId: process.env.STRIPE_PRICE_ADDON_PRODUCTS_MONTHLY, display: 15 },
+        annual:  { priceId: process.env.STRIPE_PRICE_ADDON_PRODUCTS_ANNUAL,  display: 129 },
+        label: 'Produktų katalogas', icon: 'fa-bag-shopping',
+        description: 'Parduokite grožio produktus per svetainę',
+    },
+};
+
+const ALL_ITEMS = { ...PLANS, ...ADDONS };
+const VALID_PRICE_IDS = new Set(
+    Object.values(ALL_ITEMS).flatMap(item => [item.monthly?.priceId, item.annual?.priceId]).filter(Boolean)
+);
+const PRICE_TO_KEY = {};
+for (const [key, item] of Object.entries(ALL_ITEMS)) {
+    if (item.monthly?.priceId) PRICE_TO_KEY[item.monthly.priceId] = key;
+    if (item.annual?.priceId) PRICE_TO_KEY[item.annual.priceId] = key;
+}
+const PLAN_KEYS = new Set(Object.keys(PLANS));
+const PLAN_PRICE_IDS = new Set(
+    Object.values(PLANS).flatMap(p => [p.monthly?.priceId, p.annual?.priceId]).filter(Boolean)
+);
 
 // Barbie SQLite models
 const { initDatabase, Admin, Booking, db: dbBarbie } = require('./backend/barbie/database');
@@ -165,30 +229,75 @@ app.use(session({
 }));
 
 // ==================== STRIPE API ====================
-// Returns public price IDs (not secret — safe to expose to browser)
 app.get('/api/prices', (req, res) => {
-    res.json(PRICES);
+    const publicPlan = (p) => ({
+        monthly: { priceId: p.monthly.priceId, display: p.monthly.display },
+        annual:  { priceId: p.annual.priceId,  display: p.annual.display },
+        label: p.label, description: p.description,
+    });
+    const publicAddon = (a) => ({
+        monthly: { priceId: a.monthly.priceId, display: a.monthly.display },
+        annual:  { priceId: a.annual.priceId,  display: a.annual.display },
+        label: a.label, icon: a.icon, description: a.description,
+    });
+    res.json({
+        plans: Object.fromEntries(Object.entries(PLANS).map(([k, v]) => [k, publicPlan(v)])),
+        addons: Object.fromEntries(Object.entries(ADDONS).map(([k, v]) => [k, publicAddon(v)])),
+    });
 });
 
-// Creates a Stripe Checkout session and returns the redirect URL
 app.post('/create-checkout-session', async (req, res) => {
-    const { priceId } = req.body;
-    if (!priceId || !VALID_PRICE_IDS.has(priceId)) {
-        return res.status(400).json({ error: 'Neteisingas plano ID.' });
+    const { priceIds } = req.body;
+    if (!Array.isArray(priceIds) || priceIds.length === 0 || priceIds.length > 6) {
+        return res.status(400).json({ error: 'Neteisingi kainų ID.' });
     }
+    for (const id of priceIds) {
+        if (!VALID_PRICE_IDS.has(id)) {
+            return res.status(400).json({ error: 'Neteisingas kainų ID.' });
+        }
+    }
+    const selectedPlans = priceIds.filter(id => PLAN_PRICE_IDS.has(id));
+    if (selectedPlans.length !== 1) {
+        return res.status(400).json({ error: 'Turi būti pasirinktas lygiai 1 planas.' });
+    }
+    const itemKeys = priceIds.map(id => PRICE_TO_KEY[id]).filter(Boolean);
+    const planKey = itemKeys.find(k => PLAN_KEYS.has(k));
+    const addonKeys = itemKeys.filter(k => !PLAN_KEYS.has(k));
     try {
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
-            line_items: [{ price: priceId, quantity: 1 }],
+            line_items: priceIds.map(priceId => ({ price: priceId, quantity: 1 })),
             success_url: `${SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${SITE_URL}/kainos`,
+            cancel_url: `${SITE_URL}/#kainos`,
             locale: 'lt',
             billing_address_collection: 'auto',
+            metadata: { plan: planKey, addons: addonKeys.join(',') },
         });
         res.json({ url: session.url });
     } catch (err) {
         console.error('Stripe checkout error:', err.message);
         res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
+    }
+});
+
+app.get('/api/session/:sessionId', async (req, res) => {
+    const { sessionId } = req.params;
+    if (!sessionId || !/^cs_(test_|live_)?[a-zA-Z0-9]+$/.test(sessionId)) {
+        return res.status(400).json({ error: 'Neteisingas sesijos ID.' });
+    }
+    try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const meta = session.metadata || {};
+        res.json({
+            plan: meta.plan || '',
+            addons: meta.addons ? meta.addons.split(',').filter(Boolean) : [],
+        });
+    } catch (err) {
+        console.error('Session lookup error:', err.message);
+        if (err.type === 'StripeInvalidRequestError') {
+            return res.status(404).json({ error: 'Sesija nerasta.' });
+        }
+        res.status(500).json({ error: 'Serverio klaida.' });
     }
 });
 
@@ -1510,8 +1619,8 @@ const ONE_OFF_CHANGE_PRICE = 1500; // €15.00 in cents
 
 // Price ID → plan name mapping
 function getPlanFromPriceId(priceId) {
-    for (const [plan, prices] of Object.entries(PRICES)) {
-        if (prices.monthly === priceId || prices.annual === priceId) return plan;
+    for (const [plan, p] of Object.entries(PLANS)) {
+        if (p.monthly?.priceId === priceId || p.annual?.priceId === priceId) return plan;
     }
     return 'solo';
 }

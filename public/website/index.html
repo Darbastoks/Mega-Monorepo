@@ -5,24 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Velora Studio | Modernios svetainės grožio verslams</title>
-    <meta name="description" content="Velora Studio – modernios svetainės grožio salonams su online registracija. Nuo 25€/mėn. Paruošiame per 3 dienas.">
-    <meta name="keywords" content="svetainė salonui, grožio verslas, online registracija, kirpykla svetainė, barber shop svetainė">
-    <meta property="og:title" content="Velora Studio – Svetainės grožio verslui">
-    <meta property="og:description" content="Modernios svetainės su online registracija grožio salonams. Paruošiame per 3 dienas.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="lt_LT">
-    <link rel="canonical" href="https://mega-monorepo.onrender.com/">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23060a12'/><text x='50' y='72' font-size='60' text-anchor='middle' fill='%2322d3ee' font-family='serif'>V</text></svg>">
-
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LHH8Q1QGP5"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('consent', 'default', { analytics_storage: 'denied' });
-        gtag('config', 'G-LHH8Q1QGP5');
-    </script>
+    <meta name="description"
+        content="Padedame kirpykloms, barberiams ir grožio specialistams pritraukti daugiau klientų per profesionalią internetinę svetainę.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,11 +23,6 @@
 </head>
 
 <body>
-    <div id="scrollProgress"></div>
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen">
-        <div class="loading-logo">V</div>
-    </div>
     <!-- Mouse Glow -->
     <div class="cursor-glow"></div>
     <!-- Navbar -->
@@ -54,16 +33,15 @@
                 <li><a href="#apie">Apie mus</a></li>
                 <li><a href="#paslaugos">Paslaugos</a></li>
                 <li><a href="#pavyzdziai">Pavyzdžiai</a></li>
-                <li><a href="/kainos">Kainos</a></li>
-                <li><a href="/kontaktai" class="btn btn-nav">Susisiekti</a></li>
-                <li><a href="/portal" class="btn btn-portal">Registruotis</a></li>
+                <li><a href="#kainos">Kainos</a></li>
+                <li><a href="#kontaktai" class="btn btn-nav">Susisiekti</a></li>
+                <li><a href="https://velora-mega-server.onrender.com/portal" class="btn btn-portal" target="_blank">Klientų portalas</a></li>
             </ul>
             <div class="hamburger">
                 <i class="fas fa-bars"></i>
             </div>
         </div>
     </nav>
-    <div class="menu-overlay"></div>
     <!-- Hero Section -->
     <section class="hero">
         <div class="aurora-bg">
@@ -74,17 +52,13 @@
         <div class="container hero-container fade-in">
             <div class="hero-content">
                 <div class="hero-badge"><span class="dot"></span> KURIA SVETAINES SALONAMS</div>
-                <h1><em>Modernios</em> svetainės<br><span id="typewriter" class="typewriter-text"></span></h1>
+                <h1><em>Modernios</em> svetainės <br>grožio verslams</h1>
                 <p>Padedame kirpykloms, barberiams ir grožio specialistams pritraukti daugiau klientų per profesionalią
                     internetinę svetainę.</p>
-                <p class="hero-trust"><i class="fas fa-check-circle"></i> Jau 15+ salonų naudoja Velora</p>
                 <div class="hero-buttons">
                     <a href="#pavyzdziai" class="btn btn-secondary">Peržiūrėti pavyzdžius</a>
-                    <a href="/kainos" class="btn btn-primary">Pasirinkti planą</a>
+                    <a href="#kainos" class="btn btn-primary">Pradėti</a>
                 </div>
-            </div>
-            <div class="scroll-indicator">
-                <i class="fas fa-chevron-down"></i>
             </div>
         </div>
     </section>
@@ -92,125 +66,43 @@
     <section id="apie" class="about">
         <div class="container fade-in">
             <h2 style="margin-bottom: 20px;"><em>Apie mus</em> – Velora Studio</h2>
-            <p class="about-text">Velora Studio – tai komanda, kuri kuria modernias, greitas ir patogias internetines svetaines grožio verslams. Mūsų tikslas – padėti jūsų salonui atrodyti profesionaliai internete, pritraukti daugiau klientų ir automatizuoti kasdienius procesus.</p>
-            <p class="about-text">Mes suprantame, kad grožio verslas yra greitas ir dinamiškas. Todėl dirbame efektyviai – paprastą svetainę paruošiame per 3 darbo dienas, sudėtingesnę – per 7. Kiekvienas projektas gaunamas su online registracijos sistema, Google Maps integracija ir pilna technine priežiūra.</p>
-            <div class="about-values">
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-front about-value">
-                            <div class="about-value-icon"><i class="fas fa-bolt"></i></div>
-                            <h3>Greitis</h3>
-                            <p>Svetainę paruošiame per 3–7 dienas.</p>
-                        </div>
-                        <div class="flip-back about-value">
-                            <p>Jokio ilgo laukimo ar biurokratijos. Užpildote formą, pateikiate informaciją — ir mes iškart pradedame dirbti. Paprastą svetainę pristatome per 3 darbo dienas.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-front about-value">
-                            <div class="about-value-icon"><i class="fas fa-gem"></i></div>
-                            <h3>Kokybė</h3>
-                            <p>Individualus dizainas, ne šablonai.</p>
-                        </div>
-                        <div class="flip-back about-value">
-                            <p>Kiekviena svetainė kuriama nuo nulio pagal jūsų salono stilių ir prekės ženklą. Naudojame modernias technologijas ir dizaino principus.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-front about-value">
-                            <div class="about-value-icon"><i class="fas fa-headset"></i></div>
-                            <h3>Palaikymas</h3>
-                            <p>Techninė priežiūra įtraukta į kainą.</p>
-                        </div>
-                        <div class="flip-back about-value">
-                            <p>Jūs nesirūpinate serveriais, atnaujinimais ar saugumu. Mes viską tvarkome, kad jūs galėtumėte susikoncentruoti į savo verslą.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="flip-card">
-                    <div class="flip-card-inner">
-                        <div class="flip-front about-value">
-                            <div class="about-value-icon"><i class="fas fa-hand-holding-usd"></i></div>
-                            <h3>0% komisijų</h3>
-                            <p>Tik fiksuotas mėnesinis mokestis.</p>
-                        </div>
-                        <div class="flip-back about-value">
-                            <p>Jokių paslėptų mokesčių ar procentų nuo užsakymų. Mokate vieną fiksuotą kainą — nesvarbu kiek klientų užsiregistruoja.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="about-mission">
-                <p><em>„Mūsų misija — kad kiekvienas grožio verslas Lietuvoje turėtų profesionalią svetainę, kuri dirba už jus 24/7."</em></p>
-            </div>
+            <p class="about-text">Velora Studio kuria modernias, greitas ir patogias internetines svetaines grožio
+                verslams. Mūsų tikslas – padėti jūsų salonui atrodyti profesionaliai internete ir pritraukti daugiau
+                klientų.</p>
             <div class="floor-glow"></div>
         </div>
     </section>
-    <!-- How It Works -->
-    <section class="how-it-works">
-        <div class="container fade-in">
-            <div class="section-header">
-                <h2>Kaip tai veikia?</h2>
-                <div class="divider"></div>
-            </div>
-            <div class="steps-grid">
-                <div class="step fade-in" data-step="1">
-                    <div class="step-icon"><i class="fas fa-hand-pointer"></i></div>
-                    <h3>Pasirinkite planą</h3>
-                    <p>Išsirinkite tinkamą planą ir apmokėkite online — tai užtrunka vos 2 minutes.</p>
-                </div>
-                <div class="step fade-in" data-step="2">
-                    <div class="step-icon"><i class="fas fa-edit"></i></div>
-                    <h3>Užpildykite formą</h3>
-                    <p>Pateikite salono informaciją, nuotraukas ir pageidavimus — mes pasirūpinsime visu kitu.</p>
-                </div>
-                <div class="step fade-in" data-step="3">
-                    <div class="step-icon"><i class="fas fa-rocket"></i></div>
-                    <h3>Gaukite svetainę</h3>
-                    <p>Per 3 darbo dienas jūsų svetainė bus paruošta ir veikianti su online registracija.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,0 C360,60 1080,0 1440,40 L1440,60 L0,60 Z" fill="#0a0e17"/></svg></div>
     <!-- Services Section -->
     <section id="paslaugos" class="services bg-light">
-        <div class="particle-canvas"></div>
         <div class="container fade-in">
             <div class="section-header">
                 <h2>Mūsų paslaugos</h2>
                 <div class="divider"></div>
             </div>
             <div class="grid services-grid">
-                <a href="/paslaugos/moderni-svetaine.html" class="card service-card">
+                <div class="card service-card" data-preview="images/moderni-svetaine.png">
                     <div class="icon-wrapper"><i class="fas fa-laptop-code"></i></div>
                     <h3>Moderni internetinė svetainė</h3>
                     <p>Profesionalus dizainas pritaikytas grožio verslams.</p>
-                </a>
-                <a href="/paslaugos/online-registracija.html" class="card service-card">
+                </div>
+                <div class="card service-card" data-preview="images/online-registracija.png">
                     <div class="icon-wrapper"><i class="far fa-calendar-check"></i></div>
                     <h3>Online klientų registracija</h3>
                     <p>Klientai gali patogiai užsiregistruoti vizitui internetu.</p>
-                </a>
-                <a href="/paslaugos/google-maps.html" class="card service-card">
+                </div>
+                <div class="card service-card" data-preview="images/google-maps.png">
                     <div class="icon-wrapper"><i class="fas fa-map-marker-alt"></i></div>
                     <h3>Google Maps integracija</h3>
                     <p>Lengvai randama jūsų salono lokacija.</p>
-                </a>
-                <a href="/paslaugos/svetaines-prieziura.html" class="card service-card">
+                </div>
+                <div class="card service-card" data-preview="images/svetaines-prieziura.jpg">
                     <div class="icon-wrapper"><i class="fas fa-wrench"></i></div>
                     <h3>Svetainės priežiūra</h3>
                     <p>Padedame palaikyti ir atnaujinti svetainę.</p>
-                </a>
+                </div>
             </div>
         </div>
     </section>
-    <div class="section-wave"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0,40 C360,0 1080,60 1440,0 L1440,60 L0,60 Z" fill="#060a12"/></svg></div>
     <!-- Examples / Portfolio -->
     <section id="pavyzdziai" class="portfolio">
         <div class="container fade-in">
@@ -221,48 +113,260 @@
             <div class="grid portfolio-grid">
                 <div class="card portfolio-card">
                     <div class="portfolio-image"
-                        style="background-image: url('images/portfolio-barber.png');">
+                        style="background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');">
                     </div>
                     <div class="portfolio-content">
-                        <h3>Kirpykla</h3>
-                        <a href="/demo-barber/" class="btn btn-outline">Peržiūrėti</a>
+                        <h3>Barber shop</h3>
+                        <a href="https://barbie-barber-website.onrender.com/#hero" class="btn btn-outline"
+                            target="_blank">Peržiūrėti</a>
                     </div>
                 </div>
                 <div class="card portfolio-card">
-                    <div class="portfolio-image" style="background-image: url('images/portfolio-hair.png');">
+                    <div class="portfolio-image" style="background-image: url('images/portfolio-hair.jpg');">
                     </div>
                     <div class="portfolio-content">
-                        <h3>Plaukų salonas</h3>
-                        <a href="/demo-hair/" class="btn btn-outline">Peržiūrėti</a>
+                        <h3>Hair salon</h3>
+                        <a href="https://hairbeauty-website-1.onrender.com" class="btn btn-outline"
+                            target="_blank">Peržiūrėti</a>
                     </div>
                 </div>
                 <div class="card portfolio-card">
-                    <div class="portfolio-image" style="background-image: url('images/portfolio-nails.png');">
+                    <div class="portfolio-image" style="background-image: url('images/nail-art-3.png');">
                     </div>
                     <div class="portfolio-content">
-                        <h3>Nagų studija</h3>
-                        <a href="/demo-nails/" class="btn btn-outline">Peržiūrėti</a>
+                        <h3>Nail studio</h3>
+                        <a href="https://nailsbylukra.onrender.com" class="btn btn-outline"
+                            target="_blank">Peržiūrėti</a>
                     </div>
                 </div>
             </div>
-            <!-- Real client sites (saved links): /barbie/ /hair/ /nails/ -->
         </div>
     </section>
-    <!-- CTA Section -->
-    <section class="stats-bar" style="padding: 60px 0;">
-        <div class="container fade-in" style="text-align: center;">
-            <h2 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 16px;">Pasiruošę pradėti?</h2>
-            <p style="color: #94a3b8; margin-bottom: 24px;">Pasirinkite planą ir gaukite savo svetainę per 3 darbo dienas.</p>
-            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-                <a href="/kainos" class="btn btn-primary">Pasirinkti planą</a>
-                <a href="/atsiliepimai" class="btn btn-secondary">Atsiliepimai</a>
-                <a href="/kontaktai" class="btn btn-outline">Susisiekti</a>
+    <!-- Pricing Section -->
+    <section id="kainos" class="pricing bg-light">
+        <div class="container fade-in">
+            <div class="section-header">
+                <h2>Pasirinkite savo planą</h2>
+                <div class="divider"></div>
+            </div>
+            <!-- Monthly / Annual toggle -->
+            <div class="pricing-toggle">
+                <span class="toggle-label active" id="label-monthly">Mėnesinis</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="billing-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label" id="label-annual">Metinis <span class="save-badge">Sutaupykite 2 mėn.</span></span>
+            </div>
+
+            <!-- 5-Step Process -->
+            <div class="steps-process">
+                <div class="step-card">
+                    <div class="step-circle">1</div>
+                    <h4>Planas</h4>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-circle">2</div>
+                    <h4>Papildymai</h4>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-circle">3</div>
+                    <h4>Peržiūra</h4>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-circle">4</div>
+                    <h4>Apmokėjimas</h4>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-circle">5</div>
+                    <h4>Svetainė</h4>
+                </div>
+            </div>
+
+            <div class="grid pricing-grid pricing-grid-2">
+                <div class="card pricing-card">
+                    <h3>SOLO</h3>
+                    <div class="price"
+                        data-monthly-html='25€<span>/mėn</span>'
+                        data-annual-html='<span class="old-price">300€</span> 199€<span>/metus</span>'>
+                        25€<span>/mėn</span>
+                    </div>
+                    <p class="plan-desc">Idealus vienam grožio specialistui</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> 1 grožio specialistas</li>
+                        <li><i class="fas fa-check"></i> Moderni svetainė</li>
+                        <li><i class="fas fa-check"></i> Paslaugų kainos</li>
+                        <li><i class="fas fa-check"></i> Galerija</li>
+                        <li><i class="fas fa-check"></i> Online registracija</li>
+                        <li><i class="fas fa-check"></i> Hostingas ir palaikymas</li>
+                        <li class="disabled"><i class="fas fa-times"></i> Google Maps integracija</li>
+                        <li class="disabled"><i class="fas fa-times"></i> Prioritetinis palaikymas</li>
+                    </ul>
+                    <button class="plan-btn btn-outline" data-plan="solo" style="margin-top:auto">Pasirinkti</button>
+                </div>
+                <div class="card pricing-card featured">
+                    <div class="badge">Populiariausias</div>
+                    <h3>TEAM</h3>
+                    <div class="price"
+                        data-monthly-html='59€<span>/mėn</span>'
+                        data-annual-html='<span class="old-price">708€</span> 399€<span>/metus</span>'>
+                        59€<span>/mėn</span>
+                    </div>
+                    <p class="plan-desc">Salonams su keliais darbuotojais</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Keli darbuotojai</li>
+                        <li><i class="fas fa-check"></i> Moderni svetainė</li>
+                        <li><i class="fas fa-check"></i> Paslaugų kainos</li>
+                        <li><i class="fas fa-check"></i> Galerija</li>
+                        <li><i class="fas fa-check"></i> Online registracija</li>
+                        <li><i class="fas fa-check"></i> Hostingas ir palaikymas</li>
+                        <li><i class="fas fa-check"></i> Google Maps integracija</li>
+                        <li><i class="fas fa-check"></i> Prioritetinis palaikymas</li>
+                    </ul>
+                    <button class="plan-btn btn-primary" data-plan="team" style="margin-top:auto">Pasirinkti</button>
+                </div>
+            </div>
+            <div class="existing-customer">
+                <p><i class="fas fa-user-check"></i> Jau esate klientas? <a href="mailto:velorastudios.lt@gmail.com?subject=Papildymo%20u%C5%BEsakymas&body=Sveiki%2C%20nor%C4%97%C4%8Diau%20prid%C4%97ti%20papildym%C4%85%20prie%20savo%20prenumeratos.%0A%0AMano%20el.%20pa%C5%A1tas%3A%20%0APapildymas%3A%20">Parašykite mums el. paštu</a> ir pridėsime papildymą prie jūsų prenumeratos.</p>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
+    <!-- Purchase Flow Modal -->
+    <div id="purchaseModal" class="modal purchase-modal">
+        <div class="purchase-modal-content">
+            <button class="close-modal" id="closePurchaseModal"><i class="fas fa-times"></i></button>
+
+            <!-- Selected plan header -->
+            <div class="purchase-plan-header" id="purchasePlanHeader"></div>
+
+            <!-- Modal Step Indicator -->
+            <div class="purchase-steps">
+                <span class="purchase-step active" data-pstep="1">1. Papildymai</span>
+                <span class="purchase-step" data-pstep="2">2. Suvestinė</span>
+            </div>
+
+            <!-- Step 1: Add-ons -->
+            <div class="purchase-step-content active" data-pstep="1">
+                <h3 class="step-title">Pasirinkite papildomas funkcijas</h3>
+                <p class="step-subtitle">Visos funkcijos neprivalomos — galite pridėti ir vėliau.</p>
+                <div class="addons-grid" id="addonsGrid">
+                    <!-- Populated dynamically by JS -->
+                </div>
+                <div class="purchase-nav">
+                    <button type="button" class="btn btn-secondary" id="skipAddons">Praleisti</button>
+                    <button type="button" class="btn btn-primary" id="toSummary">Toliau <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step 2: Order Summary -->
+            <div class="purchase-step-content" data-pstep="2">
+                <h3 class="step-title">Jūsų užsakymas</h3>
+                <div class="order-summary" id="orderSummary">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="order-total" id="orderTotal"></div>
+                <p class="order-note"><i class="fas fa-image"></i> Galerija ir medijos talpa įskaičiuota į planą.</p>
+                <div class="purchase-nav">
+                    <button type="button" class="btn btn-secondary" id="backToAddons"><i class="fas fa-arrow-left"></i> Atgal</button>
+                    <button type="button" class="btn btn-primary btn-large" id="checkoutBtn">
+                        <i class="fas fa-lock"></i> Apmokėti per Stripe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container fade-in">
+            <h2>Norite savo svetainės?</h2>
+            <p>Parašykite mums ir galime parodyti demonstracinę svetainę jūsų salonui.</p>
+            <a href="#" class="btn btn-primary btn-large">
+                <i class="fab fa-instagram"></i> Demo
+            </a>
+        </div>
+    </section>
+    <!-- FAQ Section -->
+    <section id="duk" class="faq">
+        <div class="container fade-in">
+            <div class="section-header">
+                <h2>Dažnai užduodami klausimai</h2>
+                <div class="divider"></div>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Kas įeina į svetainės kainą?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Kaina apima profesionalų dizainą, svetainės kūrimą, hostingą, SSL sertifikatą ir nuolatinę techninę priežiūrą. Jums nereikia rūpintis jokiais papildomais mokesčiais už serverius ar domeną.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Kiek laiko trunka svetainės sukūrimas?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Vidutiniškai svetainę paruošiame per 7 darbo dienas nuo tada, kai gausime visą reikiamą informaciją apie jūsų verslą. Sudėtingesni projektai gali užtrukti iki 14 dienų.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Ar galiu pritaikyti svetainės dizainą pagal savo stilių?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Taip! Mes kuriame svetainę pagal jūsų prekės ženklo spalvas, stilių ir nuotaiką. Užpildę klausimyną po apmokėjimo, galėsite nurodyti savo pageidavimus ir mes viską pritaikysime.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Kas vyksta po apmokėjimo?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Po apmokėjimo jūs užpildote trumpą klausimyną apie savo verslą. Mes pradedame kurti svetainę ir per 7 darbo dienas atsiųsime peržiūros nuorodą. Patvirtinus — svetainė paleidžiama.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Ar reikia techninių žinių svetainei valdyti?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Visiškai nereikia. Mes pasirūpiname visa technine dalimi — hostingu, atnaujinimais ir priežiūra. Jums tereikia nurodyti, ką norite pakeisti, ir mes tai padarysime.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Ar galiu atšaukti prenumeratą?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Taip, prenumeratą galite atšaukti bet kuriuo metu. Nėra jokių ilgalaikių įsipareigojimų. Atšaukus prenumeratą, svetainė veiks iki apmokėto laikotarpio pabaigos.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Kas įeina į hostingą ir palaikymą?</span>
+                        <i class="fas fa-chevron-down faq-toggle"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Hostingas apima greitą ir saugų serverį, SSL sertifikatą, kasdienines atsargines kopijas ir 99.9% veikimo laiko garantiją. Palaikymas — tai turinio pakeitimai, techniniai atnaujinimai ir pagalba el. paštu.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Contact & Footer Section -->
+    <footer id="kontaktai" class="footer">
         <div class="container fade-in">
             <div class="footer-content">
                 <div class="footer-brand">
@@ -275,15 +379,11 @@
                         <div class="contact-icon"><i class="fab fa-instagram"></i></div>
                         Demo
                     </a>
-                    <a href="mailto:velorastudio.support@gmail.com" class="contact-link">
+                    <a href="mailto:velorastudios.lt@gmail.com" class="contact-link">
                         <div class="contact-icon"><i class="far fa-envelope"></i></div>
-                        velorastudio.support@gmail.com
+                        velorastudios.lt@gmail.com
                     </a>
                 </div>
-            </div>
-            <div class="footer-legal">
-                <a href="/privatumo-politika">Privatumo politika</a>
-                <a href="/paslaugos-salygos">Paslaugų sąlygos</a>
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 Velora Studio. Visos teisės saugomos.</p>
@@ -295,32 +395,11 @@
     <div id="previewModal" class="modal">
         <div class="modal-content">
             <span class="close-modal"><i class="fas fa-times"></i></span>
-            <img id="previewImage" src="" alt="Peržiūra" loading="lazy">
+            <img id="previewImage" src="" alt="Peržiūra">
         </div>
     </div>
 
-    <!-- Cookie Consent Banner -->
-    <div id="cookieBanner" class="cookie-banner" style="display:none;">
-        <p>Ši svetainė naudoja slapukus, kad pagerintų jūsų patirtį. <a href="/privatumo-politika">Privatumo politika</a></p>
-        <button id="cookieAccept" class="btn btn-primary btn-sm">Sutinku</button>
-    </div>
-    <script>
-        (function(){
-            if (!localStorage.getItem('cookieConsent')) {
-                document.getElementById('cookieBanner').style.display = 'flex';
-            }
-            document.getElementById('cookieAccept').addEventListener('click', function(){
-                localStorage.setItem('cookieConsent', 'true');
-                document.getElementById('cookieBanner').style.display = 'none';
-                if (typeof gtag === 'function') {
-                    gtag('consent', 'update', { analytics_storage: 'granted' });
-                }
-            });
-        })();
-    </script>
-
-    <script src="js/main.js" defer></script>
-    <script src="js/particle-bg.js" defer></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>
