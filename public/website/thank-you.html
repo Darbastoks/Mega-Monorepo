@@ -574,6 +574,10 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!validate()) return;
+            // Warn if logo toggled yes but no file uploaded
+            if (toggleState.has_logo === 'yes' && (!window.__uploads || !window.__uploads.logo)) {
+                if (!confirm('Pasirinkote "Taip" prie logotipo, bet failas neįkeltas. Tęsti be logotipo?')) return;
+            }
             submitBtn.disabled = true;
             submitBtn.textContent = 'Siunčiama...';
 
@@ -601,7 +605,7 @@
                 seo_city: document.getElementById('seo_city')?.value || '',
                 seo_services: document.getElementById('seo_services')?.value || '',
                 notes: document.getElementById('notes')?.value || '',
-                addons: [...document.querySelectorAll('.addon-card.selected')].map(c => ({ name: c.dataset.addon, price: c.dataset.price }))
+                addons: [...document.querySelectorAll('.addon-card.selected')].map(c => ({ name: c.dataset.addon, price: parseInt(c.dataset.price) || 0 }))
             };
 
             try {
@@ -642,8 +646,8 @@
                 xhr.open('POST', UPLOAD_URL);
                 xhr.onload = function() {
                     if (xhr.status === 200) {
-                        var res = JSON.parse(xhr.responseText);
-                        resolve(res.secure_url);
+                        try { var res = JSON.parse(xhr.responseText); resolve(res.secure_url); }
+                        catch(e) { reject(new Error('Invalid response')); }
                     } else { reject(new Error('Upload failed')); }
                 };
                 xhr.onerror = function() { reject(new Error('Network error')); };
@@ -654,11 +658,13 @@
         function createThumb(url, onRemove) {
             var div = document.createElement('div');
             div.className = 'upload-thumb';
-            div.innerHTML = '<img src="' + url + '" alt=""><button type="button" class="remove-thumb"><i class="fas fa-times"></i></button>';
-            div.querySelector('.remove-thumb').addEventListener('click', function() {
-                onRemove();
-                div.remove();
-            });
+            var img = document.createElement('img');
+            img.src = url; img.alt = '';
+            var btn = document.createElement('button');
+            btn.type = 'button'; btn.className = 'remove-thumb';
+            btn.innerHTML = '<i class="fas fa-times"></i>';
+            btn.addEventListener('click', function() { onRemove(); div.remove(); });
+            div.appendChild(img); div.appendChild(btn);
             return div;
         }
 
@@ -681,14 +687,13 @@
             async function handleFiles(files) {
                 var arr = Array.from(files);
                 if (opts.single) arr = arr.slice(0, 1);
-                if (opts.maxCount) {
-                    var remaining = opts.maxCount - window.__uploads.gallery.length;
-                    arr = arr.slice(0, Math.max(0, remaining));
-                }
                 for (var i = 0; i < arr.length; i++) {
                     var f = arr[i];
+                    if (!f.type.startsWith('image/')) { alert('Tik nuotraukos (JPG, PNG, WEBP)'); continue; }
                     if (f.size > MAX_FILE_SIZE) { alert(f.name + ' per didelis (max 5MB)'); continue; }
-                    if (!f.type.startsWith('image/')) continue;
+                    if (opts.maxCount && window.__uploads.gallery.length >= opts.maxCount) {
+                        alert('Maksimalus nuotraukų skaičius pasiektas (' + opts.maxCount + ')'); break;
+                    }
                     zone.style.opacity = '0.6';
                     zone.querySelector('p').textContent = 'Įkeliama...';
                     try {
@@ -698,8 +703,8 @@
                             previews.innerHTML = '';
                             previews.appendChild(createThumb(url, function() { window.__uploads.logo = null; }));
                         } else {
+                            if (window.__uploads.gallery.length >= opts.maxCount) break;
                             window.__uploads.gallery.push(url);
-                            var idx = window.__uploads.gallery.length - 1;
                             previews.appendChild(createThumb(url, function() {
                                 var pos = window.__uploads.gallery.indexOf(url);
                                 if (pos > -1) window.__uploads.gallery.splice(pos, 1);
@@ -725,8 +730,13 @@
         function addBreak(startVal, endVal) {
             const row = document.createElement('div');
             row.className = 'break-row';
-            row.innerHTML = '<input type="time" class="break-start" value="' + (startVal || '12:00') + '"><span>–</span><input type="time" class="break-end" value="' + (endVal || '12:30') + '"><button type="button" class="remove-break" title="Pašalinti"><i class="fas fa-times"></i></button>';
-            row.querySelector('.remove-break').addEventListener('click', function() { row.remove(); });
+            const s = document.createElement('input'); s.type = 'time'; s.className = 'break-start'; s.value = startVal || '12:00';
+            const sep = document.createElement('span'); sep.textContent = '–';
+            const e = document.createElement('input'); e.type = 'time'; e.className = 'break-end'; e.value = endVal || '12:30';
+            const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'remove-break'; btn.title = 'Pašalinti';
+            btn.innerHTML = '<i class="fas fa-times"></i>';
+            btn.addEventListener('click', function() { row.remove(); });
+            row.appendChild(s); row.appendChild(sep); row.appendChild(e); row.appendChild(btn);
             container.appendChild(row);
         }
 

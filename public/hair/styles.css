@@ -13,6 +13,8 @@
     --accent-hover: #8f795d;
     --white: #ffffff;
     --border: #e8e2d8;
+    --bg-card: #ffffff;
+    --card-bg: #ffffff;
 
     --shadow-sm: 0 4px 12px rgba(61, 53, 44, 0.04);
     --shadow-md: 0 12px 24px rgba(61, 53, 44, 0.08);
