@@ -230,11 +230,14 @@ app.post('/create-addon-checkout', async (req, res) => {
     if (!email || !Array.isArray(addons) || addons.length === 0) {
         return res.status(400).json({ error: 'Trūksta duomenų.' });
     }
+    console.log('[addon-checkout] Request:', { email, salonName, addons });
+    console.log('[addon-checkout] ADDON_PRICES:', { email_reminders: ADDON_PRICES.email_reminders || '(not set)', sms_reminders: ADDON_PRICES.sms_reminders || '(not set)' });
     const lineItems = addons
         .filter(a => ADDON_PRICES[a])
         .map(a => ({ price: ADDON_PRICES[a], quantity: 1 }));
     if (lineItems.length === 0) {
-        return res.status(400).json({ error: 'Nėra tinkamų priedų.' });
+        console.error('[addon-checkout] No valid line items! Addons requested:', addons, 'ADDON_PRICES:', ADDON_PRICES);
+        return res.status(400).json({ error: 'Nėra tinkamų priedų — kainos nesukonfigūruotos.' });
     }
     try {
         const session = await stripe.checkout.sessions.create({
@@ -256,6 +259,19 @@ app.post('/create-addon-checkout', async (req, res) => {
 // Add-on payment success page
 app.get('/addon-success', (req, res) => {
     res.send(`<!DOCTYPE html><html lang="lt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Priedai aktyvuoti</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0e17;color:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}.card{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:48px 40px;max-width:480px}.icon{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,211,238,0.3)}h1{font-size:1.4rem;margin:0 0 10px}p{color:rgba(248,250,252,0.55);font-size:0.95rem;line-height:1.6;margin:0}</style></head><body><div class="card"><div class="icon">✓</div><h1>Priedai sėkmingai aktyvuoti!</h1><p>Ačiū! Jūsų pasirinkti priedai bus aktyvuoti per kelias minutes.<br>Priminimai bus siunčiami automatiškai prieš kiekvieną vizitą.</p><p style="margin-top:20px;font-size:0.85rem;opacity:0.4;">Galite uždaryti šį langą.</p></div></body></html>`);
+});
+
+// Diagnostic: check addon config (admin only, remove after debugging)
+app.get('/api/debug/addon-config', (req, res) => {
+    if (req.query.key !== 'velora-test-2026') return res.status(403).json({ error: 'Unauthorized' });
+    res.json({
+        email_price_set: !!process.env.STRIPE_PRICE_EMAIL_MONTHLY,
+        sms_price_set: !!process.env.STRIPE_PRICE_SMS_MONTHLY,
+        email_price_prefix: (process.env.STRIPE_PRICE_EMAIL_MONTHLY || '').slice(0, 12),
+        sms_price_prefix: (process.env.STRIPE_PRICE_SMS_MONTHLY || '').slice(0, 12),
+        stripe_key_mode: (process.env.STRIPE_SECRET_KEY || '').startsWith('sk_live') ? 'live' : 'test',
+        site_url: process.env.SITE_URL || '(not set)',
+    });
 });
 
 // Test endpoint: manually trigger reminders (admin only)

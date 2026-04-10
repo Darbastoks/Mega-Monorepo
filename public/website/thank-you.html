@@ -615,6 +615,7 @@
                 if (res.ok) {
                     // Check if add-ons were selected — redirect to Stripe payment
                     var selectedAddons = [...document.querySelectorAll('.addon-card.selected')].map(c => c.dataset.addon);
+                    console.log('[thank-you] Selected addons:', selectedAddons);
                     if (selectedAddons.length > 0) {
                         try {
                             var addonRes = await fetch('/create-addon-checkout', {
@@ -623,12 +624,15 @@
                                 body: JSON.stringify({ email: data.email, salonName: data.salon_name, addons: selectedAddons })
                             });
                             var addonData = await addonRes.json();
+                            console.log('[thank-you] Addon checkout response:', addonData);
                             if (addonData.url) {
                                 window.location.href = addonData.url;
                                 return;
+                            } else {
+                                console.error('[thank-you] No URL in addon response:', addonData);
                             }
                         } catch (addonErr) {
-                            console.warn('Addon checkout failed, continuing without:', addonErr);
+                            console.error('[thank-you] Addon checkout failed:', addonErr);
                         }
                     }
                     form.style.display = 'none';
