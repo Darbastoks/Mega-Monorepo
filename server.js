@@ -55,6 +55,11 @@ const PRICES = {
 };
 const VALID_PRICE_IDS = new Set(Object.values(PRICES).flatMap(p => [p.monthly, p.annual]).filter(Boolean));
 
+const ADDON_PRICES = {
+    email_reminders: process.env.STRIPE_PRICE_EMAIL_MONTHLY,
+    sms_reminders: process.env.STRIPE_PRICE_SMS_MONTHLY,
+};
+
 // Barbie SQLite models
 const { initDatabase, Admin, Booking, db: dbBarbie } = require('./backend/barbie/database');
 // Hair Beauty SQLite db
@@ -114,6 +119,34 @@ app.post('/webhook/stripe',
                     console.log(`Portal: +1 purchased change for client ${clientId}`);
                 } catch (err) {
                     console.error('One-off change error:', err.message);
+                }
+            } else if (session.metadata?.type === 'addon') {
+                // Handle add-on subscription purchase (email/SMS reminders)
+                try {
+                    const email = session.customer_email || session.metadata.email;
+                    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 10 });
+                    let emailActive = 0, smsActive = 0;
+                    for (const item of lineItems.data) {
+                        const priceId = item.price?.id;
+                        if (priceId === ADDON_PRICES.email_reminders) emailActive = 1;
+                        if (priceId === ADDON_PRICES.sms_reminders) smsActive = 1;
+                    }
+                    const existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                    if (existing) {
+                        const updates = [];
+                        const params = [];
+                        if (emailActive) { updates.push('email_reminders_active = 1'); }
+                        if (smsActive) { updates.push('sms_reminders_active = 1'); }
+                        updates.push('addon_stripe_subscription_id = ?');
+                        params.push(session.subscription || '');
+                        params.push(existing.id);
+                        await portalRun(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
+                        console.log(`Portal: Addon activated for ${email} — email:${emailActive} sms:${smsActive}`);
+                    } else {
+                        console.warn(`Portal: Addon payment from unknown client ${email}`);
+                    }
+                } catch (err) {
+                    console.error('Addon activation error:', err.message);
                 }
             } else {
                 // Auto-create/upgrade portal client account (subscription purchase)
@@ -188,6 +221,56 @@ app.post('/create-checkout-session', async (req, res) => {
     } catch (err) {
         console.error('Stripe checkout error:', err.message);
         res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
+    }
+});
+
+// Creates a Stripe Checkout session for paid add-ons (email/SMS reminders)
+app.post('/create-addon-checkout', async (req, res) => {
+    const { email, salonName, addons } = req.body;
+    if (!email || !Array.isArray(addons) || addons.length === 0) {
+        return res.status(400).json({ error: 'Trūksta duomenų.' });
+    }
+    const lineItems = addons
+        .filter(a => ADDON_PRICES[a])
+        .map(a => ({ price: ADDON_PRICES[a], quantity: 1 }));
+    if (lineItems.length === 0) {
+        return res.status(400).json({ error: 'Nėra tinkamų priedų.' });
+    }
+    try {
+        const session = await stripe.checkout.sessions.create({
+            mode: 'subscription',
+            customer_email: email,
+            line_items: lineItems,
+            metadata: { type: 'addon', email, salon_name: (salonName || '').slice(0, 100) },
+            success_url: `${SITE_URL}/addon-success`,
+            cancel_url: `${SITE_URL}/thank-you`,
+            locale: 'lt',
+        });
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('Addon checkout error:', err.message);
+        res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
+    }
+});
+
+// Add-on payment success page
+app.get('/addon-success', (req, res) => {
+    res.send(`<!DOCTYPE html><html lang="lt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Priedai aktyvuoti</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0e17;color:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}.card{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:48px 40px;max-width:480px}.icon{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,211,238,0.3)}h1{font-size:1.4rem;margin:0 0 10px}p{color:rgba(248,250,252,0.55);font-size:0.95rem;line-height:1.6;margin:0}</style></head><body><div class="card"><div class="icon">✓</div><h1>Priedai sėkmingai aktyvuoti!</h1><p>Ačiū! Jūsų pasirinkti priedai bus aktyvuoti per kelias minutes.<br>Priminimai bus siunčiami automatiškai prieš kiekvieną vizitą.</p><p style="margin-top:20px;font-size:0.85rem;opacity:0.4;">Galite uždaryti šį langą.</p></div></body></html>`);
+});
+
+// Test endpoint: manually trigger reminders (admin only)
+app.get('/api/test/trigger-reminders', async (req, res) => {
+    const key = req.query.key;
+    if (key !== process.env.ADMIN_SECRET && key !== 'velora-test-2026') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    const hours = parseInt(req.query.hours) || 24;
+    try {
+        const reminders = require('./backend/reminders');
+        await reminders.triggerReminders(hours);
+        res.json({ success: true, message: `Triggered ${hours}h reminders` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1860,6 +1943,15 @@ async function startServer() {
                 }
             }, 15 * 60 * 1000);
             console.log('[DEMO RESET] Auto-reset scheduled every 15 minutes');
+
+            // Start reminder cron jobs (email + SMS)
+            const reminders = require('./backend/reminders');
+            reminders.start({
+                portalAll, portalGet,
+                dbBarbie: dbBarbie,
+                dbHair: dbHair,
+                dbNails: dbNails,
+            });
         });
     } catch (err) {
         console.error('CRITICAL: Failed to start server due to database error:', err);

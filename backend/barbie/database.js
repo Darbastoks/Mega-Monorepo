@@ -81,6 +81,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Reminder tracking migrations
+        db.run(`ALTER TABLE bookings ADD COLUMN reminder_24h_sent INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE bookings ADD COLUMN reminder_2h_sent INTEGER DEFAULT 0`, () => {});
     }
 });
 

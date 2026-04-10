@@ -32,6 +32,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`UPDATE clients SET plan = 'solo' WHERE plan = 'start' AND stripe_customer_id != '' AND stripe_customer_id IS NOT NULL`);
         db.run(`UPDATE clients SET plan = 'team' WHERE plan = 'pro'`);
         db.run(`ALTER TABLE clients ADD COLUMN purchased_changes INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN email_reminders_active INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN sms_reminders_active INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN addon_stripe_subscription_id TEXT DEFAULT ''`, () => {});
 
         // Attachment migrations
         db.run(`ALTER TABLE change_requests ADD COLUMN attachment_base64 TEXT DEFAULT ''`, () => {});

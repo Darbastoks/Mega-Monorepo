@@ -22,6 +22,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
             )
         `);
 
+        // Reminder tracking migrations
+        db.run(`ALTER TABLE reservations ADD COLUMN reminder_24h_sent INTEGER DEFAULT 0`, () => {});
+        db.run(`ALTER TABLE reservations ADD COLUMN reminder_2h_sent INTEGER DEFAULT 0`, () => {});
+
         db.run(`
             CREATE TABLE IF NOT EXISTS settings (
                 id INTEGER PRIMARY KEY DEFAULT 1,

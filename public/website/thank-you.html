@@ -613,6 +613,24 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
                 });
                 if (res.ok) {
+                    // Check if add-ons were selected — redirect to Stripe payment
+                    var selectedAddons = [...document.querySelectorAll('.addon-card.selected')].map(c => c.dataset.addon);
+                    if (selectedAddons.length > 0) {
+                        try {
+                            var addonRes = await fetch('/create-addon-checkout', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: data.email, salonName: data.salon_name, addons: selectedAddons })
+                            });
+                            var addonData = await addonRes.json();
+                            if (addonData.url) {
+                                window.location.href = addonData.url;
+                                return;
+                            }
+                        } catch (addonErr) {
+                            console.warn('Addon checkout failed, continuing without:', addonErr);
+                        }
+                    }
                     form.style.display = 'none';
                     document.getElementById('form-success').style.display = 'block';
                 } else {
