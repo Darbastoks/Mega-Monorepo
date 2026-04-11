@@ -131,7 +131,17 @@ app.post('/webhook/stripe',
                         if (priceId === ADDON_PRICES.email_reminders) emailActive = 1;
                         if (priceId === ADDON_PRICES.sms_reminders) smsActive = 1;
                     }
-                    const existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                    let existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                    if (!existing) {
+                        // Client row doesn't exist yet (onboarding goes to velora-ops, not here) — create it
+                        const salonName = session.metadata.salon_name || '';
+                        await portalRun(
+                            'INSERT OR IGNORE INTO clients (google_email, salon_name, plan, addon_stripe_subscription_id) VALUES (?, ?, ?, ?)',
+                            [email, salonName, 'free', session.subscription || '']
+                        );
+                        existing = await portalGet('SELECT id FROM clients WHERE google_email = ?', [email]);
+                        console.log(`Portal: Created client row for addon buyer ${email}`);
+                    }
                     if (existing) {
                         const updates = [];
                         const params = [];
@@ -142,8 +152,6 @@ app.post('/webhook/stripe',
                         params.push(existing.id);
                         await portalRun(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
                         console.log(`Portal: Addon activated for ${email} — email:${emailActive} sms:${smsActive}`);
-                    } else {
-                        console.warn(`Portal: Addon payment from unknown client ${email}`);
                     }
                 } catch (err) {
                     console.error('Addon activation error:', err.message);
