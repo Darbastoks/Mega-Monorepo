@@ -153,6 +153,32 @@ app.post('/webhook/stripe',
                         await portalRun(`UPDATE clients SET ${updates.join(', ')} WHERE id = ?`, params);
                         console.log(`Portal: Addon activated for ${email} — email:${emailActive} sms:${smsActive}`);
                     }
+
+                    // Replay the onboarding form to velora-ops now that payment is confirmed
+                    const pending = await portalGet(
+                        'SELECT payload_json, addons_json FROM pending_onboarding WHERE stripe_session_id = ?',
+                        [session.id]
+                    );
+                    if (pending) {
+                        try {
+                            const payload = JSON.parse(pending.payload_json);
+                            const paidAddons = [];
+                            if (emailActive) paidAddons.push({ name: 'email_reminders', price: 9 });
+                            if (smsActive) paidAddons.push({ name: 'sms_reminders', price: 19 });
+                            payload.addons = paidAddons;
+                            payload.addons_paid = true;
+                            const opsRes = await fetch('https://velora-ops.onrender.com/webhook/onboarding', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload),
+                            });
+                            if (!opsRes.ok) throw new Error(`velora-ops returned ${opsRes.status}`);
+                            console.log(`Portal: Onboarding forwarded to velora-ops for ${email}`);
+                            await portalRun('DELETE FROM pending_onboarding WHERE stripe_session_id = ?', [session.id]);
+                        } catch (fwdErr) {
+                            console.error('Failed to forward onboarding to velora-ops:', fwdErr.message);
+                        }
+                    }
                 } catch (err) {
                     console.error('Addon activation error:', err.message);
                 }
@@ -232,31 +258,36 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
-// Creates a Stripe Checkout session for paid add-ons (email/SMS reminders)
+// Creates a Stripe Checkout session for paid add-ons (email/SMS reminders).
+// Holds the full onboarding payload in pending_onboarding until payment confirms —
+// only then does velora-ops get notified (so unpaid submissions don't spam Telegram).
 app.post('/create-addon-checkout', async (req, res) => {
-    const { email, salonName, addons } = req.body;
-    if (!email || !Array.isArray(addons) || addons.length === 0) {
+    const { payload, addons } = req.body;
+    if (!payload || !payload.email || !Array.isArray(addons) || addons.length === 0) {
         return res.status(400).json({ error: 'Trūksta duomenų.' });
     }
-    console.log('[addon-checkout] Request:', { email, salonName, addons });
-    console.log('[addon-checkout] ADDON_PRICES:', { email_reminders: ADDON_PRICES.email_reminders || '(not set)', sms_reminders: ADDON_PRICES.sms_reminders || '(not set)' });
     const lineItems = addons
         .filter(a => ADDON_PRICES[a])
         .map(a => ({ price: ADDON_PRICES[a], quantity: 1 }));
     if (lineItems.length === 0) {
-        console.error('[addon-checkout] No valid line items! Addons requested:', addons, 'ADDON_PRICES:', ADDON_PRICES);
+        console.error('[addon-checkout] No valid line items for:', addons);
         return res.status(400).json({ error: 'Nėra tinkamų priedų — kainos nesukonfigūruotos.' });
     }
     try {
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
-            customer_email: email,
+            customer_email: payload.email,
             line_items: lineItems,
-            metadata: { type: 'addon', email, salon_name: (salonName || '').slice(0, 100) },
+            metadata: { type: 'addon', email: payload.email, salon_name: (payload.salon_name || '').slice(0, 100) },
             success_url: `${SITE_URL}/addon-success`,
-            cancel_url: `${SITE_URL}/thank-you`,
+            cancel_url: `${SITE_URL}/thank-you?resume={CHECKOUT_SESSION_ID}`,
             locale: 'lt',
         });
+        // Store pending onboarding — webhook will replay it to velora-ops after payment
+        await portalRun(
+            `INSERT OR REPLACE INTO pending_onboarding (stripe_session_id, email, payload_json, addons_json) VALUES (?, ?, ?, ?)`,
+            [session.id, payload.email, JSON.stringify(payload), JSON.stringify(addons)]
+        );
         res.json({ url: session.url });
     } catch (err) {
         console.error('Addon checkout error:', err.message);
@@ -264,9 +295,88 @@ app.post('/create-addon-checkout', async (req, res) => {
     }
 });
 
+// Returns saved onboarding payload for resume flow (when user cancels Stripe)
+app.get('/api/pending-onboarding/:sessionId', async (req, res) => {
+    try {
+        const row = await portalGet(
+            'SELECT email, payload_json, addons_json FROM pending_onboarding WHERE stripe_session_id = ?',
+            [req.params.sessionId]
+        );
+        if (!row) return res.status(404).json({ error: 'Not found' });
+        res.json({
+            payload: JSON.parse(row.payload_json),
+            addons: JSON.parse(row.addons_json),
+        });
+    } catch (err) {
+        console.error('Pending onboarding lookup error:', err.message);
+        res.status(500).json({ error: 'Lookup failed' });
+    }
+});
+
 // Add-on payment success page
 app.get('/addon-success', (req, res) => {
     res.send(`<!DOCTYPE html><html lang="lt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Priedai aktyvuoti</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0e17;color:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}.card{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:48px 40px;max-width:480px}.icon{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,211,238,0.3)}h1{font-size:1.4rem;margin:0 0 10px}p{color:rgba(248,250,252,0.55);font-size:0.95rem;line-height:1.6;margin:0}</style></head><body><div class="card"><div class="icon">✓</div><h1>Priedai sėkmingai aktyvuoti!</h1><p>Ačiū! Jūsų pasirinkti priedai bus aktyvuoti per kelias minutes.<br>Priminimai bus siunčiami automatiškai prieš kiekvieną vizitą.</p><p style="margin-top:20px;font-size:0.85rem;opacity:0.4;">Galite uždaryti šį langą.</p></div></body></html>`);
+});
+
+// Reminder settings per salon — edited from each salon's admin panel
+const SALON_SESSION_KEYS = { barbie: 'isBarbieAdmin', hair: 'isHairAdmin', nails: 'isNailsAdmin' };
+function requireSalonAdmin(req, res, next) {
+    const key = SALON_SESSION_KEYS[req.params.slug];
+    if (key && req.session && req.session[key]) return next();
+    res.status(401).json({ error: 'Reikia prisijungti' });
+}
+
+app.get('/api/salon/:slug/reminder-settings', requireSalonAdmin, async (req, res) => {
+    try {
+        const row = await portalGet(
+            `SELECT email_reminders_active, sms_reminders_active, reminder_email_subject, reminder_email_body, reminder_sms_body, reminder_hours_before
+             FROM clients WHERE salon_slug = ? LIMIT 1`,
+            [req.params.slug]
+        );
+        res.json(row || {
+            email_reminders_active: 0, sms_reminders_active: 0,
+            reminder_email_subject: '', reminder_email_body: '', reminder_sms_body: '', reminder_hours_before: 24,
+        });
+    } catch (err) {
+        console.error('reminder-settings GET error:', err.message);
+        res.status(500).json({ error: 'Nepavyko gauti nustatymų.' });
+    }
+});
+
+app.post('/api/salon/:slug/reminder-settings', requireSalonAdmin, async (req, res) => {
+    const { email_subject, email_body, sms_body, hours_before } = req.body;
+    const hours = [24, 2, 0].includes(Number(hours_before)) ? Number(hours_before) : 24;
+    try {
+        const existing = await portalGet('SELECT id FROM clients WHERE salon_slug = ? LIMIT 1', [req.params.slug]);
+        if (existing) {
+            await portalRun(
+                `UPDATE clients SET reminder_email_subject = ?, reminder_email_body = ?, reminder_sms_body = ?, reminder_hours_before = ? WHERE id = ?`,
+                [email_subject || '', email_body || '', sms_body || '', hours, existing.id]
+            );
+        } else {
+            await portalRun(
+                `INSERT INTO clients (salon_slug, reminder_email_subject, reminder_email_body, reminder_sms_body, reminder_hours_before) VALUES (?, ?, ?, ?, ?)`,
+                [req.params.slug, email_subject || '', email_body || '', sms_body || '', hours]
+            );
+        }
+        res.json({ success: true });
+    } catch (err) {
+        console.error('reminder-settings POST error:', err.message);
+        res.status(500).json({ error: 'Nepavyko išsaugoti.' });
+    }
+});
+
+app.post('/api/salon/:slug/reminder-test', requireSalonAdmin, async (req, res) => {
+    const { email, phone } = req.body;
+    if (!email && !phone) return res.status(400).json({ error: 'Nurodykite el. paštą arba telefoną.' });
+    try {
+        const reminders = require('./backend/reminders');
+        const result = await reminders.sendTestReminder(req.params.slug, { email, phone });
+        res.json({ success: true, ...result });
+    } catch (err) {
+        console.error('reminder-test error:', err.message);
+        res.status(500).json({ error: err.message || 'Nepavyko išsiųsti testo.' });
+    }
 });
 
 // Test endpoint: manually trigger reminders (admin only)

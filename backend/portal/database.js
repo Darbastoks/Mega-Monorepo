@@ -35,6 +35,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run(`ALTER TABLE clients ADD COLUMN email_reminders_active INTEGER DEFAULT 0`, () => {});
         db.run(`ALTER TABLE clients ADD COLUMN sms_reminders_active INTEGER DEFAULT 0`, () => {});
         db.run(`ALTER TABLE clients ADD COLUMN addon_stripe_subscription_id TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN reminder_email_subject TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN reminder_email_body TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN reminder_sms_body TEXT DEFAULT ''`, () => {});
+        db.run(`ALTER TABLE clients ADD COLUMN reminder_hours_before INTEGER DEFAULT 24`, () => {});
+
+        // Pending onboarding: holds onboarding data until Stripe payment for addons completes
+        db.run(`
+            CREATE TABLE IF NOT EXISTS pending_onboarding (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stripe_session_id TEXT UNIQUE NOT NULL,
+                email TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                addons_json TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+        // Cleanup stale pending onboardings (>7 days old)
+        db.run(`DELETE FROM pending_onboarding WHERE datetime(created_at) < datetime('now', '-7 days')`, () => {});
 
         // Attachment migrations
         db.run(`ALTER TABLE change_requests ADD COLUMN attachment_base64 TEXT DEFAULT ''`, () => {});

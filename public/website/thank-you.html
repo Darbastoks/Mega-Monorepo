@@ -491,6 +491,10 @@
             </div>
         </form>
 
+        <div id="resume-banner" style="display:none;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#22d3ee;font-size:0.92rem;">
+            <i class="fas fa-info-circle"></i> Mokėjimas nebuvo užbaigtas. Jūsų duomenys išsaugoti — užpildykite trūkstamus laukus ir paspauskite <strong>Pateikti informaciją</strong> dar kartą.
+        </div>
+
         <div id="form-success" style="display:none;text-align:center;padding:60px 20px;">
             <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a);display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,197,94,0.4);">
                 <i class="fas fa-check"></i>
@@ -514,6 +518,41 @@
     (function() {
         const form = document.getElementById('onboarding-form');
         if (!form) return;
+
+        // Resume from Stripe cancel: reload saved form payload and show retry banner
+        (async function() {
+            const resumeId = new URLSearchParams(window.location.search).get('resume');
+            if (!resumeId) return;
+            try {
+                const r = await fetch('/api/pending-onboarding/' + encodeURIComponent(resumeId));
+                if (!r.ok) return;
+                const { payload, addons } = await r.json();
+                const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+                setVal('salon_name', payload.salon_name);
+                setVal('phone', payload.phone);
+                setVal('email', payload.email);
+                setVal('instagram', payload.instagram);
+                setVal('address', payload.address);
+                setVal('services_prices', payload.services_prices);
+                setVal('work_start', payload.work_start);
+                setVal('work_end', payload.work_end);
+                setVal('preferred_colors', payload.preferred_colors);
+                setVal('seo_city', payload.seo_city);
+                setVal('seo_services', payload.seo_services);
+                setVal('notes', payload.notes);
+                (payload.work_days || []).forEach(d => {
+                    const cb = document.querySelector(`input[name="work_days"][value="${d}"]`);
+                    if (cb) cb.checked = true;
+                });
+                (addons || []).forEach(a => {
+                    const card = document.querySelector(`.addon-card[data-addon="${a}"]`);
+                    if (card) card.classList.add('selected');
+                });
+                document.getElementById('resume-banner').style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) { console.warn('Resume failed:', e); }
+        })();
+
         const steps = form.querySelectorAll('.wizard-step');
         const progressSteps = form.querySelectorAll('.progress-step');
         const progressBar = document.getElementById('progress-bar');
@@ -608,33 +647,31 @@
                 addons: [...document.querySelectorAll('.addon-card.selected')].map(c => ({ name: c.dataset.addon, price: parseInt(c.dataset.price) || 0 }))
             };
 
+            var selectedAddons = [...document.querySelectorAll('.addon-card.selected')].map(c => c.dataset.addon);
             try {
+                if (selectedAddons.length > 0) {
+                    // BRANCH B: Addons selected — hold onboarding until payment confirms.
+                    // Server stores the full payload in pending_onboarding and returns a Stripe URL.
+                    // Webhook will forward to velora-ops only after successful payment.
+                    var addonRes = await fetch('/create-addon-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ payload: data, addons: selectedAddons })
+                    });
+                    var addonData = await addonRes.json();
+                    if (addonData.url) {
+                        window.location.href = addonData.url;
+                        return;
+                    }
+                    alert('Klaida kuriant mokėjimą: ' + (addonData.error || 'Bandykite dar kartą.'));
+                    submitBtn.disabled = false; submitBtn.textContent = 'Pateikti informaciją';
+                    return;
+                }
+                // BRANCH A: No addons — fire onboarding immediately (unchanged flow)
                 const res = await fetch('https://velora-ops.onrender.com/webhook/onboarding', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    // Check if add-ons were selected — redirect to Stripe payment
-                    var selectedAddons = [...document.querySelectorAll('.addon-card.selected')].map(c => c.dataset.addon);
-                    console.log('[thank-you] Selected addons:', selectedAddons);
-                    if (selectedAddons.length > 0) {
-                        try {
-                            var addonRes = await fetch('/create-addon-checkout', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: data.email, salonName: data.salon_name, addons: selectedAddons })
-                            });
-                            var addonData = await addonRes.json();
-                            console.log('[thank-you] Addon checkout response:', addonData);
-                            if (addonData.url) {
-                                window.location.href = addonData.url;
-                                return;
-                            } else {
-                                console.error('[thank-you] No URL in addon response:', addonData);
-                            }
-                        } catch (addonErr) {
-                            console.error('[thank-you] Addon checkout failed:', addonErr);
-                        }
-                    }
                     form.style.display = 'none';
                     document.getElementById('form-success').style.display = 'block';
                 } else {

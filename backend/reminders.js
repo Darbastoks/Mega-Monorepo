@@ -38,12 +38,34 @@ function dbRun(db, sql, params = []) {
     });
 }
 
-// Get Lithuanian time now
 function nowLT() {
     return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vilnius' }));
 }
 
-// Find bookings in a time window for a given salon
+// Default Lithuanian templates
+const DEFAULT_EMAIL_SUBJECT_24H = 'Priminimas: Jūsų vizitas rytoj {laikas}';
+const DEFAULT_EMAIL_SUBJECT_2H = 'Priminimas: Jūsų vizitas po 2 val. ({laikas})';
+const DEFAULT_EMAIL_BODY = 'Sveiki, {klientas}!\n\nPrimename apie Jūsų vizitą salone {salonas}.\n\nPaslauga: {paslauga}\nData: {data}\nLaikas: {laikas}\n\nJei norite atšaukti ar pakeisti vizitą, susisiekite su salonu tiesiogiai.';
+const DEFAULT_SMS_BODY = 'Priminimas: vizitas "{paslauga}" salone {salonas} — {data} {laikas}. Jei norite atšaukti, susisiekite.';
+
+function applyPlaceholders(template, vars) {
+    if (!template) return '';
+    return template
+        .replace(/\{salonas\}/g, vars.salonas || '')
+        .replace(/\{paslauga\}/g, vars.paslauga || '')
+        .replace(/\{data\}/g, vars.data || '')
+        .replace(/\{laikas\}/g, vars.laikas || '')
+        .replace(/\{klientas\}/g, vars.klientas || '');
+}
+
+async function getSalonClient(salonSlug) {
+    if (!portalGet) return null;
+    return await portalGet(
+        'SELECT salon_slug, salon_name, email_reminders_active, sms_reminders_active, reminder_email_subject, reminder_email_body, reminder_sms_body, reminder_hours_before FROM clients WHERE salon_slug = ?',
+        [salonSlug]
+    );
+}
+
 async function getUpcomingBookings(salonSlug, hoursAhead, reminderField) {
     const salon = salonDbs[salonSlug];
     if (!salon) return [];
@@ -51,20 +73,17 @@ async function getUpcomingBookings(salonSlug, hoursAhead, reminderField) {
     const now = nowLT();
     const target = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
 
-    // Window: target ± 30 minutes
     const windowStart = new Date(target.getTime() - 30 * 60 * 1000);
     const windowEnd = new Date(target.getTime() + 30 * 60 * 1000);
 
-    const dateStr = target.toISOString().split('T')[0]; // YYYY-MM-DD
-
+    const dateStr = target.toISOString().split('T')[0];
     const table = salon.tableName;
+
     try {
         const bookings = await dbAll(salon.db,
             `SELECT * FROM ${table} WHERE date = ? AND ${reminderField} = 0 AND status != 'cancelled'`,
             [dateStr]
         );
-
-        // Filter by time window
         return bookings.filter(b => {
             if (!b.time) return false;
             const [h, m] = b.time.split(':').map(Number);
@@ -78,41 +97,45 @@ async function getUpcomingBookings(salonSlug, hoursAhead, reminderField) {
     }
 }
 
-// Send email reminder
-async function sendEmailReminder(booking, salonName, hoursAhead) {
-    if (!resendClient || !booking.email) return false;
-
-    const isNextDay = hoursAhead === 24;
-    const subject = isNextDay
-        ? `Priminimas: Jūsų vizitas rytoj ${booking.time}`
-        : `Priminimas: Jūsų vizitas po 2 val. (${booking.time})`;
-
-    const timeText = isNextDay ? 'rytoj' : 'šiandien';
-
-    const html = `
+function buildEmailHtml(bodyText, salonName, vars) {
+    const rendered = escapeHtml(applyPlaceholders(bodyText, vars)).replace(/\n/g, '<br>');
+    return `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#0a0e17;font-family:'Helvetica Neue',Arial,sans-serif;">
 <div style="max-width:520px;margin:40px auto;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,0.06);padding:40px;color:#f8fafc;">
   <div style="text-align:center;margin-bottom:24px;">
     <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.2rem;color:#fff;">⏰</div>
   </div>
-  <h1 style="text-align:center;font-size:1.3rem;margin:0 0 8px;color:#f8fafc;">Vizito priminimas</h1>
-  <p style="text-align:center;color:rgba(248,250,252,0.55);font-size:0.9rem;margin:0 0 24px;">Primename apie Jūsų artėjantį vizitą</p>
-  <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:12px;padding:20px;margin-bottom:24px;">
-    <table style="width:100%;color:#f8fafc;font-size:0.95rem;" cellpadding="6">
-      <tr><td style="color:rgba(248,250,252,0.5);width:100px;">Salonas</td><td style="font-weight:600;">${escapeHtml(salonName)}</td></tr>
-      <tr><td style="color:rgba(248,250,252,0.5);">Paslauga</td><td>${escapeHtml(booking.service)}</td></tr>
-      <tr><td style="color:rgba(248,250,252,0.5);">Data</td><td>${escapeHtml(booking.date)} (${timeText})</td></tr>
-      <tr><td style="color:rgba(248,250,252,0.5);">Laikas</td><td style="font-weight:600;color:#22d3ee;">${escapeHtml(booking.time)}</td></tr>
-    </table>
+  <h1 style="text-align:center;font-size:1.3rem;margin:0 0 8px;color:#f8fafc;">${escapeHtml(salonName)}</h1>
+  <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:12px;padding:20px;margin:24px 0;color:#f8fafc;font-size:0.95rem;line-height:1.6;">
+    ${rendered}
   </div>
-  <p style="text-align:center;color:rgba(248,250,252,0.4);font-size:0.8rem;margin:24px 0 0;">Jei norite atšaukti ar pakeisti vizitą, susisiekite su salonu tiesiogiai.</p>
 </div>
 </body></html>`;
+}
+
+async function sendEmailReminder(booking, client, hoursAhead) {
+    if (!resendClient || !booking.email) return false;
+
+    const salonName = client.salon_name || client.salon_slug;
+    const vars = {
+        salonas: salonName,
+        paslauga: booking.service,
+        data: booking.date,
+        laikas: booking.time,
+        klientas: booking.name,
+    };
+
+    const defaultSubject = hoursAhead === 24 ? DEFAULT_EMAIL_SUBJECT_24H : DEFAULT_EMAIL_SUBJECT_2H;
+    const subjectTpl = client.reminder_email_subject && client.reminder_email_subject.trim() ? client.reminder_email_subject : defaultSubject;
+    const bodyTpl = client.reminder_email_body && client.reminder_email_body.trim() ? client.reminder_email_body : DEFAULT_EMAIL_BODY;
+
+    const subject = applyPlaceholders(subjectTpl, vars);
+    const html = buildEmailHtml(bodyTpl, salonName, vars);
 
     try {
         await resendClient.emails.send({
-            from: 'Velora Studio <info@velorastudio.lt>',
+            from: `${salonName} <info@velorastudio.lt>`,
             to: booking.email,
             subject,
             html,
@@ -125,24 +148,26 @@ async function sendEmailReminder(booking, salonName, hoursAhead) {
     }
 }
 
-// Send SMS reminder
-async function sendSmsReminder(booking, salonName, hoursAhead) {
+async function sendSmsReminder(booking, client, hoursAhead) {
     if (!twilioClient || !twilioFrom || !booking.phone) return false;
 
+    const salonName = client.salon_name || client.salon_slug;
     const phone = booking.phone.trim();
-    // Ensure Lithuanian format
     const formattedPhone = phone.startsWith('+') ? phone : '+370' + phone.replace(/^8/, '');
 
-    const isNextDay = hoursAhead === 24;
-    const timeText = isNextDay ? 'rytoj' : 'šiandien';
-    const body = `Priminimas: Jūsų vizitas "${booking.service}" salone ${salonName} — ${timeText} ${booking.time}. Jei norite atšaukti, susisiekite su salonu.`;
+    const vars = {
+        salonas: salonName,
+        paslauga: booking.service,
+        data: booking.date,
+        laikas: booking.time,
+        klientas: booking.name,
+    };
+
+    const bodyTpl = client.reminder_sms_body && client.reminder_sms_body.trim() ? client.reminder_sms_body : DEFAULT_SMS_BODY;
+    const body = applyPlaceholders(bodyTpl, vars);
 
     try {
-        await twilioClient.messages.create({
-            body,
-            from: twilioFrom,
-            to: formattedPhone,
-        });
+        await twilioClient.messages.create({ body, from: twilioFrom, to: formattedPhone });
         console.log(`[reminders] SMS sent to ${formattedPhone} for ${salonName} at ${booking.date} ${booking.time}`);
         return true;
     } catch (err) {
@@ -156,30 +181,34 @@ function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Main reminder check
+// hoursBefore: 24, 2, or 0 (both)
+function shouldRunForSalon(client, hoursAhead) {
+    const pref = Number(client.reminder_hours_before);
+    if (!pref || pref === 0) return true; // both
+    return pref === hoursAhead;
+}
+
 async function checkAndSendReminders(hoursAhead) {
     const reminderField = hoursAhead === 24 ? 'reminder_24h_sent' : 'reminder_2h_sent';
 
     try {
-        // Get all salons with active reminders
         const clients = await portalAll(
-            'SELECT salon_slug, salon_name, email_reminders_active, sms_reminders_active FROM clients WHERE (email_reminders_active = 1 OR sms_reminders_active = 1) AND salon_slug != ""'
+            'SELECT salon_slug, salon_name, email_reminders_active, sms_reminders_active, reminder_email_subject, reminder_email_body, reminder_sms_body, reminder_hours_before FROM clients WHERE (email_reminders_active = 1 OR sms_reminders_active = 1) AND salon_slug != ""'
         );
 
         for (const client of clients) {
+            if (!shouldRunForSalon(client, hoursAhead)) continue;
+
             const bookings = await getUpcomingBookings(client.salon_slug, hoursAhead, reminderField);
 
             for (const booking of bookings) {
                 let sent = false;
 
                 if (client.email_reminders_active && booking.email) {
-                    const emailSent = await sendEmailReminder(booking, client.salon_name || client.salon_slug, hoursAhead);
-                    if (emailSent) sent = true;
+                    if (await sendEmailReminder(booking, client, hoursAhead)) sent = true;
                 }
-
                 if (client.sms_reminders_active && booking.phone) {
-                    const smsSent = await sendSmsReminder(booking, client.salon_name || client.salon_slug, hoursAhead);
-                    if (smsSent) sent = true;
+                    if (await sendSmsReminder(booking, client, hoursAhead)) sent = true;
                 }
 
                 if (sent) {
@@ -196,10 +225,29 @@ async function checkAndSendReminders(hoursAhead) {
     }
 }
 
-// Manual trigger for testing
 async function triggerReminders(hoursAhead) {
     console.log(`[reminders] Manual trigger: ${hoursAhead}h reminders`);
     await checkAndSendReminders(hoursAhead);
+}
+
+// Send a one-off test reminder to an admin's email/phone using that salon's templates.
+async function sendTestReminder(salonSlug, { email, phone }) {
+    const client = await getSalonClient(salonSlug);
+    if (!client) throw new Error('Salon not found');
+
+    const fakeBooking = {
+        name: 'Testas Testauskas',
+        service: 'Pavyzdinė paslauga',
+        date: new Date().toISOString().split('T')[0],
+        time: '14:00',
+        email: email || '',
+        phone: phone || '',
+    };
+
+    const results = { email: false, sms: false };
+    if (email) results.email = await sendEmailReminder(fakeBooking, client, 24);
+    if (phone) results.sms = await sendSmsReminder(fakeBooking, client, 24);
+    return results;
 }
 
 function start(deps) {
@@ -216,13 +264,11 @@ function start(deps) {
     initResend();
     initTwilio();
 
-    // Every hour at :05 — 24h-ahead reminders
     cron.schedule('5 * * * *', () => {
         console.log('[reminders] Running 24h check...');
         checkAndSendReminders(24);
     }, { timezone: 'Europe/Vilnius' });
 
-    // Every 30 min at :05 and :35 — 2h-ahead reminders
     cron.schedule('5,35 * * * *', () => {
         console.log('[reminders] Running 2h check...');
         checkAndSendReminders(2);
@@ -231,4 +277,4 @@ function start(deps) {
     console.log('[reminders] Cron jobs started (24h at :05, 2h at :05/:35)');
 }
 
-module.exports = { start, triggerReminders };
+module.exports = { start, triggerReminders, sendTestReminder };

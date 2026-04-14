@@ -178,6 +178,105 @@
                     </div>
                 </div>
 
+                <div id="remindersSettingsBlock" style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light);">
+                    <h3 style="margin-bottom: 0.5rem;">Priminimai</h3>
+                    <div id="reminderStatus" style="font-size:0.8rem;opacity:0.7;margin-bottom:0.75rem;">Kraunama...</div>
+                    <div style="margin-bottom:0.75rem;font-size:0.75rem;opacity:0.55;">Galimi kintamieji: <code>{salonas}</code>, <code>{klientas}</code>, <code>{paslauga}</code>, <code>{data}</code>, <code>{laikas}</code></div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;margin-bottom:0.3rem;font-size:0.85rem;">El. laiško tema</label>
+                        <input type="text" id="reminderEmailSubject" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:4px;background:rgba(255,255,255,0.05);color:inherit;">
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;margin-bottom:0.3rem;font-size:0.85rem;">El. laiško tekstas</label>
+                        <textarea id="reminderEmailBody" rows="5" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:4px;background:rgba(255,255,255,0.05);color:inherit;resize:vertical;font-family:inherit;"></textarea>
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;margin-bottom:0.3rem;font-size:0.85rem;">SMS tekstas <span id="reminderSmsCount" style="opacity:0.5;">(0/160)</span></label>
+                        <textarea id="reminderSmsBody" rows="3" maxlength="320" style="width:100%;padding:0.5rem;border:1px solid var(--border-light);border-radius:4px;background:rgba(255,255,255,0.05);color:inherit;resize:vertical;font-family:inherit;"></textarea>
+                    </div>
+                    <div style="margin-bottom:0.75rem;">
+                        <label style="display:block;margin-bottom:0.3rem;font-size:0.85rem;">Kada siųsti</label>
+                        <label style="margin-right:1rem;"><input type="radio" name="reminderHours" value="24"> 24 val. prieš</label>
+                        <label style="margin-right:1rem;"><input type="radio" name="reminderHours" value="2"> 2 val. prieš</label>
+                        <label><input type="radio" name="reminderHours" value="0"> Abu</label>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" id="saveRemindersBtn" class="btn-admin" style="flex:1;padding:0.5rem 1rem;background:var(--primary-color);color:#fff;border:none;border-radius:4px;cursor:pointer;">Išsaugoti</button>
+                        <button type="button" id="testReminderBtn" class="btn-admin-outline" style="padding:0.5rem 1rem;border:1px solid var(--primary-color);color:var(--primary-color);background:transparent;border-radius:4px;cursor:pointer;">Siųsti testą</button>
+                    </div>
+                </div>
+
+                <script>
+                (function(){
+                    const SLUG = 'nails';
+                    const statusEl = document.getElementById('reminderStatus');
+                    const subj = document.getElementById('reminderEmailSubject');
+                    const body = document.getElementById('reminderEmailBody');
+                    const sms = document.getElementById('reminderSmsBody');
+                    const smsCount = document.getElementById('reminderSmsCount');
+                    const saveBtn = document.getElementById('saveRemindersBtn');
+                    const testBtn = document.getElementById('testReminderBtn');
+
+                    sms.addEventListener('input', () => { smsCount.textContent = '(' + sms.value.length + '/160)'; });
+
+                    function setLocked(locked, reason) {
+                        [subj, body, sms, saveBtn, testBtn].forEach(el => { el.disabled = locked; });
+                        document.querySelectorAll('input[name="reminderHours"]').forEach(r => r.disabled = locked);
+                        if (locked) statusEl.innerHTML = '<span style="color:#f59e0b;">' + reason + '</span>';
+                    }
+
+                    async function load() {
+                        try {
+                            const r = await fetch('/api/salon/' + SLUG + '/reminder-settings', { credentials: 'include' });
+                            if (!r.ok) { setLocked(true, 'Nepavyko įkelti nustatymų'); return; }
+                            const d = await r.json();
+                            subj.value = d.reminder_email_subject || '';
+                            body.value = d.reminder_email_body || '';
+                            sms.value = d.reminder_sms_body || '';
+                            smsCount.textContent = '(' + sms.value.length + '/160)';
+                            const hrs = String(d.reminder_hours_before || 24);
+                            const radio = document.querySelector('input[name="reminderHours"][value="' + hrs + '"]');
+                            if (radio) radio.checked = true;
+                            if (!d.email_reminders_active && !d.sms_reminders_active) {
+                                setLocked(true, 'Aktyvuokite Email arba SMS priminimų priedą, kad galėtumėte redaguoti.');
+                            } else {
+                                setLocked(false);
+                                statusEl.innerHTML = 'Aktyvūs priedai: ' + (d.email_reminders_active ? '✉ Email ' : '') + (d.sms_reminders_active ? '📱 SMS' : '');
+                            }
+                        } catch (e) { setLocked(true, 'Klaida'); }
+                    }
+
+                    saveBtn.addEventListener('click', async () => {
+                        const hrs = document.querySelector('input[name="reminderHours"]:checked');
+                        const r = await fetch('/api/salon/' + SLUG + '/reminder-settings', {
+                            method: 'POST', credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                reminder_email_subject: subj.value,
+                                reminder_email_body: body.value,
+                                reminder_sms_body: sms.value,
+                                reminder_hours_before: hrs ? Number(hrs.value) : 24,
+                            })
+                        });
+                        alert(r.ok ? 'Išsaugota ✓' : 'Klaida išsaugant');
+                    });
+
+                    testBtn.addEventListener('click', async () => {
+                        const email = prompt('Įveskite el. paštą testui (palikite tuščią jei nereikia):', '');
+                        const phone = prompt('Įveskite telefoną testui (palikite tuščią jei nereikia):', '');
+                        if (!email && !phone) return;
+                        const r = await fetch('/api/salon/' + SLUG + '/reminder-test', {
+                            method: 'POST', credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, phone })
+                        });
+                        alert(r.ok ? 'Testas išsiųstas ✓' : 'Klaida');
+                    });
+
+                    setTimeout(load, 500);
+                })();
+                </script>
+
                 <!-- Services Manager -->
                 <div
                     style="background: var(--bg-card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light);">
