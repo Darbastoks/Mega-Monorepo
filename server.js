@@ -269,6 +269,19 @@ app.get('/addon-success', (req, res) => {
     res.send(`<!DOCTYPE html><html lang="lt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Priedai aktyvuoti</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0e17;color:#f8fafc;font-family:'Helvetica Neue',Arial,sans-serif;text-align:center;padding:20px}.card{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:48px 40px;max-width:480px}.icon{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#06b6d4);display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;margin-bottom:20px;box-shadow:0 0 30px rgba(34,211,238,0.3)}h1{font-size:1.4rem;margin:0 0 10px}p{color:rgba(248,250,252,0.55);font-size:0.95rem;line-height:1.6;margin:0}</style></head><body><div class="card"><div class="icon">✓</div><h1>Priedai sėkmingai aktyvuoti!</h1><p>Ačiū! Jūsų pasirinkti priedai bus aktyvuoti per kelias minutes.<br>Priminimai bus siunčiami automatiškai prieš kiekvieną vizitą.</p><p style="margin-top:20px;font-size:0.85rem;opacity:0.4;">Galite uždaryti šį langą.</p></div></body></html>`);
 });
 
+// Diagnostic endpoint (temporary)
+app.get('/api/debug/addon-config', (req, res) => {
+    if (req.query.key !== 'velora-test-2026') return res.status(403).json({ error: 'Unauthorized' });
+    const key = process.env.STRIPE_SECRET_KEY || '';
+    res.json({
+        stripe_key_prefix: key.slice(0, 12),
+        stripe_key_account: key.slice(8, 25),
+        email_price: process.env.STRIPE_PRICE_EMAIL_MONTHLY || '(not set)',
+        sms_price: process.env.STRIPE_PRICE_SMS_MONTHLY || '(not set)',
+        webhook_secret_prefix: (process.env.STRIPE_WEBHOOK_SECRET || '').slice(0, 10),
+    });
+});
+
 // Test endpoint: manually trigger reminders (admin only)
 app.get('/api/test/trigger-reminders', async (req, res) => {
     const key = req.query.key;
