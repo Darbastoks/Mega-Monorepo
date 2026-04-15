@@ -491,8 +491,21 @@
             </div>
         </form>
 
-        <div id="resume-banner" style="display:none;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.3);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#22d3ee;font-size:0.92rem;">
-            <i class="fas fa-info-circle"></i> Mokėjimas nebuvo užbaigtas. Jūsų duomenys išsaugoti — užpildykite trūkstamus laukus ir paspauskite <strong>Pateikti informaciją</strong> dar kartą.
+        <div id="resume-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,14,23,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+            <div id="resume-modal-card" style="position:relative;max-width:480px;width:100%;background:#111827;border:1px solid rgba(34,211,238,0.3);border-radius:16px;padding:32px 28px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                <button type="button" id="resume-modal-close" aria-label="Uždaryti"
+                    style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.06);color:#f8fafc;font-size:1rem;cursor:pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div style="width:48px;height:48px;border-radius:50%;background:rgba(34,211,238,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                    <i class="fas fa-info-circle" style="color:#22d3ee;font-size:1.3rem;"></i>
+                </div>
+                <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:10px;">Mokėjimas nebuvo užbaigtas</h3>
+                <p style="color:rgba(248,250,252,0.7);font-size:0.92rem;margin-bottom:20px;line-height:1.55;">
+                    Jūsų duomenys išsaugoti. Uždarykite šį pranešimą ir paspauskite <strong style="color:#22d3ee;">Pateikti informaciją</strong>, kad pakartotumėte mokėjimą.
+                </p>
+                <button type="button" id="resume-modal-ok" style="width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#22d3ee,#0ea5e9);color:#0a0e17;font-weight:600;cursor:pointer;">Supratau</button>
+            </div>
         </div>
 
         <div id="form-success" style="display:none;text-align:center;padding:60px 20px;">
@@ -519,8 +532,9 @@
         const form = document.getElementById('onboarding-form');
         if (!form) return;
 
-        // Resume from Stripe cancel: reload saved form payload and show retry banner
-        (async function() {
+        // Resume from Stripe cancel: reload saved form payload, jump to last step, show modal.
+        // Defined here but invoked at the bottom of this IIFE (after goTo / totalSteps exist).
+        async function resumeFromStripe() {
             const resumeId = new URLSearchParams(window.location.search).get('resume');
             if (!resumeId) return;
             try {
@@ -548,10 +562,10 @@
                     const card = document.querySelector(`.addon-card[data-addon="${a}"]`);
                     if (card) card.classList.add('selected');
                 });
-                document.getElementById('resume-banner').style.display = 'block';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                goTo(totalSteps);
+                document.getElementById('resume-modal').style.display = 'flex';
             } catch (e) { console.warn('Resume failed:', e); }
-        })();
+        }
 
         const steps = form.querySelectorAll('.wizard-step');
         const progressSteps = form.querySelectorAll('.progress-step');
@@ -609,6 +623,23 @@
 
         nextBtn.addEventListener('click', () => { if (validate()) goTo(current + 1); });
         prevBtn.addEventListener('click', () => goTo(current - 1));
+
+        // Resume modal dismiss handlers
+        const resumeModal = document.getElementById('resume-modal');
+        if (resumeModal) {
+            const closeResumeModal = () => { resumeModal.style.display = 'none'; };
+            document.getElementById('resume-modal-close').addEventListener('click', closeResumeModal);
+            document.getElementById('resume-modal-ok').addEventListener('click', closeResumeModal);
+            resumeModal.addEventListener('click', (e) => {
+                if (e.target === resumeModal) closeResumeModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && resumeModal.style.display !== 'none') closeResumeModal();
+            });
+        }
+
+        // Kick off resume-from-Stripe flow now that goTo / totalSteps are defined
+        resumeFromStripe();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
