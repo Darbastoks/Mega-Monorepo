@@ -558,6 +558,36 @@
                     const cb = document.querySelector(`input[name="work_days"][value="${d}"]`);
                     if (cb) cb.checked = true;
                 });
+                // Restore toggle-choice buttons (has_logo, wants_booking, wants_seo)
+                const clickToggle = (field, yes) => {
+                    const val = yes ? 'yes' : 'no';
+                    const btn = document.querySelector(`.toggle-choice[data-field="${field}"] .choice-btn[data-value="${val}"]`);
+                    if (btn) btn.click();
+                };
+                if (payload.has_logo != null) clickToggle('has_logo', payload.has_logo);
+                if (payload.wants_booking != null) clickToggle('wants_booking', payload.wants_booking);
+                if (payload.wants_seo != null) clickToggle('wants_seo', payload.wants_seo);
+                // Restore design_style radio
+                if (payload.design_style) {
+                    const ds = document.querySelector(`input[name="design_style"][value="${payload.design_style}"]`);
+                    if (ds) ds.checked = true;
+                }
+                // Restore breaks by reclicking the add button, then setting values
+                const addBreakBtn = document.getElementById('add-break');
+                const breaksContainer = document.getElementById('breaks-container');
+                if (addBreakBtn && breaksContainer && Array.isArray(payload.breaks)) {
+                    payload.breaks.forEach(b => {
+                        addBreakBtn.click();
+                        const rows = breaksContainer.querySelectorAll('.break-row');
+                        const row = rows[rows.length - 1];
+                        if (row) {
+                            const s = row.querySelector('.break-start');
+                            const e = row.querySelector('.break-end');
+                            if (s && b.start) s.value = b.start;
+                            if (e && b.end) e.value = b.end;
+                        }
+                    });
+                }
                 (addons || []).forEach(a => {
                     const card = document.querySelector(`.addon-card[data-addon="${a}"]`);
                     if (card) card.classList.add('selected');
