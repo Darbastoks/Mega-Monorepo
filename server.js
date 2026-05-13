@@ -1923,11 +1923,12 @@ app.post('/api/portal/buy-change', requirePortalAuth, async (req, res) => {
             metadata: { type: 'one-off-change', client_id: String(client.id) },
             success_url: `${process.env.SITE_URL || 'https://velora-mega-server.onrender.com'}/portal?purchased=1`,
             cancel_url: `${process.env.SITE_URL || 'https://velora-mega-server.onrender.com'}/portal`,
+            locale: 'lt',
         });
 
         res.json({ url: session.url });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Nepavyko sukurti mokėjimo sesijos.' });
     }
 });
 
