@@ -113,7 +113,7 @@ function createDemoRoutes(config) {
             if (duration !== undefined) { fields.push('duration = ?'); params.push(duration); }
             if (price !== undefined) { fields.push('price = ?'); params.push(price); }
             if (sort_order !== undefined) { fields.push('sort_order = ?'); params.push(sort_order); }
-            if (fields.length === 0) return res.status(400).json({ error: 'No fields to update' });
+            if (fields.length === 0) return res.status(400).json({ error: 'Nėra ką atnaujinti' });
             params.push(req.params.id);
             await dbRun(`UPDATE services SET ${fields.join(', ')} WHERE id = ?`, params);
             res.json({ success: true });
@@ -249,7 +249,7 @@ function createDemoRoutes(config) {
             const date = req.params.date || req.query.date;
             const requestedServiceName = req.query.service;
             const staffId = req.query.staff_id;
-            if (!date) return res.status(400).json({ error: 'date required' });
+            if (!date) return res.status(400).json({ error: 'Data privaloma' });
 
             const s = await getStaffOrGlobalSettings(staffId);
 
@@ -310,7 +310,7 @@ function createDemoRoutes(config) {
             const year = parseInt(req.query.year);
             const month = parseInt(req.query.month);
             const staffId = req.query.staff_id;
-            if (!year || !month) return res.status(400).json({ error: 'year and month required' });
+            if (!year || !month) return res.status(400).json({ error: 'Metai ir mėnuo privalomi' });
 
             const monthStr = String(month).padStart(2, '0');
             const daysInMonth = new Date(year, month, 0).getDate();
@@ -358,7 +358,7 @@ function createDemoRoutes(config) {
                 else result[dateStr] = 'yellow';
             }
             res.json(result);
-        } catch(err) { res.status(500).json({ error: 'DB error' }); }
+        } catch(err) { res.status(500).json({ error: 'DB klaida' }); }
     });
 
     // ==================== BOOKING / RESERVATION ====================

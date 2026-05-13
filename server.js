@@ -302,14 +302,14 @@ app.get('/api/pending-onboarding/:sessionId', async (req, res) => {
             'SELECT email, payload_json, addons_json FROM pending_onboarding WHERE stripe_session_id = ?',
             [req.params.sessionId]
         );
-        if (!row) return res.status(404).json({ error: 'Not found' });
+        if (!row) return res.status(404).json({ error: 'Nerasta' });
         res.json({
             payload: JSON.parse(row.payload_json),
             addons: JSON.parse(row.addons_json),
         });
     } catch (err) {
         console.error('Pending onboarding lookup error:', err.message);
-        res.status(500).json({ error: 'Lookup failed' });
+        res.status(500).json({ error: 'Nepavyko gauti duomenų' });
     }
 });
 
@@ -383,7 +383,7 @@ app.post('/api/salon/:slug/reminder-test', requireSalonAdmin, async (req, res) =
 app.get('/api/test/trigger-reminders', async (req, res) => {
     const key = req.query.key;
     if (key !== process.env.ADMIN_SECRET && key !== 'velora-test-2026') {
-        return res.status(403).json({ error: 'Unauthorized' });
+        return res.status(403).json({ error: 'Neteisėtas veiksmas' });
     }
     const hours = parseInt(req.query.hours) || 24;
     try {
@@ -1422,7 +1422,7 @@ app.post('/api/hair/book', hairLimiter, (req, res) => {
     }
 
     if (!name || !phone || !service || !date || !time) {
-        return res.status(400).json({ error: 'Name, phone, service, date, and time are required.' });
+        return res.status(400).json({ error: 'Vardas, telefonas, paslauga, data ir laikas privalomi.' });
     }
 
     dbHair.get(`SELECT id FROM bookings WHERE date = ? AND time = ? AND status != 'cancelled'`, [date, time], (err, row) => {
@@ -1456,7 +1456,7 @@ app.delete('/api/hair/bookings/:id', requireHairAdmin, (req, res) => {
 });
 
 app.put('/api/hair/bookings/:id/status', requireHairAdmin, (req, res) => {
-    if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Bad status' });
+    if (!['pending', 'confirmed', 'completed', 'cancelled'].includes(req.body.status)) return res.status(400).json({ error: 'Neteisingas statusas' });
     dbHair.run("UPDATE bookings SET status = ? WHERE id = ?", [req.body.status, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: 'DB klaida' });
         res.json({ success: true });
